@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -28,7 +29,7 @@
             font-family: 'Inter', sans-serif;
             background-color: var(--bg-color);
             background-image:
-                radial-gradient(circle at 2px 2px, rgba(255,255,255,0.05) 1px, transparent 0);
+                radial-gradient(circle at 2px 2px, rgba(255, 255, 255, 0.05) 1px, transparent 0);
             background-size: 40px 40px;
             color: var(--text-main);
             line-height: 1.6;
@@ -82,7 +83,10 @@
         .card::before {
             content: "";
             position: absolute;
-            top: 0; left: 0; width: 100%; height: 4px;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
             background: linear-gradient(90deg, transparent, var(--accent-color), transparent);
             transform: translateX(-100%);
             transition: transform 0.5s ease;
@@ -129,183 +133,191 @@
 
         /* Responsive adjustments */
         @media (max-width: 640px) {
-            header h1 { font-size: 2rem; }
-            .container { grid-template-columns: 1fr; }
+            header h1 {
+                font-size: 2rem;
+            }
+
+            .container {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
+
 <body>
 
     <header>
         <h1>Developer Tool Suite</h1>
         <p>A collection of high-performance web utilities and visualizers.</p>
     </header>
-<main class="container" id="grid">
+    <main class="container" id="grid">
         <!-- Cards will be injected here by JavaScript for cleanliness -->
-    <a href="gemma4_1.html" class="card">
-                <div class="card-id">Tool #1</div>
-                <h2>JSON Formatter</h2>
-                <p>Create a sleek JSON beautifier and validator with syntax highlighting.</p>
-            </a><a href="gemma4_2.html" class="card">
-                <div class="card-id">Tool #2</div>
-                <h2>Regex Tester</h2>
-                <p>Build a real-time Regular Expression tester with match highlighting.</p>
-            </a><a href="gemma4_3.html" class="card">
-                <div class="card-id">Tool #3</div>
-                <h2>Base64 Tool</h2>
-                <p>A professional Base64 encoder/decoder with support for text and images.</p>
-            </a><a href="gemma4_4.html" class="card">
-                <div class="card-id">Tool #4</div>
-                <h2>Markdown Previewer</h2>
-                <p>A split-pane Markdown editor with live HTML preview.</p>
-            </a><a href="gemma4_5.html" class="card">
-                <div class="card-id">Tool #5</div>
-                <h2>JWT Decoder</h2>
-                <p>An intuitive JSON Web Token debugger that visualizes header &amp; payload.</p>
-            </a><a href="gemma4_6.html" class="card">
-                <div class="card-id">Tool #6</div>
-                <h2>CSS Glassmorphism Generator</h2>
-                <p>Adjust blur/transparency and export CSS code instantly.</p>
-            </a><a href="gemma4_7.html" class="card">
-                <div class="card-id">Tool #7</div>
-                <h2>Color Palette Pro</h2>
-                <p>Generate harmonious color schemes with HEX/RGB export.</p>
-            </a><a href="gemma4_8.html" class="card">
-                <div class="card-id">Tool #8</div>
-                <h2>Diff Checker</h2>
-                <p>A side-by-side text comparison tool highlighting changes.</p>
-            </a><a href="gemma4_9.html" class="card">
-                <div class="card-id">Tool #9</div>
-                <h2>SQL Formatter</h2>
-                <p>Beautify messy SQL queries with smart indentation logic.</p>
-            </a><a href="gemma4_10.html" class="card">
-                <div class="card-id">Tool #10</div>
-                <h2>Unit Converter Pro</h2>
-                <p>High-end converter for length, weight, and temperature.</p>
-            </a><a href="gemma4_11.html" class="card">
-                <div class="card-id">Tool #11</div>
-                <h2>Sorting Visualizer</h2>
-                <p>Interactive visualization of Bubble, Merge, and Quick Sort.</p>
-            </a><a href="gemma4_12.html" class="card">
-                <div class="card-id">Tool #12</div>
-                <h2>Pathfinding Visualizer</h2>
-                <p>Grid-based tool demonstrating A* or Dijkstra’s algorithm.</p>
-            </a><a href="gemma4_13.html" class="card">
-                <div class="card-id">Tool #13</div>
-                <h2>Conway’s Game of Life</h2>
-                <p>Beautiful implementation of the cellular automaton.</p>
-            </a><a href="gemma4_14.html" class="card">
-                <div class="card-id">Tool #14</div>
-                <h2>Fractal Generator</h2>
-                <p>HTML5 Canvas tool to explore the Mandelbrot set via zooming.</p>
-            </a><a href="gemma4_15.html" class="card">
-                <div class="card-id">Tool #15</div>
-                <h2>Particle Physics Sandbox</h2>
-                <p>High-performance particle system reacting to mouse movement.</p>
-            </a><a href="gemma4_16.html" class="card">
-                <div class="card-id">Tool #16</div>
-                <h2>Fourier Series Visualizer</h2>
-                <p>Animation showing how circles create complex wave shapes.</p>
-            </a><a href="gemma4_17.html" class="card">
-                <div class="card-id">Tool #17</div>
-                <h2>Binary Search Tree Visualizer</h2>
-                <p>Animate the insertion and searching of nodes in a BST.</p>
-            </a><a href="gemma4_18.html" class="card">
-                <div class="card-id">Tool #18</div>
-                <h2>Data Dashboard Template</h2>
-                <p>Professional single-page dashboard using Chart.js.</p>
-            </a><a href="gemma4_19.html" class="card">
-                <div class="card-id">Tool #19</div>
-                <h2>Algorithm Complexity Timer</h2>
-                <p>Visualize Big O notation growth visually via loops.</p>
-            </a><a href="gemma4_20.html" class="card">
-                <div class="card-id">Tool #20</div>
-                <h2>Sorting vs. Searching Demo</h2>
-                <p>Split-screen visual comparing algorithm traversal.</p>
-            </a><a href="gemma4_21.html" class="card">
-                <div class="card-id">Tool #21</div>
-                <h2>Minimalist Pomodoro</h2>
-                <p>Zen-style timer with customizable work/break intervals.</p>
-            </a><a href="gemma4_22.html" class="card">
-                <div class="card-id">Tool #22</div>
-                <h2>Kanban Board</h2>
-                <p>Drag-and-drop task manager using LocalStorage.</p>
-            </a><a href="gemma4_23.html" class="card">
-                <div class="card-id">Tool #23</div>
-                <h2>Habit Tracker Heatmap</h2>
-                <p>GitHub-style contribution grid for tracking daily habits.</p>
-            </a><a href="gemma4_24.html" class="card">
-                <div class="card-id">Tool #24</div>
-                <h2>Zen Notepad</h2>
-                <p>Distraction-free markdown notepad with auto-save.</p>
-            </a><a href="gemma4_25.html" class="card">
-                <div class="card-id">Tool #25</div>
-                <h2>Budget Calculator</h2>
-                <p>Sleek expense tracker with dynamic pie charts.</p>
-            </a><a href="gemma4_26.html" class="card">
-                <div class="card-id">Tool #26</div>
-                <h2>Password Architect</h2>
-                <p>Customizable password generator with entropy calculation.</p>
-            </a><a href="gemma4_27.html" class="card">
-                <div class="card-id">Tool #27</div>
-                <h2>Daily Focus Timer</h2>
-                <p>Countdown timer featuring a minimalist progress ring.</p>
-            </a><a href="gemma4_28.html" class="card">
-                <div class="card-id">Tool #28</div>
-                <h2>Interactive Mind Map</h2>
-                <p>Create nodes and connections using SVG drag-and-drop.</p>
-            </a><a href="gemma4_29.html" class="card">
-                <div class="card-id">Tool #29</div>
-                <h2>Breathwork Guide</h2>
-                <p>Calming, animated circle expansion for guided breathing.</p>
-            </a><a href="gemma4_30.html" class="card">
-                <div class="card-id">Tool #30</div>
-                <h2>Minimalist Weather App</h2>
-                <p>Clean dashboard with real-time API data &amp; dynamic backgrounds.</p>
-            </a><a href="gemma4_31.html" class="card">
-                <div class="card-id">Tool #31</div>
-                <h2>Retro Terminal Emulator</h2>
-                <p>Functional CLI styled like a 1980s CRT monitor.</p>
-            </a><a href="gemma4_32.html" class="card">
-                <div class="card-id">Tool #32</div>
-                <h2>Neumorphic Calculator</h2>
-                <p>Calculator using the soft, extruded Neumorphism design trend.</p>
-            </a><a href="gemma4_33.html" class="card">
-                <div class="card-id">Tool #33</div>
-                <h2>Cyberpunk Dashboard</h2>
-                <p>High-contrast, neon-accented UI for monitoring stats.</p>
-            </a><a href="gemma4_34.html" class="card">
-                <div class="card-id">Tool #34</div>
-                <h2>Generative Art Canvas</h2>
-                <p>Generate geometric patterns via mathematical logic.</p>
-            </a><a href="gemma4_35.html" class="card">
-                <div class="card-id">Tool #35</div>
-                <h2>3D CSS Cube Playground</h2>
-                <p>Manipulate 3D shapes created entirely with CSS transforms.</p>
-            </a><a href="gemma4_36.html" class="card">
-                <div class="card-id">Tool #36</div>
-                <h2>Audio Visualizer</h2>
-                <p>Web Audio API implementation for microphone input.</p>
-            </a><a href="gemma4_37.html" class="card">
-                <div class="card-id">Tool #37</div>
-                <h2>Glassmorphism UI Kit</h2>
-                <p>Interactive showcase of various glass-style components.</p>
-            </a><a href="gemma4_38.html" class="card">
-                <div class="card-id">Tool #38</div>
-                <h2>Interactive Particle Background</h2>
-                <p>Lightweight, high-performance background for landing pages.</p>
-            </a><a href="gemma4_39.html" class="card">
-                <div class="card-id">Tool #39</div>
-                <h2>CSS Grid Playground</h2>
-                <p>Visual tool to build and export complex CSS Grid layouts.</p>
-            </a><a href="gemma4_40.html" class="card">
-                <div class="card-id">Tool #40</div>
-                <h2>Digital Clock (Modern)</h2>
-                <p>Typography-focused clock with smooth transitions.</p>
-            </a></main>
+        <a href="tool_1.html" class="card">
+            <div class="card-id">Tool #1</div>
+            <h2>JSON Formatter</h2>
+            <p>Create a sleek JSON beautifier and validator with syntax highlighting.</p>
+        </a><a href="tool_2.html" class="card">
+            <div class="card-id">Tool #2</div>
+            <h2>Regex Tester</h2>
+            <p>Build a real-time Regular Expression tester with match highlighting.</p>
+        </a><a href="tool_3.html" class="card">
+            <div class="card-id">Tool #3</div>
+            <h2>Base64 Tool</h2>
+            <p>A professional Base64 encoder/decoder with support for text and images.</p>
+        </a><a href="tool_4.html" class="card">
+            <div class="card-id">Tool #4</div>
+            <h2>Markdown Previewer</h2>
+            <p>A split-pane Markdown editor with live HTML preview.</p>
+        </a><a href="tool_5.html" class="card">
+            <div class="card-id">Tool #5</div>
+            <h2>JWT Decoder</h2>
+            <p>An intuitive JSON Web Token debugger that visualizes header &amp; payload.</p>
+        </a><a href="tool_6.html" class="card">
+            <div class="card-id">Tool #6</div>
+            <h2>CSS Glassmorphism Generator</h2>
+            <p>Adjust blur/transparency and export CSS code instantly.</p>
+        </a><a href="tool_7.html" class="card">
+            <div class="card-id">Tool #7</div>
+            <h2>Color Palette Pro</h2>
+            <p>Generate harmonious color schemes with HEX/RGB export.</p>
+        </a><a href="tool_8.html" class="card">
+            <div class="card-id">Tool #8</div>
+            <h2>Diff Checker</h2>
+            <p>A side-by-side text comparison tool highlighting changes.</p>
+        </a><a href="tool_9.html" class="card">
+            <div class="card-id">Tool #9</div>
+            <h2>SQL Formatter</h2>
+            <p>Beautify messy SQL queries with smart indentation logic.</p>
+        </a><a href="tool_10.html" class="card">
+            <div class="card-id">Tool #10</div>
+            <h2>Unit Converter Pro</h2>
+            <p>High-end converter for length, weight, and temperature.</p>
+        </a><a href="tool_11.html" class="card">
+            <div class="card-id">Tool #11</div>
+            <h2>Sorting Visualizer</h2>
+            <p>Interactive visualization of Bubble, Merge, and Quick Sort.</p>
+        </a><a href="tool_12.html" class="card">
+            <div class="card-id">Tool #12</div>
+            <h2>Pathfinding Visualizer</h2>
+            <p>Grid-based tool demonstrating A* or Dijkstra’s algorithm.</p>
+        </a><a href="tool_13.html" class="card">
+            <div class="card-id">Tool #13</div>
+            <h2>Conway’s Game of Life</h2>
+            <p>Beautiful implementation of the cellular automaton.</p>
+        </a><a href="tool_14.html" class="card">
+            <div class="card-id">Tool #14</div>
+            <h2>Fractal Generator</h2>
+            <p>HTML5 Canvas tool to explore the Mandelbrot set via zooming.</p>
+        </a><a href="tool_15.html" class="card">
+            <div class="card-id">Tool #15</div>
+            <h2>Particle Physics Sandbox</h2>
+            <p>High-performance particle system reacting to mouse movement.</p>
+        </a><a href="tool_16.html" class="card">
+            <div class="card-id">Tool #16</div>
+            <h2>Fourier Series Visualizer</h2>
+            <p>Animation showing how circles create complex wave shapes.</p>
+        </a><a href="tool_17.html" class="card">
+            <div class="card-id">Tool #17</div>
+            <h2>Binary Search Tree Visualizer</h2>
+            <p>Animate the insertion and searching of nodes in a BST.</p>
+        </a><a href="tool_18.html" class="card">
+            <div class="card-id">Tool #18</div>
+            <h2>Data Dashboard Template</h2>
+            <p>Professional single-page dashboard using Chart.js.</p>
+        </a><a href="tool_19.html" class="card">
+            <div class="card-id">Tool #19</div>
+            <h2>Algorithm Complexity Timer</h2>
+            <p>Visualize Big O notation growth visually via loops.</p>
+        </a><a href="tool_20.html" class="card">
+            <div class="card-id">Tool #20</div>
+            <h2>Sorting vs. Searching Demo</h2>
+            <p>Split-screen visual comparing algorithm traversal.</p>
+        </a><a href="tool_21.html" class="card">
+            <div class="card-id">Tool #21</div>
+            <h2>Minimalist Pomodoro</h2>
+            <p>Zen-style timer with customizable work/break intervals.</p>
+        </a><a href="tool_22.html" class="card">
+            <div class="card-id">Tool #22</div>
+            <h2>Kanban Board</h2>
+            <p>Drag-and-drop task manager using LocalStorage.</p>
+        </a><a href="tool_23.html" class="card">
+            <div class="card-id">Tool #23</div>
+            <h2>Habit Tracker Heatmap</h2>
+            <p>GitHub-style contribution grid for tracking daily habits.</p>
+        </a><a href="tool_24.html" class="card">
+            <div class="card-id">Tool #24</div>
+            <h2>Zen Notepad</h2>
+            <p>Distraction-free markdown notepad with auto-save.</p>
+        </a><a href="tool_25.html" class="card">
+            <div class="card-id">Tool #25</div>
+            <h2>Budget Calculator</h2>
+            <p>Sleek expense tracker with dynamic pie charts.</p>
+        </a><a href="tool_26.html" class="card">
+            <div class="card-id">Tool #26</div>
+            <h2>Password Architect</h2>
+            <p>Customizable password generator with entropy calculation.</p>
+        </a><a href="tool_27.html" class="card">
+            <div class="card-id">Tool #27</div>
+            <h2>Daily Focus Timer</h2>
+            <p>Countdown timer featuring a minimalist progress ring.</p>
+        </a><a href="tool_28.html" class="card">
+            <div class="card-id">Tool #28</div>
+            <h2>Interactive Mind Map</h2>
+            <p>Create nodes and connections using SVG drag-and-drop.</p>
+        </a><a href="tool_29.html" class="card">
+            <div class="card-id">Tool #29</div>
+            <h2>Breathwork Guide</h2>
+            <p>Calming, animated circle expansion for guided breathing.</p>
+        </a><a href="tool_30.html" class="card">
+            <div class="card-id">Tool #30</div>
+            <h2>Minimalist Weather App</h2>
+            <p>Clean dashboard with real-time API data &amp; dynamic backgrounds.</p>
+        </a><a href="tool_31.html" class="card">
+            <div class="card-id">Tool #31</div>
+            <h2>Retro Terminal Emulator</h2>
+            <p>Functional CLI styled like a 1980s CRT monitor.</p>
+        </a><a href="tool_32.html" class="card">
+            <div class="card-id">Tool #32</div>
+            <h2>Neumorphic Calculator</h2>
+            <p>Calculator using the soft, extruded Neumorphism design trend.</p>
+        </a><a href="tool_33.html" class="card">
+            <div class="card-id">Tool #33</div>
+            <h2>Cyberpunk Dashboard</h2>
+            <p>High-contrast, neon-accented UI for monitoring stats.</p>
+        </a><a href="tool_34.html" class="card">
+            <div class="card-id">Tool #34</div>
+            <h2>Generative Art Canvas</h2>
+            <p>Generate geometric patterns via mathematical logic.</p>
+        </a><a href="tool_35.html" class="card">
+            <div class="card-id">Tool #35</div>
+            <h2>3D CSS Cube Playground</h2>
+            <p>Manipulate 3D shapes created entirely with CSS transforms.</p>
+        </a><a href="tool_36.html" class="card">
+            <div class="card-id">Tool #36</div>
+            <h2>Audio Visualizer</h2>
+            <p>Web Audio API implementation for microphone input.</p>
+        </a><a href="tool_37.html" class="card">
+            <div class="card-id">Tool #37</div>
+            <h2>Glassmorphism UI Kit</h2>
+            <p>Interactive showcase of various glass-style components.</p>
+        </a><a href="tool_38.html" class="card">
+            <div class="card-id">Tool #38</div>
+            <h2>Interactive Particle Background</h2>
+            <p>Lightweight, high-performance background for landing pages.</p>
+        </a><a href="tool_39.html" class="card">
+            <div class="card-id">Tool #39</div>
+            <h2>CSS Grid Playground</h2>
+            <p>Visual tool to build and export complex CSS Grid layouts.</p>
+        </a><a href="tool_40.html" class="card">
+            <div class="card-id">Tool #40</div>
+            <h2>Digital Clock (Modern)</h2>
+            <p>Typography-focused clock with smooth transitions.</p>
+        </a>
+    </main>
 
     <footer>
         &copy; 2023 Gemma 4 Toolset • Built for Performance
     </footer>
 </body>
+
 </html>
