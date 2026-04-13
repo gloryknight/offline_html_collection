@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEURAL_LINK // Cyberpunk Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-cyan: #00f3ff;
+            --neon-pink: #ff00ff;
+            --dark-bg: #050505;
+            --card-bg: rgba(15, 15, 25, 0.8);
+        }
+
+        body {
+            background-color: var(--dark-bg);
+            font-family: 'Inter', sans-serif;
+            color: #e2e8f0;
+            overflow: hidden;
+        }
+
+        .font-mono { font-family: 'Fira Code', monospace; }
+
+        .cyber-border {
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .cyber-border:hover {
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.3);
+        }
+
+        .neon-text-cyan { text-shadow: 0 0 10px rgba(0, 243, 255, 0.7); color: var(--neon-cyan); }
+        .neon-text-pink { text-shadow: 0 0 10px rgba(255, 0, 255, 0.7); color: var(--neon-pink); }
+
+        .glass {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #0a0a0a; }
+        ::-webkit-scrollbar-thumb { background: var(--neon-cyan); border-radius: 10px; }
+
+        .scanline {
+            width: 100%;
+            height: 2px;
+            background: rgba(0, 243, 255, 0.1);
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 50;
+            pointer-events: none;
+            animation: scanline 8s linear infinite;
+        }
+
+        @keyframes scanline {
+            0% { top: 0%; }
+            100% { top: 100%; }
+        }
+
+        .glitch-hover:hover {
+            animation: glitch 0.3s cubic-bezier(.25,.46,.45,.94) both infinite;
+        }
+
+        @keyframes glitch {
+            0% { transform: translate(0); }
+            20% { transform: translate(-2px, 2px); }
+            40% { transform: translate(-2px, -2px); }
+            60% { transform: translate(2px, 2px); }
+            80% { transform: translate(2px, -2px); }
+            100% { transform: translate(0); }
+        }
+
+        .status-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .3; }
+        }
+    </style>
+</head>
+<body class="h-screen w-full flex overflow-hidden">
+    <div class="scanline"></div>
+
+    <!-- SIDEBAR -->
+    <aside class="w-20 lg:w-64 h-full glass border-r border-cyan-900/50 flex flex-col z-40 transition-all duration-300">
+        <div class="p-6 flex items-center gap-3">
+            <div class="w-8 h-8 bg-cyan-500 rounded shadow-[0_0_15px_#00f3ff] flex items-center justify-center">
+                <i data-lucide="cpu" class="text-black w-5 h-5"></i>
+            </div>
+            <span class="hidden lg:block font-extrabold tracking-tighter text-xl italic neon-text-cyan">NEURAL_LINK</span>
+        </div>
+
+        <nav class="flex-1 px-4 py-6 space-y-4">
+            <a href="#" class="flex items-center gap-4 p-3 rounded transition-all bg-cyan-500/10 text-cyan-400 border-r-2 border-cyan-400">
+                <i data-lucide="layout-dashboard"></i> <span class="hidden lg:block font-medium">OVERVIEW</span>
+            </a>
+            <a href="#" class="flex items-center gap-4 p-3 rounded transition-all text-gray-500 hover:text-cyan-400 hover:bg-cyan-500/5">
+                <i data-lucide="activity"></i> <span class="hidden lg:block font-medium">BIO_METRICS</span>
+            </a>
+            <a href="#" class="flex items-center gap-4 p-3 rounded transition-all text-gray-500 hover:text-cyan-400 hover:bg-cyan-500/5">
+                <i data-lucide="shield-alert"></i> <span class="hidden lg:block font-medium">FIREWALL</span>
+            </a>
+            <a href="#" class="flex items-center gap-4 p-3 rounded transition-all text-gray-500 hover:text-cyan-400 hover:bg-cyan-500/5">
+                <i data-lucide="database"></i> <span class="hidden lg:block font-medium">DATA_STREAMS</span>
+            </a>
+        </nav>
+
+        <div class="p-4 border-t border-cyan-900/30">
+            <div class="flex items-center gap-3 p-2">
+                <div class="w-10 h-10 rounded-full bg-pink-500/20 border border-pink-500 flex items-center justify-center overflow-hidden">
+                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="avatar">
+                </div>
+                <div class="hidden lg:block">
+                    <p class="text-xs font-bold text-white">USER_01</p>
+                    <p class="text-[10px] text-pink-500 uppercase tracking-widest">Admin Access</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 flex flex-col relative overflow-hidden">
+        
+        <!-- TOP NAV -->
+        <header class="h-16 glass border-b border-cyan-900/30 flex items-center justify-between px-8 z-30">
+            <div class="flex items-center gap-4">
+                <h2 class="text-sm font-mono text-gray-400 tracking-[0.3em]">SYSTEM_STATUS: <span class="text-green-400 status-pulse">OPTIMAL</span></h2>
+            </div>
+            <div class="flex items-center gap-6">
+                <div class="hidden md:flex flex-col items-end">
+                    <span id="real-time-clock" class="font-mono text-cyan-400 text-sm">00:00:00</span>
+                    <span id="current-date" class="text-[10px] text-gray-500 uppercase tracking-tighter">2077.10.24</span>
+                </div>
+                <div class="flex gap-3">
+                    <button class="p-2 text-gray-400 hover:text-cyan-400 transition-colors"><i data-lucide="bell" class="w-5 h-5"></i></button>
+                    <button class="p-2 text-gray-400 hover:text-pink-500 transition-colors"><i data-lucide="settings" class="w-5 h-5"></i></button>
+                </div>
+            </div>
+        </header>
+
+        <!-- DASHBOARD CONTENT -->
+        <div class="flex-1 overflow-y-auto p-6 space-y-6 scroll-smooth">
+            
+            <!-- STATS GRID -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="glass cyber-border p-5 rounded-lg relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 p-2 opacity-20 group-hover:opacity-100 transition-opacity"><i data-lucide="zap" class="text-cyan-400 w-8 h-8"></i></div>
+                    <p class="text-xs text-gray-500 uppercase tracking-widest mb-1">Core Load</p>
+                    <h3 id="stat-cpu" class="text-3xl font-extrabold neon-text-cyan">42%</h3>
+                    <div class="w-full bg-gray-800 h-1 mt-4 rounded-full overflow-hidden">
+                        <div id="bar-cpu" class="bg-cyan-500 h-full transition-all duration-500" style="width: 42%"></div>
+                    </div>
+                </div>
+
+                <div class="glass cyber-border p-5 rounded-lg relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 p-2 opacity-20 group-hover:opacity-100 transition-opacity"><i data-lucide="hard-drive" class="text-pink-500 w-8 h-8"></i></div>
+                    <p class="text-xs text-gray-500 uppercase tracking-widest mb-1">Memory Usage</p>
+                    <h3 id="stat-ram" class="text-3xl font-extrabold neon-text-pink">68%</h3>
+                    <div class="w-full bg-gray-800 h-1 mt-4 rounded-full overflow-hidden">
+                        <div id="bar-ram" class="bg-pink-500 h-full transition-all duration-500" style="width: 68%"></div>
+                    </div>
+                </div>
+
+                <div class="glass cyber-border p-5 rounded-lg relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 p-2 opacity-20 group-hover:opacity-100 transition-opacity"><i data-lucide="wifi" class="text-cyan-400 w-8 h-8"></i></div>
+                    <p class="text-xs text-gray-500 uppercase tracking-widest mb-1">Net Latency</p>
+                    <h3 id="stat-ping" class="text-3xl font-extrabold neon-text-cyan">14ms</h3>
+                    <p class="text-[10px] text-green-500 mt-2 font-mono uppercase">Stable Connection</p>
+                </div>
+
+                <div class="glass cyber-border p-5 rounded-lg relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 p-2 opacity-20 group-hover:opacity-100 transition-opacity"><i data-lucide="shield" class="text-pink-500 w-8 h-8"></i></div>
+                    <p class="text-xs text-gray-500 uppercase tracking-widest mb-1">Security Level</p>
+                    <h3 class="text-3xl font-extrabold neon-text-pink">MAX</h3>
+                    <p class="text-[10px] text-gray-500 mt-2 font-mono uppercase">Encryption: AES-X256</p>
+                </div>
+            </div>
+
+            <!-- MAIN VISUALS -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                <!-- CHART AREA -->
+                <div class="lg:col-span-2 glass cyber-border rounded-xl p-6 min-h-[400px] flex flex-col">
+                    <div class="flex justify-between items-center mb-6">
+                        <div>
+                            <h3 class="text-lg font-bold tracking-tight text-white uppercase">Neural Flux Analysis</h3>
+                            <p class="text-xs text-gray-500 font-mono">Real-time data stream visualization</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <span class="px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-[10px] text-cyan-400 font-mono uppercase tracking-widest">Live</span>
+                        </div>
+                    </div>
+                    <div class="flex-1 relative">
+                        <canvas id="mainChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- TERMINAL -->
+                <div class="glass cyber-border rounded-xl flex flex-col overflow-hidden h-[400px] lg:h-auto">
+                    <div class="bg-gray-900/80 p-3 border-b border-cyan-900/30 flex items-center justify-between">
+                        <span class="text-[10px] font-mono text-cyan-400 uppercase tracking-widest flex items-center gap-2">
+                            <span class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                            System_Console.exe
+                        </span>
+                        <div class="flex gap-1.5">
+                            <div class="w-2 h-2 rounded-full bg-gray-700"></div>
+                            <div class="w-2 h-2 rounded-full bg-gray-700"></div>
+                        </div>
+                    </div>
+                    <div id="terminal-output" class="flex-1 p-4 font-mono text-[11px] overflow-y-auto space-y-1 leading-relaxed text-cyan-500/80 bg-black/40">
+                        <!-- Terminal lines injected by JS -->
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- BOTTOM SECTION -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pb-6">
+                <div class="glass cyber-border p-5 rounded-xl flex items-center justify-between group cursor-pointer glitch-hover transition-all">
+                    <div class="flex items-center gap-4">
+                        <div class="p-3 bg-pink-500/10 rounded text-pink-500"><i data-lucide="user-plus"></i></div>
+                        <div>
+                            <h4 class="text-sm font-bold text-white uppercase tracking-wide">New Connection Detected</h4>
+                            <p class="text-xs text-gray-500 font-mono">ID: 8892-XF | Origin: Tokyo_Sector_7</p>
+                        </div>
+                    </div>
+                    <i data-lucide="chevron-right" class="text-gray-600 group-hover:text-pink-500 transition-colors"></i>
+                </div>
+
+                <div class="glass cyber-border p-5 rounded-xl flex items-center justify-between group cursor-pointer glitch-hover transition-all">
+                    <div class="flex items-center gap-4">
+                        <div class="p-3 bg-cyan-500/10 rounded text-cyan-500"><i data-lucide="alert-triangle"></i></div>
+                        <div>
+                            <h4 class="text-sm font-bold text-white uppercase tracking-wide">Security Breach Attempt</h4>
+                            <p class="text-xs text-gray-500 font-mono">Protocol: ICE_BREAKER | Status: Blocked</p>
+                        </div>
+                    </div>
+                    <i data-lucide="chevron-right" class="text-gray-600 group-hover:text-cyan-500 transition-colors"></i>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        // Clock & Date
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('real-time-clock').textContent = now.toLocaleTimeString('en-GB', { hour12: false });
+            const options = { year: 'numeric', month: 'long', day: 'numeric' };
+            // Custom format for cyberpunk feel
+            const dateStr = `${now.getFullYear()}.${(now.getMonth()+1).toString().padStart(2, '0')}.${now.getDate().toString().padStart(2, '0')}`;
+            document.getElementById('current-date').textContent = dateStr;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Charting Logic
+        const ctx = document.getElementById('mainChart').getContext('2d');
+        let chartData = {
+            labels: Array(20).fill('').map((_, i) => i),
+            datasets: [{
+                label: 'Neural Flux',
+                data: Array(20).fill(0).map(() => Math.floor(Math.random() * 50) + 30),
+                borderColor: '#00f3ff',
+                borderWidth: 2,
+                tension: 0.4,
+                pointRadius: 0,
+                fill: true,
+                backgroundColor: (context) => {
+                    const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+                    gradient.addColorStop(0, 'rgba(0, 243, 255, 0.2)');
+                    gradient.addColorStop(1, 'rgba(0, 243, 255, 0)');
+                    return gradient;
+                },
+            }]
+        };
+
+        const mainChart = new Chart(ctx, {
+            type: 'line',
+            data: chartData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { display: false },
+                    y: { 
+                        beginAtZero: true, 
+                        grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                        ticks: { color: '#4b5563', font: { family: 'Fira Code', size: 10 } }
+                    }
+                },
+                animation: { duration: 0 }
+            }
+        });
+
+        // Live Data Simulation
+        setInterval(() => {
+            // Update Chart
+            chartData.datasets[0].data.shift();
+            chartData.datasets[0].data.push(Math.floor(Math.random() * 50) + 30);
+            mainChart.update();
+
+            // Update Stats
+            const cpu = Math.floor(Math.random() * 40) + 20;
+            const ram = Math.floor(Math.random() * 30) + 50;
+            const ping = Math.floor(Math.random() * 10) + 10;
+
+            document.getElementById('stat-cpu').textContent = `${cpu}%`;
+            document.getElementById('bar-cpu').style.width = `${cpu}%`;
+            document.getElementById('stat-ram').textContent = `${ram}%`;
+            document.getElementById('bar-ram').style.width = `${ram}%`;
+            document.getElementById('stat-ping').textContent = `${ping}ms`;
+
+        }, 2000);
+
+        // Terminal Simulation
+        const terminal = document.getElementById('terminal-output');
+        const logs = [
+            "Initializing neural link...",
+            "Handshake established with node_77",
+            "Decrypting incoming packet stream...",
+            "Warning: High latency detected in sector 4",
+            "Firewall status: ACTIVE",
+            "Syncing biometric data to cloud...",
+            "Access granted: USER_01",
+            "Scanning local subnet for vulnerabilities...",
+            "Optimizing buffer allocation...",
+            "System kernel updated successfully.",
+            "Alert: Unidentified packet origin detected.",
+            "Cleaning cache memory..."
+        ];
+
+        function addLog() {
+            const log = logs[Math.floor(Math.random() * logs.length)];
+            const timestamp = new Date().toLocaleTimeString('en-GB', { hour12: false });
+            const div = document.createElement('div');
+            div.innerHTML = `<span class="text-gray-600">[${timestamp}]</span> <span class="text-cyan-400">></span> ${log}`;
+            terminal.appendChild(div);
+            if (terminal.childNodes.length > 50) {
+                terminal.removeChild(terminal.firstChild);
+            }
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        setInterval(addLog, 1500);
+        // Initial logs
+        for(let i=0; i<5; i++) addLog();
+
+    </script>
+</body>
+</html>

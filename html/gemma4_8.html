@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProDiff // Professional Text Comparison Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsdiff/5.1.0/diff.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .code-font { font-family: 'Fira Code', monospace; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        .diff-added { background-color: #dcfce7; color: #166534; text-decoration: none; }
+        .diff-removed { background-color: #fee2e2; color: #991b1b; text-decoration: line-through; }
+        .diff-empty { background-color: #f8fafc; opacity: 0.5; }
+
+        .line-row { display: flex; min-height: 1.5rem; border-bottom: 1px solid #f1f5f9; }
+        .line-number { width: 40px; flex-shrink: 0; text-align: right; padding-right: 12px; color: #94a3b8; user-select: none; font-size: 0.75rem; border-right: 1px solid #e2e8f0; margin-right: 12px; }
+        .line-content { flex-grow: 1; white-space: pre-wrap; word-break: break-all; padding-left: 4px; font-size: 0.875rem; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-white border-b border-slate-200 py-4 px-6 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <div class="bg-indigo-600 p-1.5 rounded-lg text-white">
+                    <i data-lucide="git-diff" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight">ProDiff</h1>
+                    <p class="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">Text Comparison Engine</p>
+                </div>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="clearAll()" class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-all">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i> Clear
+                </button>
+                <button onclick="compareText()" class="flex items-center gap-2 px-6 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-md shadow-indigo-200 transition-all active:scale-95">
+                    <i data-lucide="play" class="w-4 h-4"></i> Compare Now
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl w-full mx-auto p-6 space-y-6">
+        
+        <!-- Input Section -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in" style="animation-delay: 0.1s;">
+            <div class="space-y-2">
+                <label class="text-sm font-semibold text-slate-700 flex items-center gap-2 ml-1">
+                    <i data-lucide="file-text" class="w-4 h-4"></i> Original Text
+                </label>
+                <textarea id="input-left" placeholder="Paste your original text here..." 
+                    class="w-full h-64 p-4 rounded-xl border border-slate-200 focus:ring-4 focus:ring-indigo-50/50 focus:border-indigo-500 outline-none transition-all code-font text-sm resize-none shadow-sm"></textarea>
+            </div>
+            <div class="space-y-2">
+                <label class="text-sm font-semibold text-slate-700 flex items-center gap-2 ml-1">
+                    <i data-lucide="file-edit" class="w-4 h-4"></i> Modified Text
+                </label>
+                <textarea id="input-right" placeholder="Paste your modified text here..." 
+                    class="w-full h-64 p-4 rounded-xl border border-slate-200 focus:ring-4 focus:ring-indigo-50/50 focus:border-indigo-500 outline-none transition-all code-font text-sm resize-none shadow-sm"></textarea>
+            </div>
+        </div>
+
+        <!-- Result Section -->
+        <div id="result-container" class="hidden space-y-4 animate-fade-in">
+            <div class="flex justify-between items-center px-1">
+                <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="layers" class="w-5 h-5 text-indigo-600"></i> 
+                    Comparison Result
+                </h2>
+                <div class="flex gap-4 text-xs font-medium uppercase tracking-wider text-slate-500">
+                    <span class="flex items-center gap-1"><span class="w-3 h-3 bg-green-200 border border-green-400 rounded-sm"></span> Addition</span>
+                    <span class="flex items-center gap-1"><span class="w-3 h-3 bg-red-200 border border-red-400 rounded-sm"></span> Deletion</span>
+                </div>
+            </div>
+
+            <div id="diff-viewer" class="grid grid-cols-1 md:grid-cols-2 gap-0 border border-slate-200 rounded-xl overflow-hidden bg-white shadow-xl ring-1 ring-black/5">
+                <!-- Left Pane (Original) -->
+                <div id="pane-left" class="overflow-auto max-h-[600px] border-r border-slate-200 custom-scrollbar"></div>
+                <!-- Right Pane (Modified) -->
+                <div id="pane-right" class="overflow-auto max-h-[600px] custom-scrollbar"></div>
+            </div>
+        </div>
+
+        <!-- Empty State / Placeholder -->
+        <div id="empty-state" class="py-20 flex flex-col items-center justify-center text-slate-400 space-y-4 border-2 border-dashed border-slate-200 rounded-3xl">
+            <i data-lucide="binary" class="w-16 h-16 opacity-20"></i>
+            <p class="text-lg font-medium">Enter text above and click "Compare Now" to see the magic.</p>
+        </div>
+
+    </main>
+
+    <footer class="py-8 px-6 text-center text-slate-400 text-sm">
+        <p>&copy; <span id="year"></span> ProDiff Tool • Built for developers</p>
+    </footer>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+        document.getElementById('year').textContent = new Date().getFullYear();
+
+        const inputLeft = document.getElementById('input-left');
+        const inputRight = document.getElementById('input-right');
+        const resultContainer = document.getElementById('result-container');
+        const emptyState = document.getElementById('empty-state');
+        const paneLeft = document.getElementById('pane-left');
+        const paneRight = document.getElementById('pane-right');
+
+        // Sync Scrolling Logic
+        let isScrolling = false;
+        const syncScroll = (e) => {
+            if (!isScrolling) {
+                isScrolling = true;
+                const otherPane = e.target === paneLeft ? paneRight : paneLeft;
+                otherPane.scrollTop = e.target.scrollTop;
+                setTimeout(() => { isScrolling = false; }, 50);
+            }
+        };
+
+        paneLeft.addEventListener('scroll', syncScroll);
+        paneRight.addEventListener('scroll', syncScroll);
+
+        function clearAll() {
+            inputLeft.value = '';
+            inputRight.value = '';
+            resultContainer.classList.add('hidden');
+            emptyState.classList.remove('hidden');
+        }
+
+        function createLineElement(num, content, type) {
+            const row = document.createElement('div');
+            row.className = 'line-row';
+            
+            const numEl = document.createElement('div');
+            numEl.className = 'line-number';
+            numEl.textContent = num || '';
+
+            const contentEl = document.createElement('div');
+            contentEl.className = `line-content ${type === 'added' ? 'diff-added' : type === 'removed' ? 'diff-removed' : ''}`;
+            contentEl.textContent = content;
+
+            row.appendChild(numEl);
+            row.appendChild(contentEl);
+            return row;
+        }
+
+        function createEmptyElement(type) {
+            const row = document.createElement('div');
+            row.className = `line-row ${type === 'added' ? 'diff-empty' : 'diff-empty'}`;
+            
+            const numEl = document.createElement('div');
+            numEl.className = 'line-number';
+            numEl.textContent = '';
+
+            const contentEl = document.createElement('div');
+            contentEl.className = 'line-content';
+            contentEl.innerHTML = '&nbsp;'; // Non-breaking space to maintain height
+
+            row.appendChild(numEl);
+            row.appendChild(contentEl);
+            return row;
+        }
+
+        function compareText() {
+            const text1 = inputLeft.value;
+            const text2 = inputRight.value;
+
+            if (!text1 && !text2) {
+                alert("Please enter some text to compare.");
+                return;
+            }
+
+            // Clear previous results
+            paneLeft.innerHTML = '';
+            paneRight.innerHTML = '';
+
+            // Use jsdiff to find differences line by line
+            const diff = Diff.diffLines(text1, text2);
+
+            let leftLineCount = 1;
+            let rightLineCount = 1;
+
+            diff.forEach((part) => {
+                const lines = part.value.split(/\r?\n/);
+                // If the last line is empty due to split (often happens with trailing newline), remove it
+                if (lines[lines.length - 1] === "") lines.pop();
+
+                if (part.added) {
+                    // Part was added in text2 (Right side)
+                    // We must add "empty" placeholders to the Left side to keep alignment
+                    lines.forEach(line => {
+                        paneLeft.appendChild(createEmptyElement('added'));
+                        paneRight.appendChild(createLineElement(rightLineCount++, line, 'added'));
+                    });
+                } else if (part.removed) {
+                    // Part was removed from text1 (Left side)
+                    // We must add "empty" placeholders to the Right side to keep alignment
+                    lines.forEach(line => {
+                        paneLeft.appendChild(createLineElement(leftLineCount++, line, 'removed'));
+                        paneRight.appendChild(createEmptyElement('removed'));
+                    });
+                } else {
+                    // Part is unchanged
+                    lines.forEach(line => {
+                        paneLeft.appendChild(createLineElement(leftLineCount++, line, 'unchanged'));
+                        paneRight.appendChild(createLineElement(rightLineCount++, line, 'unchanged'));
+                    });
+                }
+            });
+
+            // Show results
+            emptyState.classList.add('hidden');
+            resultContainer.classList.remove('hidden');
+            
+            // Smooth scroll to result
+            setTimeout(() => {
+                resultContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+        }
+
+        // Add subtle keyboard support (Cmd/Ctrl + Enter to compare)
+        [inputLeft, inputRight].forEach(el => {
+            el.addEventListener('keydown', (e) => {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    compareText();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

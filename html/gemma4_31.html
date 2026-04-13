@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RetroOS | Terminal Emulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --term-color: #ffb000; /* Amber Retro */
+            --term-glow: rgba(255, 176, 0, 0.3);
+        }
+
+        body {
+            background-color: #0a0a0a;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* CRT Monitor Effect */
+        .crt-container {
+            position: relative;
+            width: 95%;
+            max-width: 1000px;
+            height: 80vh;
+            background: #121212;
+            border: 20px solid #222;
+            border-radius: 30px;
+            box-shadow: 
+                inset 0 0 50px #000,
+                0 0 30px rgba(0,0,0,0.5),
+                0 0 100px rgba(0,0,0,0.8);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Scanline Overlay */
+        .crt-container::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.2) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            z-index: 10;
+            background-size: 100% 3px, 3px 100%;
+            pointer-events: none;
+        }
+
+        /* Screen Flicker Effect */
+        .crt-screen {
+            flex: 1;
+            padding: 40px;
+            position: relative;
+            overflow-y: auto;
+            scrollbar-width: none; /* Firefox */
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--term-color);
+            text-shadow: 0 0 8px var(--term-glow);
+            animation: flicker 0.15s infinite;
+        }
+
+        .crt-screen::-webkit-scrollbar {
+            display: none; /* Chrome/Safari */
+        }
+
+        @keyframes flicker {
+            0% { opacity: 0.987; }
+            50% { opacity: 1; }
+            100% { opacity: 0.992; }
+        }
+
+        /* Terminal Text Styles */
+        .command-line {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #user-input {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--term-color);
+            font-family: 'JetBrains Mono', monospace;
+            flex: 1;
+            text-shadow: 0 0 8px var(--term-glow);
+        }
+
+        .prompt {
+            color: var(--term-color);
+            white-space: nowrap;
+        }
+
+        /* Typing Cursor */
+        .cursor {
+            display: inline-block;
+            width: 10px;
+            height: 1.2em;
+            background-color: var(--term-color);
+            animation: blink 1s step-end infinite;
+            vertical-align: middle;
+        }
+
+        @keyframes blink {
+            from, to { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        /* Matrix Effect Mode */
+        .matrix-mode {
+            background: black !important;
+            color: #0f0 !important;
+        }
+
+        .output-line {
+            margin-bottom: 8px;
+            line-height: 1.4;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        /* Decorative Screen Curvature */
+        .curvature {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            box-shadow: inset 0 0 100px rgba(0,0,0,0.5);
+            pointer-events: none;
+            z-index: 11;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="crt-container">
+        <div class="curvature"></div>
+        <div class="crt-screen" id="terminal-screen">
+            <div id="output-container">
+                <!-- Initial Boot Sequence -->
+                <div class="output-line">RETRO_OS v1.0.4 (c) 1984 TERMINAL CORP.</div>
+                <div class="output-line">INITIALIZING SYSTEM... [OK]</div>
+                <div class="output-line">LOADING KERNEL... [OK]</div>
+                <div class="output-line">ESTABLISHING CONNECTION... [OK]</div>
+                <div class="output-line">&nbsp;</div>
+                <div class="output-line">Type <span style="text-decoration: underline;">'help'</span> to see available commands.</div>
+                <div class="output-line">&nbsp;</div>
+            </div>
+
+            <div class="command-line" id="input-area">
+                <span class="prompt">guest@retro_os:~$</span>
+                <input type="text" id="user-input" autofocus spellcheck="false" autocomplete="off">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const input = document.getElementById('user-input');
+        const outputContainer = document.getElementById('output-container');
+        const screen = document.getElementById('terminal-screen');
+        const terminalScreen = document.getElementById('terminal-screen');
+
+        // Command Logic
+        const commands = {
+            'help': () => `Available commands:
+  help      - Show this list
+  clear     - Clear the console
+  about     - System information
+  date      - Current system date/time
+  ls        - List directory contents
+  whoami    - Display current user
+  echo [t]  - Repeat text
+  matrix    - Enter Matrix mode (type 'exit' to leave)
+  theme [c] - Change color (amber, green, cyan)`,
+
+            'about': () => `RETRO-OS v1.0.4\nArchitecture: 8-bit Emulated\nStatus: Operational\nDeveloper: GitHub Enthusiast`,
+
+            'date': () => new Date().toString(),
+
+            'ls': () => `Documents/  System/  Logs/  Secret_Files/  readme.txt`,
+
+            'whoami': () => `guest_user_8429 (Privilege Level: USER)`,
+
+            'clear': () => {
+                outputContainer.innerHTML = '';
+                return null;
+            },
+
+            'echo': (args) => args.join(' '),
+
+            'theme': (args) => {
+                const colors = {
+                    amber: '#ffb000',
+                    green: '#33ff33',
+                    cyan: '#00ffff'
+                };
+                const selected = args[0];
+                if (colors[selected]) {
+                    document.documentElement.style.setProperty('--term-color', colors[selected]);
+                    document.documentElement.style.setProperty('--term-glow', colors[selected] + '4D'); // add alpha
+                    return `Theme changed to ${selected}`;
+                }
+                return "Usage: theme [amber|green|cyan]";
+            },
+
+            'matrix': () => {
+                startMatrixEffect();
+                return "Entering Matrix Mode...";
+            }
+        };
+
+        let matrixInterval = null;
+
+        function startMatrixEffect() {
+            if (matrixInterval) return;
+            terminalScreen.classList.add('matrix-mode');
+            input.style.display = 'none';
+            document.getElementById('input-area').style.display = 'none';
+            
+            matrixInterval = setInterval(() => {
+                const line = document.createElement('div');
+                line.className = 'output-line';
+                line.innerText = Array(50).fill(0).map(() => String.fromCharCode(Math.floor(Math.random() * 94) + 33)).join('');
+                outputContainer.appendChild(line);
+                screen.scrollTop = screen.scrollHeight;
+
+                // Keep performance stable by removing old lines
+                if (outputContainer.childNodes.length > 50) {
+                    outputContainer.removeChild(outputContainer.firstChild);
+                }
+            }, 50);
+        }
+
+        function stopMatrixEffect() {
+            clearInterval(matrixInterval);
+            matrixInterval = null;
+            terminalScreen.classList.remove('matrix-mode');
+            input.style.display = 'flex';
+            document.getElementById('input-area').style.display = 'flex';
+            input.focus();
+        }
+
+        // Input Handler
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const fullCommand = input.value.trim();
+                const parts = fullCommand.split(' ');
+                const cmd = parts[0].toLowerCase();
+                const args = parts.slice(1);
+
+                // Add command to output
+                printLine(`<span class="prompt">guest@retro_os:~$</span> ${fullCommand}`);
+
+                if (cmd === 'exit' && terminalScreen.classList.contains('matrix-mode')) {
+                    stopMatrixEffect();
+                } else if (cmd !== '') {
+                    if (commands[cmd]) {
+                        const result = commands[cmd](args);
+                        if (result !== null) printLine(result);
+                    } else {
+                        printLine(`Command not found: ${cmd}. Type 'help' for assistance.`);
+                    }
+                }
+
+                input.value = '';
+                screen.scrollTop = screen.scrollHeight;
+            }
+        });
+
+        function printLine(text) {
+            const line = document.createElement('div');
+            line.className = 'output-line';
+            // Handle HTML vs Text
+            if (text.includes('<')) {
+                line.innerHTML = text;
+            } else {
+                line.innerText = text;
+            }
+            outputContainer.appendChild(line);
+        }
+
+        // Keep focus on input even if clicking elsewhere in the screen
+        document.addEventListener('click', () => {
+            input.focus();
+        });
+
+        // Initial Focus
+        window.onload = () => {
+            input.focus();
+        };
+    </script>
+</body>
+</html>

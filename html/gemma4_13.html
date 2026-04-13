@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conway's Game of Life | Cellular Automaton</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617;
+            overflow: hidden;
+            touch-action: none;
+        }
+        .glass {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        canvas {
+            image-rendering: pixelated;
+        }
+        input[type="range"] {
+            accent-color: #6366f1;
+        }
+        .btn-icon {
+            @apply p-2 rounded-lg transition-all duration-200 flex items-center justify-center hover:bg-white/10 active:scale-95;
+        }
+    </style>
+</head>
+<body class="text-slate-200">
+
+    <!-- Main Canvas -->
+    <canvas id="gameCanvas" class="absolute inset-0 w-full h-full cursor-crosshair"></canvas>
+
+    <!-- Top Stats Overlay -->
+    <div class="absolute top-6 left-6 pointer-events-none select-none">
+        <h1 class="text-2xl font-extrabold tracking-tighter text-white flex items-center gap-2">
+            <i data-lucide="binary" class="text-indigo-500"></i> 
+            GAME <span class="text-indigo-500">OF</span> LIFE
+        </h1>
+        <div class="flex gap-4 mt-2 text-xs font-medium tracking-widest uppercase opacity-60">
+            <span>Gen: <span id="genCount" class="text-white">0</span></span>
+            <span>Pop: <span id="popCount" class="text-white">0</span></span>
+        </div>
+    </div>
+
+    <!-- Control Panel -->
+    <div class="absolute bottom-8 left-1/2 -translate-x-1/2 glass px-6 py-4 rounded-2xl shadow-2xl flex flex-wrap items-center gap-6 max-w-[95vw] md:max-w-none">
+        
+        <!-- Playback Controls -->
+        <div class="flex items-center gap-2 border-r border-white/10 pr-6">
+            <button id="playPauseBtn" class="btn-icon text-indigo-400 hover:text-indigo-300" title="Play/Pause">
+                <i data-lucide="play" id="playIcon"></i>
+            </button>
+            <button id="stepBtn" class="btn-icon" title="Single Step">
+                <i data-lucide="skip-forward"></i>
+            </button>
+            <button id="resetBtn" class="btn-icon text-rose-400 hover:text-rose-300" title="Clear Grid">
+                <i data-lucide="trash-2"></i>
+            </button>
+            <button id="randomizeBtn" class="btn-icon text-emerald-400 hover:text-emerald-300" title="Randomize">
+                <i data-lucide="sparkles"></i>
+            </button>
+        </div>
+
+        <!-- Speed & Grid Controls -->
+        <div class="flex items-center gap-6">
+            <div class="flex flex-col gap-1 min-w-[120px]">
+                <label class="text-[10px] uppercase tracking-widest opacity-50 font-bold">Speed</label>
+                <input type="range" id="speedSlider" min="1" max="60" value="30" class="w-full h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer">
+            </div>
+
+            <div class="flex flex-col gap-1 min-w-[120px]">
+                <label class="text-[10px] uppercase tracking-widest opacity-50 font-bold">Resolution</label>
+                <input type="range" id="resSlider" min="4" max="40" value="15" class="w-full h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer">
+            </div>
+
+            <div class="flex items-center gap-3 pl-2">
+                <label class="text-[10px] uppercase tracking-widest opacity-50 font-bold whitespace-nowrap">Brush</label>
+                <button id="brushModeBtn" class="btn-icon text-indigo-400 border border-indigo-500/30 bg-indigo-500/10" title="Toggle Brush Size">
+                    <i data-lucide="pencil" size="18"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Rule Configuration (B/S) -->
+        <div class="flex items-center gap-4 border-l border-white/10 pl-6 text-[10px] uppercase tracking-widest font-bold opacity-70">
+             <span>Rules: B3 / S23</span>
+        </div>
+    </div>
+
+    <!-- Instructions Overlay -->
+    <div class="absolute top-6 right-6 hidden lg:block glass px-4 py-2 rounded-lg text-[10px] opacity-50 uppercase tracking-widest">
+        Click/Drag to draw • Resize window to adapt
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d', { alpha: false });
+        const genDisplay = document.getElementById('genCount');
+        const popDisplay = document.getElementById('popCount');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const playIcon = document.getElementById('playIcon');
+        const stepBtn = document.getElementById('stepBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const randomizeBtn = document.getElementById('randomizeBtn');
+        const speedSlider = document.getElementById('speedSlider');
+        const resSlider = document.getElementById('resSlider');
+        const brushModeBtn = document.getElementById('brushModeBtn');
+
+        let width, height, rows, cols;
+        let cellSize = parseInt(resSlider.value);
+        let grid = [];
+        let isPlaying = false;
+        let generation = 0;
+        let lastFrameTime = 0;
+        let isDrawing = false;
+        let brushSize = 1;
+
+        // Initialize Grid
+        function initGrid() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+            cols = Math.ceil(width / cellSize);
+            rows = Math.ceil(height / cellSize);
+            grid = Array.from({ length: cols }, () => new Uint8Array(rows).fill(0));
+            generation = 0;
+            updateStats();
+        }
+
+        function randomize() {
+            for (let i = 0; i < cols; i++) {
+                for (let j = 0; j < rows; j++) {
+                    grid[i][j] = Math.random() > 0.85 ? 1 : 0;
+                }
+            }
+            generation = 0;
+            updateStats();
+        }
+
+        function updateStats() {
+            genDisplay.textContent = generation;
+            let population = 0;
+            for (let i = 0; i < cols; i++) {
+                for (let j = 0; j < rows; j++) {
+                    if (grid[i][j] === 1) population++;
+                }
+            }
+            popDisplay.textContent = population;
+        }
+
+        function getNeighbors(x, y) {
+            let count = 0;
+            for (let i = -1; i < 2; i++) {
+                for (let j = -1; j < 2; j++) {
+                    if (i === 0 && j === 0) continue;
+                    const nx = (x + i + cols) % cols;
+                    const ny = (y + j + rows) % rows;
+                    count += grid[nx][ny];
+                }
+            }
+            return count;
+        }
+
+        function nextGeneration() {
+            let nextGrid = Array.from({ length: cols }, () => new Uint8Array(rows));
+            for (let i = 0; i < cols; i++) {
+                for (let j = 0; j < rows; j++) {
+                    const neighbors = getNeighbors(i, j);
+                    if (grid[i][j] === 1) {
+                        nextGrid[i][j] = (neighbors === 2 || neighbors === 3) ? 1 : 0;
+                    } else {
+                        nextGrid[i][j] = (neighbors === 3) ? 1 : 0;
+                    }
+                }
+            }
+            grid = nextGrid;
+            generation++;
+        }
+
+        function draw() {
+            ctx.fillStyle = '#020617';
+            ctx.fillRect(0, 0, width, height);
+
+            for (let i = 0; i < cols; i++) {
+                for (let j = 0; j < rows; j++) {
+                    if (grid[i][j] === 1) {
+                        // Create a nice glow effect for cells
+                        ctx.fillStyle = '#6366f1';
+                        ctx.shadowBlur = 4;
+                        ctx.shadowColor = '#6366f1';
+                        ctx.fillRect(i * cellSize, j * cellSize, cellSize - 1, cellSize - 1);
+                        ctx.shadowBlur = 0;
+                    } else {
+                        // Subtle grid lines
+                        ctx.fillStyle = 'rgba(255,255,255,0.03)';
+                        ctx.fillRect(i * cellSize, j * cellSize, cellSize - 1, cellSize - 1);
+                    }
+                }
+            }
+        }
+
+        function loop(timestamp) {
+            const elapsed = timestamp - lastFrameTime;
+            const fpsInterval = 1000 / parseInt(speedSlider.value);
+
+            if (isPlaying && elapsed > fpsInterval) {
+                nextGeneration();
+                updateStats();
+                lastFrameTime = timestamp;
+            }
+
+            draw();
+            requestAnimationFrame(loop);
+        }
+
+        // Interaction logic
+        function handleInput(e) {
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX || e.touches[0].clientX) - rect.left;
+            const y = (e.clientY || e.touches[0].clientY) - rect.top;
+            
+            const c = Math.floor(x / cellSize);
+            const r = Math.floor(y / cellSize);
+
+            if (c >= 0 && c < cols && r >= 0 && r < rows) {
+                for(let i=0; i<brushSize; i++) {
+                    for(let j=0; j<brushSize; j++) {
+                        if (c+i < cols && r+j < rows) grid[c+i][r+j] = 1;
+                    }
+                }
+            }
+        }
+
+        canvas.addEventListener('mousedown', (e) => { isDrawing = true; handleInput(e); });
+        window.addEventListener('mouseup', () => isDrawing = false);
+        canvas.addEventListener('mousemove', (e) => { if (isDrawing) handleInput(e); });
+        
+        // Touch support
+        canvas.addEventListener('touchstart', (e) => { isDrawing = true; handleInput(e); e.preventDefault(); }, {passive: false});
+        canvas.addEventListener('touchmove', (e) => { if (isDrawing) handleInput(e); e.preventDefault(); }, {passive: false});
+        canvas.addEventListener('touchend', () => isDrawing = false);
+
+        // Control Listeners
+        playPauseBtn.onclick = () => {
+            isPlaying = !isPlaying;
+            playIcon.setAttribute('data-lucide', isPlaying ? 'pause' : 'play');
+            lucide.createIcons();
+        };
+
+        stepBtn.onclick = () => {
+            nextGeneration();
+            updateStats();
+        };
+
+        resetBtn.onclick = () => {
+            initGrid();
+        };
+
+        randomizeBtn.onclick = () => {
+            randomize();
+        };
+
+        resSlider.oninput = (e) => {
+            cellSize = parseInt(e.target.value);
+            initGrid();
+        };
+
+        brushModeBtn.onclick = () => {
+            brushSize = brushSize === 1 ? 3 : 1;
+            brushModeBtn.classList.toggle('bg-indigo-500/10');
+            brushModeBtn.classList.toggle('border-indigo-500/30');
+        };
+
+        window.onresize = initGrid;
+
+        // Initial Start
+        initGrid();
+        randomize();
+        requestAnimationFrame(loop);
+
+    </script>
+</body>
+</html>

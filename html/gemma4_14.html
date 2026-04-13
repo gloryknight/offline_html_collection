@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FractalExplorer | Mandelbrot Set</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #050505; overflow: hidden; }
+        canvas { cursor: crosshair; touch-action: none; }
+        .glass { background: rgba(15, 15, 15, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .control-panel { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        input[type=range] { accent-color: #3b82f6; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+    </style>
+</head>
+<body class="text-gray-200">
+
+    <!-- Main Canvas -->
+    <canvas id="fractalCanvas" class="fixed inset-0 w-full h-full"></canvas>
+
+    <!-- UI Overlay: Header -->
+    <div class="fixed top-6 left-6 pointer-events-none">
+        <h1 class="text-3xl font-light tracking-tighter text-white flex items-center gap-2">
+            <i data-lucide="atom" class="w-8 h-8 text-blue-500"></i>
+            Fractal<span class="font-semibold">Explorer</span>
+        </h1>
+        <p class="text-xs text-gray-400 mt-1 uppercase tracking-widest opacity-70">Mandelbrot Set Visualizer</p>
+    </div>
+
+    <!-- UI Overlay: Controls -->
+    <div id="controls" class="fixed top-6 right-6 w-80 glass rounded-2xl p-6 control-panel shadow-2xl">
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-sm font-semibold uppercase tracking-wider text-gray-400">Parameters</h2>
+            <button onclick="resetView()" class="p-2 hover:bg-white/10 rounded-lg transition-colors" title="Reset View">
+                <i data-lucide="refresh-cw" class="w-4 h-4 text-blue-400"></i>
+            </button>
+        </div>
+
+        <!-- Iterations -->
+        <div class="mb-6">
+            <div class="flex justify-between mb-2">
+                <label class="text-xs font-medium">Max Iterations</label>
+                <span id="iterValue" class="text-xs text-blue-400 font-mono">150</span>
+            </div>
+            <input type="range" id="iterations" min="50" max="2000" step="10" value="150" class="w-full h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+        </div>
+
+        <!-- Color Palette -->
+        <div class="mb-6">
+            <label class="text-xs font-medium block mb-3">Color Scheme</label>
+            <div class="grid grid-cols-2 gap-2" id="paletteSelector">
+                <button onclick="setPalette('electric')" class="palette-btn text-[10px] py-2 rounded bg-blue-600/20 border border-blue-500/50 text-blue-300 uppercase tracking-tighter" data-palette="electric">Electric</button>
+                <button onclick="setPalette('sunset')" class="palette-btn text-[10px] py-2 rounded bg-white/5 border border-white/10 hover:border-white/30 transition-all uppercase tracking-tighter" data-palette="sunset">Sunset</button>
+                <button onclick="setPalette('ocean')" class="palette-btn text-[10px] py-2 rounded bg-white/5 border border-white/10 hover:border-white/30 transition-all uppercase tracking-tighter" data-palette="ocean">Ocean</button>
+                <button onclick="setPalette('mono')" class="palette-btn text-[10px] py-2 rounded bg-white/5 border border-white/10 hover:border-white/30 transition-all uppercase tracking-tighter" data-palette="mono">Monochrome</button>
+            </div>
+        </div>
+
+        <!-- Instructions -->
+        <div class="pt-4 border-t border-white/10 mt-4 space-y-3 text-[11px] text-gray-500">
+            <div class="flex items-center gap-3"><i data-lucide="mouse-pointer-2" class="w-3 h-3"></i> Click & Drag to Pan</div>
+            <div class="flex items-center gap-3"><i data-lucide="zoom-in" class="w-3 h-3"></i> Scroll to Zoom In/Out</div>
+            <div class="flex items-center gap-3"><i data-lucide="download" class="w-3 h-3 pointer-events-auto cursor-pointer hover:text-white transition-colors" onclick="downloadImage()">Click to Export Image</div>
+        </div>
+    </div>
+
+    <!-- UI Overlay: Stats Footer -->
+    <div class="fixed bottom-6 left-6 glass px-4 py-2 rounded-full text-[10px] font-mono text-gray-400 flex gap-4 items-center">
+        <span>ZOOM: <span id="zoomStat" class="text-blue-400">1.0x</span></span>
+        <div class="w-px h-3 bg-white/20"></div>
+        <span>X: <span id="coordX" class="text-blue-400">0.00</span></span>
+        <div class="w-px h-3 bg-white/20"></div>
+        <span>Y: <span id="coordY" class="text-blue-400">0.00</span></div>
+    </div>
+
+    <!-- Loading Indicator -->
+    <div id="loader" class="fixed inset-0 flex items-center justify-center bg-black/50 opacity-0 pointer-events-none transition-opacity duration-300 z-50">
+        <div class="w-12 h-12 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+    </div>
+
+    <script>
+        // Configuration & State
+        const canvas = document.getElementById('fractalCanvas');
+        const ctx = canvas.getContext('2d', { alpha: false });
+        const loader = document.getElementById('loader');
+        
+        let width, height;
+        let maxIter = 150;
+        let zoom = 1.0;
+        let offsetX = -0.5;
+        let offsetY = 0;
+        let currentPalette = 'electric';
+
+        // Viewport settings
+        const palettes = {
+            electric: (t) => [t * 255, Math.pow(t, 2) * 255, 255],
+            sunset: (t) => [255, Math.pow(t, 1.5) * 100, Math.pow(t, 3) * 50],
+            ocean: (t) => [0, t * 150, t * 255],
+            mono: (t) => [t * 255, t * 255, t * 255]
+        };
+
+        // Initialization
+        function init() {
+            resize();
+            window.addEventListener('resize', resize);
+            setupInteractions();
+            lucide.createIcons();
+            render();
+        }
+
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+            render();
+        }
+
+        // Core Mandelbrot Algorithm (Optimized with Typed Arrays)
+        async function render() {
+            loader.style.opacity = '1';
+            
+            // Small delay to allow UI to show loader
+            await new Promise(r => setTimeout(r, 10));
+
+            const imgData = ctx.createImageData(width, height);
+            const data = imgData.data;
+
+            // Aspect ratio correction
+            const aspectRatio = width / height;
+            const viewWidth = 4 / zoom;
+            const viewHeight = (4 / aspectRatio) / zoom;
+
+            const xMin = offsetX - viewWidth / 2;
+            const yMin = offsetY - viewHeight / 2;
+
+            for (let py = 0; py < height; py++) {
+                for (let px = 0; px < width; px++) {
+                    // Map pixel to complex plane
+                    let x0 = xMin + (px / width) * viewWidth;
+                    let y0 = yMin + (py / height) * viewHeight;
+
+                    let x = 0, y = 0, iteration = 0;
+                    let x2 = 0, y2 = 0;
+
+                    // Escape time loop
+                    while (x2 + y2 <= 4 && iteration < maxIter) {
+                        y = 2 * x * y + y0;
+                        x = x2 - y2 + x0;
+                        x2 = x * x;
+                        y2 = y * y;
+                        iteration++;
+                    }
+
+                    const pixelIdx = (py * width + px) * 4;
+
+                    if (iteration < maxIter) {
+                        // Smooth coloring algorithm
+                        const log_zn = Math.log(x2 + y2) / 2;
+                        const nu = Math.log(log_zn / Math.log(2)) / Math.log(2);
+                        const smoothIter = iteration + 1 - nu;
+                        const t = smoothIter / maxIter;
+
+                        const [r, g, b] = palettes[currentPalette](t);
+                        data[pixelIdx] = r;
+                        data[pixelIdx + 1] = g;
+                        data[pixelIdx + 2] = b;
+                    } else {
+                        data[pixelIdx] = 0;
+                        data[pixelIdx + 1] = 0;
+                        data[pixelIdx + 2] = 0;
+                    }
+                    data[pixelIdx + 3] = 255; // Alpha
+                }
+            }
+
+            ctx.putImageData(imgData, 0, 0);
+            updateStats();
+            loader.style.opacity = '0';
+        }
+
+        // Interaction Logic
+        function setupInteractions() {
+            let isDragging = false;
+            let lastX, lastY;
+
+            canvas.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                lastX = e.clientX;
+                lastY = e.clientY;
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                
+                const dx = e.clientX - lastX;
+                const dy = e.clientY - lastY;
+                
+                const aspectRatio = width / height;
+                const viewWidth = 4 / zoom;
+                const viewHeight = (4 / aspectRatio) / zoom;
+
+                offsetX -= (dx / width) * viewWidth;
+                offsetY -= (dy / height) * viewHeight;
+
+                lastX = e.clientX;
+                lastY = e.clientY;
+                render();
+            });
+
+            window.addEventListener('mouseup', () => isDragging = false);
+
+            canvas.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const zoomFactor = e.deltaY < 0 ? 1.2 : 0.8;
+                
+                // Zoom toward mouse position
+                const aspectRatio = width / height;
+                const viewWidth = 4 / zoom;
+                const viewHeight = (4 / aspectRatio) / zoom;
+
+                const mouseXRel = e.clientX / width;
+                const mouseYRel = e.clientY / height;
+
+                const mouseReal = offsetX + (mouseXRel - 0.5) * viewWidth;
+                const mouseImag = offsetY + (mouseYRel - 0.5) * viewHeight;
+
+                zoom *= zoomFactor;
+
+                // Re-center based on target
+                const newViewWidth = 4 / zoom;
+                const newViewHeight = (4 / aspectRatio) / zoom;
+                offsetX = mouseReal - (mouseXRel - 0.5) * newViewWidth;
+                offsetY = mouseImag - (mouseYRel - 0.5) * newViewHeight;
+
+                render();
+            }, { passive: false });
+
+            // Slider logic
+            document.getElementById('iterations').addEventListener('input', (e) => {
+                maxIter = parseInt(e.target.value);
+                document.getElementById('iterValue').innerText = maxIter;
+                render();
+            });
+        }
+
+        function updateStats() {
+            document.getElementById('zoomStat').innerText = zoom.toExponential(2) + 'x';
+            document.getElementById('coordX').innerText = offsetX.toFixed(4);
+            document.getElementById('coordY').innerText = offsetY.toFixed(4);
+        }
+
+        function setPalette(p) {
+            currentPalette = p;
+            document.querySelectorAll('.palette-btn').forEach(btn => {
+                if (btn.dataset.palette === p) {
+                    btn.classList.add('bg-blue-600/20', 'border-blue-500/50', 'text-blue-300');
+                    btn.classList.remove('bg-white/5', 'border-white/10', 'text-gray-400');
+                } else {
+                    btn.classList.remove('bg-blue-600/20', 'border-blue-500/50', 'text-blue-300');
+                    btn.classList.add('bg-white/5', 'border-white/10', 'text-gray-400');
+                }
+            });
+            render();
+        }
+
+        function resetView() {
+            zoom = 1.0;
+            offsetX = -0.5;
+            offsetY = 0;
+            render();
+        }
+
+        function downloadImage() {
+            const link = document.createElement('a');
+            link.download = 'fractal-explorer.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+
+        // Start application
+        init();
+    </script>
+</body>
+</html>

@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unit Converter Pro | High-End Length Conversion</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at top left, #f8fafc, #e2e8f0);
+            min-height: 100vh;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .input-focus-effect:focus {
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+            border-color: #3b82f6;
+        }
+        .custom-transition {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center p-4 md:p-8">
+
+    <div class="w-full max-w-xl">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-200 mb-4 transform rotate-3 hover:rotate-0 transition-transform duration-300">
+                <i class="fas fa-ruler-combined text-2xl"></i>
+            </div>
+            <h1 class="text-3xl font-bold text-slate-800 tracking-tight">Unit Converter <span class="text-blue-600">Pro</span></h1>
+            <p class="text-slate-500 mt-2 font-medium">Precision length conversion engine</p>
+        </div>
+
+        <!-- Main Converter Card -->
+        <div class="glass-card rounded-3xl shadow-2xl p-6 md:p-10 overflow-hidden relative">
+            <!-- Decorative background element -->
+            <div class="absolute -top-24 -right-24 w-48 h-48 bg-blue-50 rounded-full blur-3xl opacity-50"></div>
+            
+            <div class="relative z-10 space-y-6">
+                
+                <!-- From Section -->
+                <div class="space-y-2">
+                    <label class="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">From</label>
+                    <div class="flex flex-col md:flex-row gap-3">
+                        <div class="relative flex-grow">
+                            <input type="number" id="inputValue" value="1" 
+                                class="w-full bg-white/50 border border-slate-200 rounded-xl px-4 py-4 text-lg font-semibold text-slate-700 outline-none input-focus-effect custom-transition"
+                                placeholder="0.00">
+                        </div>
+                        <div class="w-full md:w-40">
+                            <select id="fromUnit" 
+                                class="w-full bg-white border border-slate-200 rounded-xl px-4 py-4 text-md font-medium text-slate-700 outline-none cursor-pointer hover:bg-slate-50 custom-transition appearance-none">
+                                <!-- Options populated by JS -->
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Swap Button -->
+                <div class="flex justify-center -my-4 relative z-20">
+                    <button id="swapBtn" class="bg-white text-blue-600 w-10 h-10 rounded-full shadow-md border border-slate-100 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all duration-300 active:scale-90">
+                        <i class="fas fa-exchange-alt"></i>
+                    </button>
+                </div>
+
+                <!-- To Section -->
+                <div class="space-y-2">
+                    <label class="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">To</label>
+                    <div class="flex flex-col md:flex-row gap-3">
+                        <div class="relative flex-grow">
+                            <input type="text" id="outputValue" readonly 
+                                class="w-full bg-slate-50/50 border border-transparent rounded-xl px-4 py-4 text-lg font-bold text-blue-600 outline-none cursor-default"
+                                placeholder="Result">
+                        </div>
+                        <div class="w-full md:w-40">
+                            <select id="toUnit" 
+                                class="w-full bg-white border border-slate-200 rounded-xl px-4 py-4 text-md font-medium text-slate-700 outline-none cursor-pointer hover:bg-slate-50 custom-transition appearance-none">
+                                <!-- Options populated by JS -->
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Result Details / Action -->
+                <div class="pt-4 flex items-center justify-between border-t border-slate-100 mt-6">
+                    <div id="formulaDisplay" class="text-xs text-slate-400 italic font-medium">
+                        1 m = 3.28084 ft
+                    </div>
+                    <button id="copyBtn" class="text-slate-400 hover:text-blue-600 transition-colors flex items-center gap-2 text-sm font-semibold">
+                        <i class="far fa-copy"></i> Copy Result
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- History Section -->
+        <div id="historyContainer" class="mt-8 opacity-0 transition-opacity duration-500">
+            <h3 class="text-sm font-bold text-slate-500 uppercase tracking-widest mb-4 ml-2">Recent Conversions</h3>
+            <div id="historyList" class="space-y-3">
+                <!-- History items -->
+            </div>
+        </div>
+
+        <footer class="mt-12 text-center text-slate-400 text-sm font-medium">
+            &copy; <span id="year"></span> Unit Converter Pro • Open Source
+        </footer>
+    </div>
+
+    <script>
+        // Configuration & Data
+        const units = {
+            millimeter: { name: 'Millimeters (mm)', factor: 0.001 },
+            centimeter: { name: 'Centimeters (cm)', factor: 0.01 },
+            meter: { name: 'Meters (m)', factor: 1 },
+            kilometer: { name: 'Kilometers (km)', factor: 1000 },
+            inch: { name: 'Inches (in)', factor: 0.0254 },
+            foot: { name: 'Feet (ft)', factor: 0.3048 },
+            yard: { name: 'Yards (yd)', factor: 0.9144 },
+            mile: { name: 'Miles (mi)', factor: 1609.344 },
+            nauticalMile: { name: 'Nautical Miles (nmi)', factor: 1852 }
+        };
+
+        // DOM Elements
+        const inputValue = document.getElementById('inputValue');
+        const outputValue = document.getElementById('outputValue');
+        const fromUnitSelect = document.getElementById('fromUnit');
+        const toUnitSelect = document.getElementById('toUnit');
+        const swapBtn = document.getElementById('swapBtn');
+        const copyBtn = document.getElementById('copyBtn');
+        const formulaDisplay = document.getElementById('formulaDisplay');
+        const historyList = document.getElementById('historyList');
+        const historyContainer = document.getElementById('historyContainer');
+
+        let history = [];
+
+        // Initialize Selects
+        function init() {
+            Object.keys(units).forEach(key => {
+                const opt1 = new Option(units[key].name, key);
+                const opt2 = new Option(units[key].name, key);
+                fromUnitSelect.add(opt1);
+                toUnitSelect.add(opt2);
+            });
+
+            // Defaults
+            fromUnitSelect.value = 'meter';
+            toUnitSelect.value = 'foot';
+            
+            document.getElementById('year').textContent = new Date().getFullYear();
+            convert();
+        }
+
+        // Core Conversion Logic
+        function convert() {
+            const val = parseFloat(inputValue.value);
+            const fromKey = fromUnitSelect.value;
+            const toKey = toUnitSelect.value;
+
+            if (isNaN(val)) {
+                outputValue.value = "";
+                return;
+            }
+
+            // Convert input to meters (base unit) then to target unit
+            const meters = val * units[fromKey].factor;
+            const result = meters / units[toKey].factor;
+
+            // Format output: use scientific notation for very small/large numbers, otherwise precision 4
+            const formattedResult = result < 0.0001 || result > 10000000 ? result.toExponential(4) : parseFloat(result.toFixed(6)).toString();
+            outputValue.value = formattedResult;
+
+            // Update Formula Display
+            const ratio = (units[fromKey].factor / units[toKey].factor).toFixed(6);
+            formulaDisplay.textContent = `1 ${fromKey} ≈ ${ratio} ${toKey}`;
+
+            // Add to history if changed significantly (debounced by user interaction)
+        }
+
+        function addToHistory() {
+            const from = fromUnitSelect.options[fromUnitSelect.selectedIndex].text;
+            const to = toUnitSelect.options[toUnitSelect.selectedIndex].text;
+            const val = inputValue.value;
+            const res = outputValue.value;
+
+            if (!val || !res) return;
+
+            const entry = `${val} ${from} ➔ ${res} ${to}`;
+            if (history[0] === entry) return;
+
+            history.unshift(entry);
+            if (history.length > 5) history.pop();
+
+            renderHistory();
+        }
+
+        function renderHistory() {
+            historyContainer.classList.remove('opacity-0');
+            historyList.innerHTML = history.map(item => `
+                <div class="glass-card py-3 px-4 rounded-xl text-sm text-slate-600 font-medium flex justify-between items-center animate-in slide-in-from-top duration-300">
+                    <span>${item}</span>
+                    <i class="fas fa-check-circle text-green-500 opacity-50"></i>
+                </div>
+            `).join('');
+        }
+
+        // Event Listeners
+        inputValue.addEventListener('input', convert);
+        fromUnitSelect.addEventListener('change', () => { convert(); addToHistory(); });
+        toUnitSelect.addEventListener('change', () => { convert(); addToHistory(); });
+
+        swapBtn.addEventListener('click', () => {
+            const temp = fromUnitSelect.value;
+            fromUnitSelect.value = toUnitSelect.value;
+            toUnitSelect.value = temp;
+            convert();
+            // Visual feedback for swap
+            swapBtn.classList.add('scale-125', 'bg-blue-600', 'text-white');
+            setTimeout(() => swapBtn.classList.remove('scale-125', 'bg-blue-600', 'text-white'), 300);
+        });
+
+        copyBtn.addEventListener('click', () => {
+            if (!outputValue.value) return;
+            navigator.clipboard.writeText(outputValue.value);
+            const originalText = copyBtn.innerHTML;
+            copyBtn.innerHTML = `<i class="fas fa-check text-green-500"></i> Copied!`;
+            setTimeout(() => {
+                copyBtn.innerHTML = originalText;
+            }, 2000);
+        });
+
+        // Debounced history addition to prevent spamming on every keystroke
+        let timer;
+        inputValue.addEventListener('keyup', () => {
+            clearTimeout(timer);
+            timer = setTimeout(addToHistory, 1500);
+        });
+
+        // Run App
+        init();
+    </script>
+</body>
+</html>

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zen Notepad | Distraction-Free Writing</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.5s ease, color 0.5s ease;
+        }
+        .editor-container {
+            min-height: calc(100vh - 160px);
+        }
+        textarea {
+            resize: none;
+            outline: none;
+            line-height: 1.8;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border-radius: 10px;
+        }
+        .zen-mode .ui-element {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease, transform 0.4s ease;
+            transform: translateY(-10px);
+        }
+        .zen-mode .editor-container {
+            padding: 0 !important;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .light .glass {
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+    </style>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        zen: {
+                            bg: '#09090b',
+                            text: '#fafafa',
+                            accent: '#3f3f46'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors duration-500">
+
+    <!-- Header / Toolbar -->
+    <header class="ui-element fixed top-0 left-0 w-full z-50 flex items-center justify-between px-6 py-4 glass">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-zinc-900 dark:bg-zinc-100 rounded-lg flex items-center justify-center">
+                <i data-lucide="feather" class="w-5 h-5 text-white dark:text-black"></i>
+            </div>
+            <h1 class="font-medium tracking-tight hidden sm:block">Zen Notepad</h1>
+        </div>
+
+        <div class="flex items-center gap-2 md:gap-4">
+            <button onclick="toggleTheme()" class="p-2 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-full transition-all" title="Toggle Theme">
+                <i data-lucide="sun" id="theme-icon-light" class="hidden w-5 h-5"></i>
+                <i data-lucide="moon" id="theme-icon-dark" class="w-5 h-5"></i>
+            </button>
+            <div class="h-6 w-[1px] bg-zinc-300 dark:bg-zinc-700 mx-2"></div>
+            <button onclick="toggleZenMode()" class="p-2 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-full transition-all" title="Focus Mode (Esc)">
+                <i data-lucide="maximize" class="w-5 h-5"></i>
+            </button>
+            <button onclick="downloadNote()" class="p-2 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-full transition-all" title="Download .txt">
+                <i data-lucide="download" class="w-5 h-5"></i>
+            </button>
+            <button onclick="copyNote()" class="p-2 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-full transition-all" title="Copy to Clipboard">
+                <i data-lucide="copy" class="w-5 h-5"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Editor Area -->
+    <main class="pt-24 pb-12 px-6 md:px-0 flex justify-center">
+        <div class="editor-container w-full max-w-3xl transition-all duration-500" id="editor-wrapper">
+            <textarea 
+                id="editor" 
+                spellcheck="false"
+                placeholder="Start writing your thoughts..."
+                class="w-full bg-transparent text-lg md:text-xl font-light focus:ring-0 border-none placeholder:opacity-30"
+            ></textarea>
+        </div>
+    </main>
+
+    <!-- Footer / Status Bar -->
+    <footer class="ui-element fixed bottom-0 left-0 w-full px-6 py-3 glass flex items-center justify-between text-xs font-medium text-zinc-500 uppercase tracking-widest">
+        <div class="flex gap-6">
+            <span>Words: <span id="word-count" class="text-zinc-900 dark:text-zinc-300">0</span></span>
+            <span>Chars: <span id="char-count" class="text-zinc-900 dark:text-zinc-300">0</span></span>
+        </div>
+        <div class="flex items-center gap-2">
+            <span id="save-status" class="opacity-0 transition-opacity duration-300">Saved</span>
+            <div class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
+        </div>
+    </footer>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-16 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full glass text-sm opacity-0 transition-all duration-300 pointer-events-none">
+        Copied to clipboard!
+    </div>
+
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        const editor = document.getElementById('editor');
+        const wordCountEl = document.getElementById('word-count');
+        const charCountEl = document.getElementById('char-count');
+        const saveStatus = document.getElementById('save-status');
+        const toast = document.getElementById('toast');
+
+        // --- Core Functionality ---
+
+        // Load saved content
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedContent = localStorage.getItem('zen_notepad_content');
+            if (savedContent) {
+                editor.value = savedContent;
+                updateStats();
+            }
+            
+            // Check for dark mode preference
+            if (localStorage.getItem('theme') === 'light') {
+                document.documentElement.classList.remove('dark');
+                document.documentElement.classList.add('light');
+            }
+        });
+
+        // Auto-save and Stats
+        editor.addEventListener('input', () => {
+            updateStats();
+            autoSave();
+        });
+
+        function updateStats() {
+            const text = editor.value.trim();
+            const words = text ? text.split(/\s+/).length : 0;
+            const chars = text.length;
+            
+            wordCountEl.innerText = words;
+            charCountEl.innerText = chars;
+        }
+
+        let saveTimeout;
+        function autoSave() {
+            saveStatus.classList.add('opacity-100');
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                localStorage.setItem('zen_notepad_content', editor.value);
+                saveStatus.classList.remove('opacity-100');
+            }, 800);
+        }
+
+        // Theme Toggle
+        function toggleTheme() {
+            const isDark = document.documentElement.classList.toggle('dark');
+            document.documentElement.classList.toggle('light', !isDark);
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            updateIcons();
+        }
+
+        function updateIcons() {
+            const isDark = document.documentElement.classList.contains('dark');
+            document.getElementById('theme-icon-light').classList.toggle('hidden', !isDark);
+            document.getElementById('theme-icon-dark').classList.toggle('hidden', isDark);
+        }
+        updateIcons();
+
+        // Zen Mode (Focus Mode)
+        function toggleZenMode() {
+            document.body.classList.toggle('zen-mode');
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && document.body.classList.contains('zen-mode')) {
+                toggleZenMode();
+            }
+        });
+
+        // Actions
+        function copyNote() {
+            navigator.clipboard.writeText(editor.value).then(() => {
+                showToast("Copied to clipboard!");
+            });
+        }
+
+        function downloadNote() {
+            const element = document.createElement('a');
+            const file = new Blob([editor.value], {type: 'text/plain'});
+            element.href = URL.createObjectURL(file);
+            element.download = `zen-note-${new Date().toISOString().slice(0,10)}.txt`;
+            document.body.appendChild(element);
+            element.click();
+            document.body.removeChild(element);
+        }
+
+        function showToast(msg) {
+            toast.innerText = msg;
+            toast.classList.remove('opacity-0', 'translate-y-2');
+            toast.classList.add('opacity-100', '-translate-y-2');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                toast.classList.remove('opacity-100', '-translate-y-2');
+            }, 2000);
+        }
+
+        // Allow Tab key in textarea
+        editor.addEventListener('keydown', function(e) {
+            if (e.key == 'Tab') {
+                e.preventDefault();
+                var start = this.selectionStart;
+                var end = this.selectionEnd;
+                this.value = this.value.substring(0, start) + "\t" + this.value.substring(end);
+                this.selectionStart = this.selectionEnd = start + 1;
+            }
+        });
+    </script>
+</body>
+</html>

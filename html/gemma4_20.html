@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AlgoVision | Sorting vs Searching</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #f8fafc; }
+        .bar { transition: height 0.1s ease, background-color 0.1s ease; }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        input[type=range] { accent-color: #6366f1; }
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .searching-target { animation: pulse-glow 0.8s infinite; }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8">
+
+    <!-- Header -->
+    <header class="max-w-7xl mx-auto mb-8 text-center">
+        <h1 class="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400 mb-2">
+            AlgoVision
+        </h1>
+        <p class="text-slate-400 text-lg">Visualizing the fundamental dance of data structures.</p>
+    </header>
+
+    <!-- Global Controls -->
+    <div class="max-w-7xl mx-auto glass rounded-2xl p-6 mb-8 flex flex-wrap items-center justify-between gap-6">
+        <div class="flex items-center gap-6">
+            <div class="flex flex-col">
+                <label class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Array Size</label>
+                <input type="range" id="sizeSlider" min="10" max="100" value="40" class="w-32 md:w-48">
+            </div>
+            <div class="flex flex-col">
+                <label class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Speed</label>
+                <input type="range" id="speedSlider" min="1" max="100" value="80" class="w-32 md:w-48">
+            </div>
+        </div>
+        <div class="flex gap-4">
+            <button id="resetBtn" class="px-6 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 transition-all font-semibold">Generate New Array</button>
+            <button id="startBtn" class="px-8 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 transition-all font-bold shadow-lg shadow-indigo-500/20">Run Comparison</button>
+        </div>
+    </div>
+
+    <!-- Main Workspace -->
+    <main class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
+        
+        <!-- Sorting Section -->
+        <section class="glass rounded-3xl p-6 flex flex-col h-[500px]">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-xl font-bold text-indigo-400">Sorting</h2>
+                    <p id="sortStatus" class="text-sm text-slate-500 italic">Ready to sort...</p>
+                </div>
+                <select id="sortAlgo" class="bg-slate-800 border border-slate-700 rounded px-3 py-1 text-sm outline-none focus:ring-2 ring-indigo-500">
+                    <option value="bubble">Bubble Sort</option>
+                    <option value="selection">Selection Sort</option>
+                </select>
+            </div>
+            <div id="sortContainer" class="flex-grow flex items-end justify-center gap-[2px] px-2 border-b border-slate-700/50 pb-2">
+                <!-- Bars injected here -->
+            </div>
+        </section>
+
+        <!-- Searching Section -->
+        <section class="glass rounded-3xl p-6 flex flex-col h-[500px]">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-xl font-bold text-cyan-400">Searching</h2>
+                    <p id="searchStatus" class="text-sm text-slate-500 italic">Ready to search...</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="number" id="searchValue" value="30" class="w-16 bg-slate-800 border border-slate-700 rounded px-2 py-1 text-sm outline-none focus:ring-2 ring-cyan-500">
+                    <select id="searchAlgo" class="bg-slate-800 border border-slate-700 rounded px-3 py-1 text-sm outline-none focus:ring-2 ring-cyan-500">
+                        <option value="linear">Linear Search</option>
+                        <option value="binary">Binary Search (Needs Sorted)</option>
+                    </select>
+                </div>
+            </div>
+            <div id="searchContainer" class="flex-grow flex items-end justify-center gap-[2px] px-2 border-b border-slate-700/50 pb-2">
+                <!-- Bars injected here -->
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="max-w-7xl mx-auto mt-12 text-center text-slate-600 text-sm">
+        Built with ❤️ for Algorithms Enthusiasts • Open Source Visualizer
+    </footer>
+
+    <script>
+        // --- State Management ---
+        let arraySize = 40;
+        let delay = 50;
+        let isRunning = false;
+        let sortArray = [];
+        let searchArray = [];
+
+        const sortContainer = document.getElementById('sortContainer');
+        const searchContainer = document.getElementById('searchContainer');
+        const sizeSlider = document.getElementById('sizeSlider');
+        const speedSlider = document.getElementById('speedSlider');
+        const resetBtn = document.getElementById('resetBtn');
+        const startBtn = document.getElementById('startBtn');
+        const sortStatus = document.getElementById('sortStatus');
+        const searchStatus = document.getElementById('searchStatus');
+
+        // --- Utilities ---
+        const sleep = () => new Promise(resolve => setTimeout(resolve, 101 - speedSlider.value));
+
+        function generateArrays() {
+            if (isRunning) return;
+            arraySize = parseInt(sizeSlider.value);
+            sortArray = Array.from({ length: arraySize }, () => Math.floor(Math.random() * 95) + 5);
+            searchArray = [...sortArray]; // Copy to keep them synced initially
+            render();
+            sortStatus.innerText = "Ready to sort...";
+            searchStatus.innerText = "Ready to search...";
+        }
+
+        function render() {
+            sortContainer.innerHTML = '';
+            searchContainer.innerHTML = '';
+
+            sortArray.forEach((val, i) => {
+                const bar = document.createElement('div');
+                bar.className = 'bar bg-indigo-500 w-full rounded-t-sm';
+                bar.style.height = `${val}%`;
+                bar.id = `sort-bar-${i}`;
+                sortContainer.appendChild(bar);
+            });
+
+            searchArray.forEach((val, i) => {
+                const bar = document.createElement('div');
+                bar.className = 'bar bg-cyan-500 w-full rounded-t-sm';
+                bar.style.height = `${val}%`;
+                bar.id = `search-bar-${i}`;
+                searchContainer.appendChild(bar);
+            });
+        }
+
+        // --- Sorting Algorithms ---
+        async function bubbleSort() {
+            let arr = sortArray;
+            for (let i = 0; i < arr.length; i++) {
+                for (let j = 0; j < arr.length - i - 1; j++) {
+                    if (!isRunning) return;
+                    const bar1 = document.getElementById(`sort-bar-${j}`);
+                    const bar2 = document.getElementById(`sort-bar-${j+1}`);
+                    
+                    bar1.classList.replace('bg-indigo-500', 'bg-rose-500');
+                    bar2.classList.replace('bg-indigo-500', 'bg-rose-500');
+                    
+                    sortStatus.innerText = `Comparing indices ${j} & ${j+1}`;
+                    await sleep();
+
+                    if (arr[j] > arr[j + 1]) {
+                        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+                        bar1.style.height = `${arr[j]}%`;
+                        bar2.style.height = `${arr[j+1]}%`;
+                    }
+
+                    bar1.classList.replace('bg-rose-500', 'bg-indigo-500');
+                    bar2.classList.replace('bg-rose-500', 'bg-indigo-500');
+                }
+                document.getElementById(`sort-bar-${arr.length - i - 1}`).classList.replace('bg-indigo-500', 'bg-emerald-500');
+            }
+            sortStatus.innerText = "Sorting Complete!";
+        }
+
+        async function selectionSort() {
+            let arr = sortArray;
+            for (let i = 0; i < arr.length; i++) {
+                let minIdx = i;
+                document.getElementById(`sort-bar-${i}`).classList.replace('bg-indigo-500', 'bg-yellow-400');
+                
+                for (let j = i + 1; j < arr.length; j++) {
+                    if (!isRunning) return;
+                    const barJ = document.getElementById(`sort-bar-${j}`);
+                    barJ.classList.replace('bg-cyan-500', 'bg-rose-400'); // visual error in color logic, fixed below
+                    barJ.style.backgroundColor = '#f43f5e'; 
+                    
+                    sortStatus.innerText = `Finding minimum...`;
+                    await sleep();
+
+                    if (arr[j] < arr[minIdx]) {
+                        if (minIdx !== i) document.getElementById(`sort-bar-${minIdx}`).classList.replace('bg-yellow-400', 'bg-indigo-500');
+                        minIdx = j;
+                        document.getElementById(`sort-bar-${minIdx}`).classList.replace('bg-indigo-500', 'bg-yellow-400');
+                    } else {
+                        barJ.style.backgroundColor = '#06b6d4'; 
+                    }
+                }
+
+                if (minIdx !== i) {
+                    [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
+                    document.getElementById(`sort-bar-${i}`).style.height = `${arr[i]}%`;
+                    document.getElementById(`sort-bar-${minIdx}`).style.height = `${arr[minIdx]}%`;
+                }
+                
+                document.getElementById(`sort-bar-${i}`).classList.replace('bg-yellow-400', 'bg-emerald-500');
+            }
+            sortStatus.innerText = "Sorting Complete!";
+        }
+
+        // --- Searching Algorithms ---
+        async function linearSearch(target) {
+            const arr = searchArray;
+            for (let i = 0; i < arr.length; i++) {
+                if (!isRunning) return;
+                const bar = document.getElementById(`search-bar-${i}`);
+                bar.classList.replace('bg-cyan-500', 'bg-rose-500');
+                searchStatus.innerText = `Checking index ${i}...`;
+                await sleep();
+
+                if (arr[i] === target) {
+                    bar.classList.replace('bg-rose-500', 'bg-emerald-500');
+                    bar.classList.add('searching-target');
+                    searchStatus.innerText = `Found ${target} at index ${i}!`;
+                    return;
+                }
+                bar.classList.replace('bg-rose-500', 'bg-cyan-500');
+            }
+            searchStatus.innerText = "Not found.";
+        }
+
+        async function binarySearch(target) {
+            // Binary search requires sorted array. We must sort the visual representation first for demo purposes.
+            searchStatus.innerText = "Sorting for Binary Search...";
+            let arr = [...searchArray].sort((a, b) => a - b);
+            // Update display to sorted
+            for(let i=0; i<arr.length; i++) {
+                searchArray[i] = arr[i];
+                document.getElementById(`search-bar-${i}`).style.height = `${arr[i]}%`;
+            }
+
+            let left = 0;
+            let right = arr.length - 1;
+
+            while (left <= right) {
+                if (!isRunning) return;
+                let mid = Math.floor((left + right) / 2);
+                const barMid = document.getElementById(`search-bar-${mid}`);
+                
+                barMid.classList.replace('bg-cyan-500', 'bg-yellow-400');
+                searchStatus.innerText = `Checking midpoint index ${mid}...`;
+                await sleep();
+
+                if (arr[mid] === target) {
+                    barMid.classList.replace('bg-yellow-400', 'bg-emerald-500');
+                    barMid.classList.add('searching-target');
+                    searchStatus.innerText = `Found ${target} at index ${mid}!`;
+                    return;
+                }
+
+                if (arr[mid] < target) {
+                    left = mid + 1;
+                } else {
+                    right = mid - 1;
+                }
+                barMid.classList.replace('bg-yellow-400', 'bg-cyan-500');
+            }
+            searchStatus.innerText = "Not found.";
+        }
+
+        // --- Main Controller ---
+        async function runComparison() {
+            if (isRunning) return;
+            isRunning = true;
+            startBtn.disabled = true;
+            startBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+            const sortType = document.getElementById('sortAlgo').value;
+            const searchType = document.getElementById('searchAlgo').value;
+            const target = parseInt(document.getElementById('searchValue').value);
+
+            // Run both concurrently using Promise.all
+            const sortingPromise = (sortType === 'bubble') ? bubbleSort() : selectionSort();
+            const searchingPromise = (searchType === 'linear') ? linearSearch(target) : binarySearch(target);
+
+            await Promise.all([sortingPromise, searchingPromise]);
+
+            isRunning = false;
+            startBtn.disabled = false;
+            startBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+
+        // --- Event Listeners ---
+        resetBtn.addEventListener('click', generateArrays);
+        sizeSlider.addEventListener('input', generateArrays);
+        startBtn.addEventListener('click', runComparison);
+
+        // Initialize
+        generateArrays();
+    </script>
+</body>
+</html>

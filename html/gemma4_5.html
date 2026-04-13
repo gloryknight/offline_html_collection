@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JWT Decoder | Professional Debugger</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; transition: background-color 0.3s ease; }
+        .code-font { font-family: 'Fira Code', monospace; }
+        .jwt-header { color: #fb7185; } /* Rose 400 */
+        .jwt-payload { color: #c084fc; } /* Purple 400 */
+        .jwt-signature { color: #60a5fa; } /* Blue 400 */
+        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .dark .glass { background: rgba(15, 23, 42, 0.6); }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+    </style>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: '#6366f1',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 min-h-screen">
+
+    <!-- Navigation -->
+    <nav class="border-b border-slate-200 dark:border-slate-800 px-6 py-4 flex justify-between items-center sticky top-0 z-50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md">
+        <div class="flex items-center gap-2">
+            <div class="p-2 bg-brand rounded-lg shadow-lg shadow-indigo-500/20">
+                <i data-lucide="shield-check" class="text-white w-5 h-5"></i>
+            </div>
+            <span class="font-bold text-xl tracking-tight">JWT<span class="text-brand">Decoder</span></span>
+        </div>
+        <div class="flex items-center gap-4">
+            <button id="themeToggle" class="p-2 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-full transition-colors">
+                <i data-lucide="moon" id="themeIcon" class="w-5 h-5"></i>
+            </button>
+            <a href="https://github.com" target="_blank" class="text-sm text-slate-500 hover:text-brand transition-colors flex items-center gap-1">
+                <i data-lucide="github" class="w-4 h-4"></i> GitHub
+            </a>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto p-6 lg:p-10 space-y-8">
+        <!-- Header Section -->
+        <div class="text-center space-y-2 max-w-2xl mx-auto animate-fade-in">
+            <h1 class="text-4xl font-extrabold tracking-tight lg:text-5xl">Debug JSON Web Tokens.</h1>
+            <p class="text-slate-500 dark:text-slate-400 text-lg">Paste your encoded JWT below to instantly decode and visualize its structure.</p>
+        </div>
+
+        <!-- Input Section -->
+        <div class="relative group animate-fade-in" style="animation-delay: 0.1s;">
+            <div class="absolute -inset-1 bg-gradient-to-r from-rose-500 via-purple-500 to-blue-500 rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-1000"></div>
+            <div class="relative flex flex-col gap-4">
+                <textarea 
+                    id="jwtInput"
+                    placeholder="Paste your JWT here (e.g., eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...)"
+                    class="w-full h-40 p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl focus:ring-2 focus:ring-brand outline-none text-lg code-font shadow-xl transition-all resize-none"
+                ></textarea>
+                <div class="flex justify-between items-center px-2">
+                    <div id="statusIndicator" class="text-sm font-medium flex items-center gap-2 text-slate-400">
+                        <i data-lucide="info" class="w-4 h-4"></i> Waiting for input...
+                    </div>
+                    <button onclick="loadExample()" class="text-sm text-brand hover:underline font-medium">Load Example</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Grid -->
+        <div id="resultsGrid" class="grid grid-cols-1 lg:grid-cols-3 gap-6 hidden animate-fade-in" style="animation-delay: 0.2s;">
+            
+            <!-- Header Card -->
+            <div class="flex flex-col space-y-4">
+                <div class="flex items-center justify-between px-1">
+                    <h3 class="text-sm font-semibold uppercase tracking-wider text-rose-500 flex items-center gap-2">
+                        <i data-lucide="box" class="w-4 h-4"></i> Header
+                    </h3>
+                    <button onclick="copyText('headerContent')" class="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-800 rounded transition-colors text-slate-400" title="Copy JSON">
+                        <i data-lucide="copy" class="w-4 h-4"></i>
+                    </button>
+                </div>
+                <div id="headerContent" class="glass p-5 rounded-2xl min-h-[200px] code-font text-sm whitespace-pre overflow-auto max-h-[400px]"></div>
+            </div>
+
+            <!-- Payload Card -->
+            <div class="flex flex-col space-y-4">
+                <div class="flex items-center justify-between px-1">
+                    <h3 class="text-sm font-semibold uppercase tracking-wider text-purple-500 flex items-center gap-2">
+                        <i data-lucide="database" class="w-4 h-4"></i> Payload
+                    </h3>
+                    <button onclick="copyText('payloadContent')" class="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-800 rounded transition-colors text-slate-400" title="Copy JSON">
+                        <i data-lucide="copy" class="w-4 h-4"></i>
+                    </button>
+                </div>
+                <div id="payloadContent" class="glass p-5 rounded-2xl min-h-[200px] code-font text-sm whitespace-pre overflow-auto max-h-[400px]"></div>
+            </div>
+
+            <!-- Signature Card -->
+            <div class="flex flex-col space-y-4">
+                <div class="flex items-center justify-between px-1">
+                    <h3 class="text-sm font-semibold uppercase tracking-wider text-blue-500 flex items-center gap-2">
+                        <i data-lucide="lock" class="w-4 h-4"></i> Signature
+                    </h3>
+                    <button onclick="copyText('signatureContent')" class="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-800 rounded transition-colors text-slate-400" title="Copy Signature">
+                        <i data-lucide="copy" class="w-4 h-4"></i>
+                    </button>
+                </div>
+                <div id="signatureContent" class="glass p-5 rounded-2xl min-h-[200px] code-font text-sm break-all whitespace-pre overflow-auto max-h-[400px]"></div>
+            </div>
+
+        </div>
+
+        <!-- Error State -->
+        <div id="errorState" class="hidden flex items-center justify-center p-12 bg-rose-50 dark:bg-rose-950/20 rounded-3xl border border-rose-200 dark:border-rose-900 text-rose-600 dark:text-rose-400 animate-fade-in">
+            <div class="flex items-center gap-3">
+                <i data-lucide="alert-circle" class="w-6 h-6"></i>
+                <span id="errorMessage" class="font-medium">Invalid JWT format.</span>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 px-6 py-3 bg-slate-900 text-white rounded-full shadow-2xl opacity-0 transition-opacity pointer-events-none flex items-center gap-2">
+        <i data-lucide="check" class="w-4 h-4 text-green-400"></i>
+        <span>Copied to clipboard!</span>
+    </div>
+
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        const jwtInput = document.getElementById('jwtInput');
+        const resultsGrid = document.getElementById('resultsGrid');
+        const errorState = document.getElementById('errorState');
+        const errorMessage = document.getElementById('errorMessage');
+        const statusIndicator = document.getElementById('statusIndicator');
+        
+        const headerContent = document.getElementById('headerContent');
+        const payloadContent = document.getElementById('payloadContent');
+        const signatureContent = document.getElementById('signatureContent');
+
+        // Theme Management
+        const themeToggle = document.getElementById('themeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+        const htmlElement = document.documentElement;
+
+        themeToggle.addEventListener('click', () => {
+            if (htmlElement.classList.contains('dark')) {
+                htmlElement.classList.remove('dark');
+                themeIcon.setAttribute('data-lucide', 'sun');
+            } else {
+                htmlElement.classList.add('dark');
+                themeIcon.setAttribute('data-lucide', 'moon');
+            }
+            lucide.createIcons();
+        });
+
+        // JWT Logic
+        function base64UrlDecode(str) {
+            try {
+                // Convert Base64Url to standard Base64
+                str = str.replace(/-/g, '+').replace(/_/g, '/');
+                // Add padding if necessary
+                while (str.length % 4 !== 0) {
+                    str += '=';
+                }
+                return decodeURIComponent(atob(str).split('').map(c => {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+            } catch (e) {
+                throw new Error("Failed to decode base64 segment.");
+            }
+        }
+
+        function decodeJWT() {
+            const token = jwtInput.value.trim();
+            
+            if (!token) {
+                resultsGrid.classList.add('hidden');
+                errorState.classList.add('hidden');
+                statusIndicator.innerHTML = `<i data-lucide="info" class="w-4 h-4"></i> Waiting for input...`;
+                lucide.createIcons();
+                return;
+            }
+
+            const parts = token.split('.');
+
+            if (parts.length !== 3) {
+                showError("A JWT must have exactly 3 parts separated by dots.");
+                return;
+            }
+
+            try {
+                // Decode Header
+                const header = JSON.parse(base64UrlDecode(parts[0]));
+                headerContent.textContent = JSON.stringify(header, null, 2);
+                headerContent.className = "glass p-5 rounded-2xl min-h-[200px] code-font text-sm whitespace-pre overflow-auto max-h-[400px] jwt-header";
+
+                // Decode Payload
+                const payload = JSON.parse(base64UrlDecode(parts[1]));
+                payloadContent.textContent = JSON.stringify(payload, null, 2);
+                payloadContent.className = "glass p-5 rounded-2xl min-h-[200px] code-font text-sm whitespace-pre overflow-auto max-h-[400px] jwt-payload";
+
+                // Signature (Raw)
+                signatureContent.textContent = parts[2];
+                signatureContent.className = "glass p-5 rounded-2xl min-h-[200px] code-font text-sm break-all whitespace-pre overflow-auto max-h-[400px] jwt-signature";
+
+                // Success State
+                resultsGrid.classList.remove('hidden');
+                errorState.classList.add('hidden');
+                statusIndicator.innerHTML = `<i data-lucide="check-circle" class="w-4 h-4 text-green-500"></i> Valid JWT detected`;
+                lucide.createIcons();
+
+            } catch (err) {
+                showError("Invalid token structure or malformed JSON.");
+            }
+        }
+
+        function showError(msg) {
+            errorMessage.textContent = msg;
+            errorState.classList.remove('hidden');
+            resultsGrid.classList.add('hidden');
+            statusIndicator.innerHTML = `<i data-lucide="x-circle" class="w-4 h-4 text-rose-500"></i> Error`;
+            lucide.createIcons();
+        }
+
+        function loadExample() {
+            jwtInput.value = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c";
+            decodeJWT();
+        }
+
+        // Utilities
+        function copyText(elementId) {
+            const text = document.getElementById(elementId).textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                showToast();
+            });
+        }
+
+        function showToast() {
+            const toast = document.getElementById('toast');
+            toast.style.opacity = '1';
+            setTimeout(() => {
+                toast.style.opacity = '0';
+            }, 2000);
+        }
+
+        // Event Listeners
+        jwtInput.addEventListener('input', decodeJWT);
+
+    </script>
+</body>
+</html>

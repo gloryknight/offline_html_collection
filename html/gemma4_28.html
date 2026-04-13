@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MindFlow // Interactive Mind Mapper</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            background-color: #f8fafc;
+        }
+        .canvas-grid {
+            background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+        .node {
+            transition: transform 0.1s ease-out, box-shadow 0.2s ease;
+            user-select: none;
+            touch-action: none;
+        }
+        .node:active {
+            cursor: grabbing;
+            transform: scale(1.02);
+        }
+        .connection-line {
+            fill: none;
+            stroke: #94a3b8;
+            stroke-width: 2;
+            transition: stroke 0.2s;
+        }
+        .connecting-line {
+            stroke: #3b82f6;
+            stroke-dasharray: 5, 5;
+            animation: dash 1s linear infinite;
+        }
+        @keyframes dash {
+            to { stroke-dashoffset: -10; }
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        [contenteditable]:focus {
+            outline: none;
+            background: rgba(59, 130, 246, 0.05);
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen overflow-hidden">
+
+    <!-- Header / Toolbar -->
+    <header class="fixed top-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 px-6 py-3 glass rounded-full shadow-xl border border-slate-200">
+        <div class="flex items-center gap-2 mr-4 border-r pr-4 border-slate-200">
+            <i data-lucide="brain-circuit" class="w-6 h-6 text-blue-600"></i>
+            <span class="font-bold text-slate-800 tracking-tight">MindFlow</span>
+        </div>
+        
+        <button onclick="addNode()" class="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full transition-all text-sm font-medium shadow-lg shadow-blue-200">
+            <i data-lucide="plus" class="w-4 h-4"></i> Add Node
+        </button>
+
+        <div class="h-6 w-[1px] bg-slate-200 mx-2"></div>
+
+        <button onclick="clearCanvas()" class="p-2 text-slate-500 hover:text-red-500 transition-colors" title="Clear All">
+            <i data-lucide="trash-2" class="w-5 h-5"></i>
+        </button>
+
+        <button onclick="exportJSON()" class="p-2 text-slate-500 hover:text-blue-600 transition-colors" title="Export Data">
+            <i data-lucide="download" class="w-5 h-5"></i>
+        </button>
+
+        <div class="h-6 w-[1px] bg-slate-200 mx-2"></div>
+
+        <div class="flex items-center gap-3 text-xs font-medium text-slate-400">
+            <span>Drag nodes to move</span>
+            <span class="flex items-center gap-1"><i data-lucide="mouse-pointer-2" class="w-3 h-3"></i> Connect via handles</span>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main id="viewport" class="relative w-full h-full canvas-grid overflow-hidden cursor-grab active:cursor-grabbing">
+        <!-- SVG Layer for Connections -->
+        <svg id="svg-canvas" class="absolute top-0 left-0 w-full h-full pointer-events-none"></svg>
+        
+        <!-- Nodes Container -->
+        <div id="nodes-container" class="absolute top-0 left-0 w-full h-full"></div>
+
+        <!-- Temporary connection line while dragging from handle -->
+        <svg id="temp-svg" class="absolute top-0 left-0 w-full h-full pointer-events-none hidden">
+            <path id="temp-line" d="" class="connecting-line" />
+        </svg>
+    </main>
+
+    <!-- Instructions Overlay -->
+    <div id="empty-state" class="fixed inset-0 flex items-center justify-center pointer-events-none transition-opacity duration-500">
+        <div class="text-center opacity-40">
+            <i data-lucide="layout" class="w-16 h-16 mx-auto mb-4 text-slate-300"></i>
+            <p class="text-xl font-medium text-slate-400">Start by adding a node</p>
+        </div>
+    </div>
+
+    <script>
+        // State Management
+        let nodes = [];
+        let connections = []; // Array of { from: id, to: id }
+        let isDraggingNode = null;
+        let isConnecting = null; // { nodeId, startX, startY }
+        let dragOffset = { x: 0, y: 0 };
+
+        const viewport = document.getElementById('viewport');
+        const nodesContainer = document.getElementById('nodes-container');
+        const svgCanvas = document.getElementById('svg-canvas');
+        const tempSvg = document.getElementById('temp-svg');
+        const tempLine = document.getElementById('temp-line');
+        const emptyState = document.getElementById('empty-state');
+
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        function addNode(x = window.innerWidth / 2, y = window.innerHeight / 2, text = "New Idea") {
+            const id = 'node_' + Date.now();
+            const newNode = { id, x, y, text };
+            nodes.push(newNode);
+            renderNode(newNode);
+            updateEmptyState();
+        }
+
+        function renderNode(node) {
+            const el = document.createElement('div');
+            el.id = node.id;
+            el.className = 'node absolute glass rounded-xl shadow-sm border border-slate-200 p-4 min-w-[150px] group';
+            el.style.left = `${node.x - 75}px`;
+            el.style.top = `${node.y - 30}px`;
+
+            el.innerHTML = `
+                <div class="flex justify-between items-start mb-2">
+                    <div class="handle w-3 h-3 bg-blue-400 rounded-full cursor-crosshair hover:scale-150 transition-transform" 
+                         onmousedown="startConnection(event, '${node.id}')"></div>
+                    <button onclick="deleteNode('${node.id}')" class="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-red-500 transition-all">
+                        <i data-lucide="x" class="w-3 h-3"></i>
+                    </button>
+                </div>
+                <div contenteditable="true" class="text-slate-700 font-medium text-sm focus:outline-none min-h-[1.25rem]" 
+                     oninput="updateText('${node.id}', this.innerText)">${node.text}</div>
+            `;
+
+            // Dragging Logic
+            el.addEventListener('mousedown', (e) => {
+                if (e.target.classList.contains('handle') || e.target.getAttribute('contenteditable')) return;
+                isDraggingNode = node;
+                const rect = el.getBoundingClientRect();
+                dragOffset.x = e.clientX - rect.left;
+                dragOffset.y = e.clientY - rect.top;
+                el.style.zIndex = 1000;
+            });
+
+            nodesContainer.appendChild(el);
+            lucide.createIcons();
+        }
+
+        function updateText(id, text) {
+            const node = nodes.find(n => n.id === id);
+            if (node) node.text = text;
+        }
+
+        function deleteNode(id) {
+            nodes = nodes.filter(n => n.id !== id);
+            connections = connections.filter(c => c.from !== id && c.to !== id);
+            document.getElementById(id).remove();
+            drawConnections();
+            updateEmptyState();
+        }
+
+        function clearCanvas() {
+            if (confirm('Are you sure you want to clear the entire map?')) {
+                nodes = [];
+                connections = [];
+                nodesContainer.innerHTML = '';
+                drawConnections();
+                updateEmptyState();
+            }
+        }
+
+        // Connection Logic
+        function startConnection(e, nodeId) {
+            e.stopPropagation();
+            const node = nodes.find(n => n.id === nodeId);
+            isConnecting = { 
+                nodeId, 
+                startX: node.x, 
+                startY: node.y 
+            };
+            tempSvg.classList.remove('hidden');
+        }
+
+        // Global Mouse Events for Dragging and Connecting
+        window.addEventListener('mousemove', (e) => {
+            if (isDraggingNode) {
+                isDraggingNode.x = e.clientX - dragOffset.x + 75; // Adjusting offset to center roughly
+                isDraggingNode.y = e.clientY - dragOffset.y + 30;
+                const el = document.getElementById(isDraggingNode.id);
+                el.style.left = `${isDraggingNode.x - 75}px`;
+                el.style.top = `${isDraggingNode.y - 30}px`;
+                drawConnections();
+            }
+
+            if (isConnecting) {
+                const d = calculateBezier(isConnecting.startX, isConnecting.startY, e.clientX, e.clientY);
+                tempLine.setAttribute('d', d);
+            }
+        });
+
+        window.addEventListener('mouseup', (e) => {
+            if (isConnecting) {
+                // Check if we dropped on another node
+                const targetEl = document.elementFromPoint(e.clientX, e.clientY)?.closest('.node');
+                if (targetEl && targetEl.id !== isConnecting.nodeId) {
+                    // Create connection
+                    const exists = connections.some(c => 
+                        (c.from === isConnecting.nodeId && c.to === targetEl.id) || 
+                        (c.from === targetEl.id && c.to === isConnecting.nodeId)
+                    );
+                    if (!exists) {
+                        connections.push({ from: isConnecting.nodeId, to: targetEl.id });
+                    }
+                }
+                isConnecting = null;
+                tempSvg.classList.add('hidden');
+                drawConnections();
+            }
+            if (isDraggingNode) {
+                document.getElementById(isDraggingNode.id).style.zIndex = '';
+                isDraggingNode = null;
+            }
+        });
+
+        function calculateBezier(x1, y1, x2, y2) {
+            const cp1x = x1 + (x2 - x1) / 2;
+            const cp2x = x1 + (x2 - x1) / 2;
+            return `M ${x1} ${y1} C ${cp1x} ${y1}, ${cp2x} ${y2}, ${x2} ${y2}`;
+        }
+
+        function drawConnections() {
+            svgCanvas.innerHTML = '';
+            connections.forEach(conn => {
+                const fromNode = nodes.find(n => n.id === conn.from);
+                const toNode = nodes.find(n => n.id === conn.to);
+                if (fromNode && toNode) {
+                    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                    path.setAttribute("d", calculateBezier(fromNode.x, fromNode.y, toNode.x, toNode.y));
+                    path.setAttribute("class", "connection-line");
+                    // Add slight glow effect
+                    path.style.filter = "drop-shadow(0 2px 4px rgba(0,0,0,0.05))";
+                    svgCanvas.appendChild(path);
+                }
+            });
+        }
+
+        function updateEmptyState() {
+            emptyState.style.opacity = nodes.length === 0 ? '1' : '0';
+        }
+
+        function exportJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ nodes, connections }));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", "mindmap_export.json");
+            document.body.appendChild(downloadAnchorNode); 
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        }
+
+        // Initial Node
+        addNode(window.innerWidth / 2, window.innerHeight / 2, "Central Concept");
+
+    </script>
+</body>
+</html>

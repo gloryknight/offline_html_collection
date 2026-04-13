@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkyCast // Minimalist Weather</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background 1s ease-in-out;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .weather-gradient-clear { background: linear-gradient(to bottom right, #4facfe 0%, #00f2fe 100%); }
+        .weather-gradient-clouds { background: linear-gradient(to bottom right, #bdc3c7 0%, #2c3e50 100%); }
+        .weather-gradient-rain { background: linear-gradient(to bottom right, #485563 0%, #29323c 100%); }
+        .weather-gradient-snow { background: linear-gradient(to bottom right, #e6e9f0 0%, #eef1f5 100%); }
+        .weather-gradient-default { background: linear-gradient(to bottom right, #6a11cb 0%, #2575fc 100%); }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade { animation: fadeIn 0.6s ease-out forwards; }
+    </style>
+</head>
+<body class="weather-gradient-default min-h-screen text-white flex items-center justify-center p-4 md:p-8">
+
+    <div class="max-w-4xl w-full space-y-6">
+        <!-- Search Bar -->
+        <div class="flex gap-2 animate-fade" style="animation-delay: 0.1s;">
+            <div class="relative flex-grow">
+                <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/60"></i>
+                <input type="text" id="cityInput" placeholder="Search city (e.g. London, Tokyo)..." 
+                    class="w-full bg-white/20 border border-white/30 rounded-2xl py-4 pl-12 pr-4 outline-none focus:ring-2 focus:ring-white/50 transition-all placeholder:text-white/60 text-lg">
+            </div>
+            <button id="searchBtn" class="glass px-8 rounded-2xl font-semibold hover:bg-white/30 transition-all active:scale-95">
+                Search
+            </button>
+        </div>
+
+        <!-- API Key Prompt (For Demo Purposes) -->
+        <div id="keyPrompt" class="glass p-4 rounded-2xl text-sm mb-6 animate-fade" style="animation-delay: 0.2s;">
+            <p class="text-center opacity-80">Note: To use real data, you'll need an <a href="https://openweathermap.org/api" target="_blank" class="underline font-bold">OpenWeatherMap API Key</a>. Enter it below for a full experience:</p>
+            <div class="mt-2 flex gap-2">
+                <input type="password" id="apiKeyInput" placeholder="Paste API Key here..." class="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1 text-sm outline-none focus:border-white/40">
+                <button onclick="saveKey()" class="bg-white text-blue-600 px-4 py-1 rounded-lg text-xs font-bold uppercase tracking-wider">Save</button>
+            </div>
+        </div>
+
+        <!-- Main Dashboard (Hidden until data is fetched) -->
+        <div id="weatherDashboard" class="hidden space-y-6">
+            
+            <!-- Current Weather Hero -->
+            <div class="glass rounded-[2.5rem] p-8 md:p-12 flex flex-col md:flex-row items-center justify-between animate-fade" style="animation-delay: 0.3s;">
+                <div class="text-center md:text-left">
+                    <h1 id="cityName" class="text-4xl md:text-6xl font-bold mb-2 tracking-tight">London</h1>
+                    <p id="currentDate" class="text-lg opacity-80 font-light uppercase tracking-widest">Monday, 12 June</p>
+                </div>
+                <div class="flex flex-col items-center mt-8 md:mt-0">
+                    <i id="weatherIcon" data-lucide="sun" class="w-24 h-24 text-yellow-300 drop-shadow-lg"></i>
+                    <span id="tempDisplay" class="text-7xl md:text-8xl font-bold mt-2">24°</span>
+                    <p id="weatherDesc" class="text-xl opacity-90 capitalize">Sunny Skies</p>
+                </div>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 animate-fade" style="animation-delay: 0.4s;">
+                <div class="glass rounded-3xl p-6 flex flex-col items-center text-center">
+                    <i data-lucide="droplets" class="w-6 h-6 mb-2 opacity-70"></i>
+                    <span class="text-sm opacity-70 uppercase tracking-tighter">Humidity</span>
+                    <span id="humidityVal" class="text-xl font-semibold">45%</span>
+                </div>
+                <div class="glass rounded-3xl p-6 flex flex-col items-center text-center">
+                    <i data-lucide="wind" class="w-6 h-6 mb-2 opacity-70"></i>
+                    <span class="text-sm opacity-70 uppercase tracking-tighter">Wind</span>
+                    <span id="windVal" class="text-xl font-semibold">12 km/h</span>
+                </div>
+                <div class="glass rounded-3xl p-6 flex flex-col items-center text-center">
+                    <i data-lucide="thermometer" class="w-6 h-6 mb-2 opacity-70"></i>
+                    <span class="text-sm opacity-70 uppercase tracking-tighter">Feels Like</span>
+                    <span id="feelsLikeVal" class="text-xl font-semibold">26°</span>
+                </div>
+                <div class="glass rounded-3xl p-6 flex flex-col items-center text-center">
+                    <i data-lucide="eye" class="w-6 h-6 mb-2 opacity-70"></i>
+                    <span class="text-sm opacity-70 uppercase tracking-tighter">Visibility</span>
+                    <span id="visibilityVal" class="text-xl font-semibold">10 km</span>
+                </div>
+            </div>
+
+            <!-- 5-Day Forecast -->
+            <div class="animate-fade" style="animation-delay: 0.5s;">
+                <h3 class="text-xl font-semibold mb-4 ml-2">5-Day Forecast</h3>
+                <div id="forecastContainer" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+                    <!-- Forecast cards injected here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Error/Empty State -->
+        <div id="errorState" class="hidden text-center py-20 animate-fade">
+            <i data-lucide="alert-circle" class="w-16 h-16 mx-auto mb-4 opacity-50"></i>
+            <p id="errorMessage" class="text-xl font-medium">City not found. Please try again.</p>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        let API_KEY = localStorage.getItem('weather_api_key') || '';
+        const cityInput = document.getElementById('cityInput');
+        const searchBtn = document.getElementById('searchBtn');
+        const dashboard = document.getElementById('weatherDashboard');
+        const errorState = document.getElementById('errorState');
+        const keyPrompt = document.getElementById('keyPrompt');
+
+        if (API_KEY) keyPrompt.classList.add('hidden');
+
+        function saveKey() {
+            const val = document.getElementById('apiKeyInput').value.trim();
+            if (val) {
+                localStorage.setItem('weather_api_key', val);
+                API_KEY = val;
+                keyPrompt.classList.add('hidden');
+                alert('API Key saved!');
+            }
+        }
+
+        async function fetchWeather(city) {
+            if (!API_KEY) {
+                alert("Please enter an API key first!");
+                return;
+            }
+
+            try {
+                // Clear UI
+                errorState.classList.add('hidden');
+                dashboard.classList.add('hidden');
+
+                // 1. Fetch Current Weather
+                const currentRes = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${API_KEY}`);
+                if (!currentRes.ok) throw new Error("City not found");
+                const currentData = await currentRes.json();
+
+                // 2. Fetch Forecast
+                const forecastRes = await fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${currentData.coord.lat}&lon=${currentData.coord.lon}&units=metric&appid=${API_KEY}`);
+                const forecastData = await forecastRes.json();
+
+                updateUI(currentData, forecastData);
+            } catch (err) {
+                errorState.classList.remove('hidden');
+                dashboard.classList.add('hidden');
+                document.getElementById('errorMessage').innerText = err.message;
+            }
+        }
+
+        function updateUI(current, forecast) {
+            // Update Current Weather
+            document.getElementById('cityName').innerText = current.name;
+            document.getElementById('tempDisplay').innerText = `${Math.round(current.main.temp)}°`;
+            document.getElementById('weatherDesc').innerText = current.weather[0].description;
+            document.getElementById('humidityVal').innerText = `${current.main.humidity}%`;
+            document.getElementById('windVal').innerText = `${current.wind.speed} m/s`;
+            document.getElementById('feelsLikeVal').innerText = `${Math.round(current.main.feels_like)}°`;
+            document.getElementById('visibilityVal').innerText = `${(current.visibility / 1000).toFixed(1)} km`;
+
+            // Date
+            const options = { weekday: 'long', day: 'numeric', month: 'long' };
+            document.getElementById('currentDate').innerText = new Date().toLocaleDateString('en-US', options);
+
+            // Icon & Background
+            const condition = current.weather[0].main.toLowerCase();
+            updateTheme(condition);
+            updateIcon(current.weather[0].main);
+
+            // Forecast
+            const forecastContainer = document.getElementById('forecastContainer');
+            forecastContainer.innerHTML = '';
+            
+            // OpenWeather returns data every 3 hours, we take one per day (every 8th index)
+            for (let i = 0; i < forecast.list.length; i += 8) {
+                const dayData = forecast.list[i];
+                const date = new Date(dayData.dt * 1000).toLocaleDateString('en-US', { weekday: 'short' });
+                
+                const card = document.createElement('div');
+                card.className = 'glass rounded-3xl p-4 flex flex-col items-center animate-fade';
+                card.style.animationDelay = `${(i/8) * 0.1}s`;
+                card.innerHTML = `
+                    <span class="text-sm opacity-70 font-medium uppercase">${date}</span>
+                    <img src="https://openweathermap.org/img/wn/${dayData.weather[0].icon}.png" alt="icon" class="w-12 h-12">
+                    <span class="text-lg font-bold">${Math.round(dayData.main.temp)}°</span>
+                `;
+                forecastContainer.appendChild(card);
+            }
+
+            dashboard.classList.remove('hidden');
+            lucide.createIcons(); // Re-render icons if needed (though we use img for forecast)
+        }
+
+        function updateTheme(condition) {
+            const body = document.body;
+            body.className = 'min-h-screen text-white flex items-center justify-center p-4 md:p-8 transition-all duration-1000';
+            
+            if (condition.includes('clear')) body.classList.add('weather-gradient-clear');
+            else if (condition.includes('cloud')) body.classList.add('weather-gradient-clouds');
+            else if (condition.includes('rain') || condition.includes('drizzle')) body.classList.add('weather-gradient-rain');
+            else if (condition.includes('snow')) body.classList.add('weather-gradient-snow');
+            else body.classList.add('weather-gradient-default');
+        }
+
+        function updateIcon(main) {
+            const iconEl = document.getElementById('weatherIcon');
+            iconEl.setAttribute('data-lucide', getLucideMapping(main));
+            lucide.createIcons();
+        }
+
+        function getLucideMapping(condition) {
+            const c = condition.toLowerCase();
+            if (c.includes('clear')) return 'sun';
+            if (c.includes('cloud')) return 'cloud';
+            if (c.includes('rain')) return 'cloud-rain';
+            if (c.includes('snow')) return 'snowflake';
+            if (c.includes('thunder')) return 'cloud-lightning';
+            return 'cloud-sun';
+        }
+
+        // Event Listeners
+        searchBtn.addEventListener('click', () => fetchWeather(cityInput.value));
+        cityInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') fetchWeather(cityInput.value);
+        });
+    </script>
+</body>
+</html>

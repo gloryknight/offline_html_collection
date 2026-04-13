@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chronos | Minimalist Digital Clock</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter & JetBrains Mono for numbers -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <!-- Lucide Icons via CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            transition: background-color 0.5s ease, color 0.5s ease;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .light .glass {
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        /* Prevent jitter by using tabular nums */
+        .clock-digits {
+            font-variant-numeric: tabular-nums;
+        }
+        @keyframes pulse-subtle {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+        .animate-pulse-subtle {
+            animation: pulse-subtle 3s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 dark:bg-slate-950 dark:text-slate-100 light:bg-slate-50 light:text-slate-900 transition-colors duration-500 overflow-hidden">
+
+    <!-- Background Decorative Elements -->
+    <div class="fixed inset-0 -z-10 overflow-hidden">
+        <div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-blue-500/10 blur-[120px]"></div>
+        <div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-purple-500/10 blur-[120px]"></div>
+    </div>
+
+    <main class="flex flex-col items-center justify-center min-h-screen p-6">
+        
+        <!-- Clock Container -->
+        <div class="relative group">
+            <!-- Glow Effect behind clock -->
+            <div class="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-600 opacity-0 group-hover:opacity-10 transition-opacity duration-700 blur-3xl rounded-full"></div>
+            
+            <div class="glass px-8 py-12 md:px-16 md:py-20 rounded-[3rem] shadow-2xl text-center relative z-10 min-w-[320px] md:min-w-[600px]">
+                
+                <!-- Date Display -->
+                <div id="date-display" class="text-sm md:text-lg font-light tracking-[0.3em] uppercase opacity-60 mb-4 transition-all duration-500">
+                    Loading date...
+                </div>
+
+                <!-- Time Display -->
+                <div class="flex items-baseline justify-center gap-2 md:gap-4">
+                    <span id="time-display" class="clock-digits text-6xl md:text-8xl lg:text-9xl font-medium tracking-tighter">
+                        00:00:00
+                    </span>
+                    <span id="ampm-display" class="text-xl md:text-2xl font-light opacity-40 w-12 text-left">
+                        PM
+                    </span>
+                </div>
+
+                <!-- Seconds Indicator (Minimalist dot) -->
+                <div class="mt-8 flex justify-center items-center gap-3">
+                    <div id="sec-dot" class="w-2 h-2 rounded-full bg-blue-500 animate-pulse-subtle"></div>
+                    <span id="seconds-text" class="text-xs font-mono tracking-widest opacity-40 uppercase">Seconds</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls Bar -->
+        <div class="fixed bottom-10 flex items-center gap-6 glass px-6 py-3 rounded-full transition-all duration-300 hover:scale-105">
+            <!-- Theme Toggle -->
+            <button onclick="toggleTheme()" class="p-2 hover:bg-white/10 rounded-full transition-colors group" title="Toggle Light/Dark Mode">
+                <i data-lucide="sun" class="w-5 h-5 block dark:hidden text-amber-400"></i>
+                <i data-lucide="moon" class="w-5 h-5 hidden dark:block text-blue-400"></i>
+            </button>
+
+            <!-- Divider -->
+            <div class="w-[1px] h-6 bg-slate-700/50"></div>
+
+            <!-- Format Toggle (12h/24h) -->
+            <button onclick="toggleFormat()" class="flex items-center gap-2 text-sm font-medium opacity-70 hover:opacity-100 transition-opacity" title="Toggle 12h/24h Format">
+                <span id="format-label">24H</span>
+                <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+            </button>
+
+            <!-- Divider -->
+            <div class="w-[1px] h-6 bg-slate-700/50"></div>
+
+            <!-- Fullscreen Toggle -->
+            <button onclick="toggleFullscreen()" class="p-2 hover:bg-white/10 rounded-full transition-colors" title="Toggle Fullscreen">
+                <i data-lucide="maximize" class="w-5 h-5 opacity-70"></i>
+            </button>
+        </div>
+
+    </main>
+
+    <!-- Footer Info -->
+    <footer class="fixed bottom-4 w-full text-center text-[10px] uppercase tracking-[0.4em] opacity-20 pointer-events-none">
+        Precision Digital Chronometer &copy; <span id="year"></span>
+    </footer>
+
+    <script>
+        // State Management
+        let is24Hour = true;
+        let isDarkMode = true;
+
+        // DOM Elements
+        const timeDisplay = document.getElementById('time-display');
+        const dateDisplay = document.getElementById('date-display');
+        const ampmDisplay = document.getElementById('ampm-display');
+        const formatLabel = document.getElementById('format-label');
+        const yearSpan = document.getElementById('year');
+
+        // Initialize Lucide Icons
+        lucide.createIcons();
+        yearSpan.textContent = new Date().getFullYear();
+
+        function updateClock() {
+            const now = new Date();
+            
+            // Time logic
+            let hours = now.getHours();
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+
+            if (!is24Hour) {
+                hours = hours % 12;
+                hours = hours ? hours : 12; // the hour '0' should be '12'
+                ampmDisplay.style.display = 'inline-block';
+            } else {
+                ampmDisplay.style.display = 'none';
+            }
+
+            const formattedHours = String(hours).padStart(2, '0');
+            timeDisplay.textContent = `${formattedHours}:${minutes}:${seconds}`;
+            ampmDisplay.textContent = ampm;
+
+            // Date logic
+            const options = { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' };
+            dateDisplay.textContent = now.toLocaleDateString('en-US', options);
+        }
+
+        function toggleTheme() {
+            isDarkMode = !isDarkMode;
+            const html = document.documentElement;
+            if (isDarkMode) {
+                html.classList.add('dark');
+                html.classList.remove('light');
+                document.body.classList.replace('bg-slate-50', 'bg-slate-950');
+                document.body.classList.replace('text-slate-900', 'text-slate-100');
+            } else {
+                html.classList.remove('dark');
+                html.classList.add('light');
+                document.body.classList.replace('bg-slate-950', 'bg-slate-50');
+                document.body.classList.replace('text-slate-100', 'text-slate-900');
+            }
+        }
+
+        function toggleFormat() {
+            is24Hour = !is24Hour;
+            formatLabel.textContent = is24Hour ? '24H' : '12H';
+            // Small scale animation on text change
+            timeDisplay.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                updateClock();
+                timeDisplay.classList.remove('scale-95', 'opacity-0');
+            }, 150);
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    alert(`Error attempting to enable full-screen mode: ${err.message}`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        // Initial Call and Interval
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Smoothly handle window resizing for any specific layout adjustments if needed
+        window.addEventListener('resize', () => {
+            // Logic for responsive handling can go here
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProMark | Professional Markdown Editor</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <!-- GitHub Markdown Styles -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown.min.css">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Markdown Parser -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Sanitizer -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+    <!-- Syntax Highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .code-font { font-family: 'Fira Code', monospace; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+        .dark ::-webkit-scrollbar-thumb { background: #334155; }
+        ::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
+
+        /* Editor Styling */
+        #editor {
+            resize: none;
+            outline: none;
+            line-height: 1.6;
+        }
+
+        /* Smooth Transitions */
+        .transition-all { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+
+        /* Split Pane Layout Adjustment */
+        @media (max-width: 768px) {
+            .split-container { flex-direction: column; }
+            .pane { width: 100% !important; height: 50vh !important; }
+        }
+
+        /* Markdown Preview Customization */
+        .markdown-body {
+            padding: 2rem;
+            background-color: transparent !important;
+        }
+    </style>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: '#2563eb',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="h-full bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300">
+
+    <!-- Top Navigation -->
+    <nav class="h-14 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md flex items-center justify-between px-4 sticky top-0 z-50">
+        <div class="flex items-center gap-2">
+            <div class="bg-brand p-1.5 rounded-lg text-white">
+                <i data-lucide="file-text" class="w-5 h-5"></i>
+            </div>
+            <span class="font-bold text-lg tracking-tight hidden sm:inline-block">ProMark</span>
+        </div>
+
+        <div class="flex items-center gap-2 sm:gap-4">
+            <!-- Actions -->
+            <div class="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
+                <button onclick="downloadMarkdown()" class="p-1.5 hover:bg-white dark:hover:bg-slate-700 rounded-md transition-all text-slate-600 dark:text-slate-400" title="Download .md">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                </button>
+                <button onclick="copyHTML()" class="p-1.5 hover:bg-white dark:hover:bg-slate-700 rounded-md transition-all text-slate-600 dark:text-slate-400" title="Copy HTML">
+                    <i data-lucide="copy" class="w-4 h-4"></i>
+                </button>
+                <div class="w-[1px] h-4 bg-slate-300 dark:bg-slate-600 mx-1"></div>
+                <label class="p-1.5 hover:bg-white dark:hover:bg-slate-700 rounded-md transition-all text-slate-600 dark:text-slate-400 cursor-pointer" title="Open File">
+                    <i data-lucide="folder-open" class="w-4 h-4"></i>
+                    <input type="file" id="fileInput" class="hidden" accept=".md,.txt">
+                </label>
+            </div>
+
+            <!-- Theme Toggle -->
+            <button onclick="toggleTheme()" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-all text-slate-600 dark:text-slate-400">
+                <i id="themeIcon" data-lucide="moon" class="w-5 h-5"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Workspace -->
+    <main class="flex flex-col md:flex-row h-[calc(100vh-3.5rem)] overflow-hidden split-container">
+        
+        <!-- Editor Pane -->
+        <section class="pane relative w-full md:w-1/2 h-full border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col">
+            <div class="flex items-center justify-between px-4 py-2 text-[10px] uppercase tracking-widest font-bold text-slate-400 bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
+                <span>Editor</span>
+                <span id="wordCount">0 Words</span>
+            </div>
+            <textarea 
+                id="editor" 
+                class="flex-1 w-full p-6 code-font text-sm sm:text-base bg-transparent transition-all focus:ring-0"
+                placeholder="# Start writing your masterpiece..."
+                spellcheck="false"
+            ></textarea>
+        </section>
+
+        <!-- Preview Pane -->
+        <section class="pane w-full md:w-1/2 h-full overflow-y-auto bg-white dark:bg-slate-950 relative">
+            <div class="flex items-center justify-between px-4 py-2 text-[10px] uppercase tracking-widest font-bold text-slate-400 bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-10">
+                <span>Live Preview</span>
+                <div class="flex gap-2">
+                    <span id="syncStatus" class="text-green-500 flex items-center gap-1"><i data-lucide="check-circle" class="w-3 h-3"></i> Synced</span>
+                </div>
+            </div>
+            <div id="preview" class="markdown-body max-w-none min-h-full">
+                <!-- Rendered HTML goes here -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 px-6 py-3 rounded-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-2xl opacity-0 pointer-events-none transition-all duration-300 flex items-center gap-2 z-[100]">
+        <i data-lucide="check" class="w-4 h-4"></i>
+        <span id="toastMessage">Copied to clipboard!</span>
+    </div>
+
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        const editor = document.getElementById('editor');
+        const preview = document.getElementById('preview');
+        const wordCountDisplay = document.getElementById('wordCount');
+        const fileInput = document.getElementById('fileInput');
+        const toast = document.getElementById('toast');
+        const toastMessage = document.getElementById('toastMessage');
+
+        // Configure Marked with Syntax Highlighting
+        marked.setOptions({
+            highlight: function(code, lang) {
+                if (lang && hljs.getLanguage(lang)) {
+                    return hljs.highlight(code, { language: lang }).value;
+                }
+                return hljs.highlightAuto(code).value;
+            },
+            breaks: true,
+            gfm: true
+        });
+
+        // --- Core Logic ---
+
+        function updatePreview() {
+            const content = editor.value;
+            const rawHtml = marked.parse(content);
+            const cleanHtml = DOMPurify.sanitize(rawHtml);
+            preview.innerHTML = cleanHtml;
+            
+            // Update Word Count
+            const words = content.trim() ? content.trim().split(/\s+/).length : 0;
+            wordCountDisplay.innerText = `${words} Words`;
+
+            // Trigger syntax highlighting for any new blocks
+            document.querySelectorAll('pre code').forEach((el) => {
+                hljs.highlightElement(el);
+            });
+        }
+
+        function toggleTheme() {
+            const isDark = document.documentElement.classList.toggle('dark');
+            const themeIcon = document.getElementById('themeIcon');
+            themeIcon.setAttribute('data-lucide', isDark ? 'sun' : 'moon');
+            lucide.createIcons();
+        }
+
+        function showToast(msg) {
+            toastMessage.innerText = msg;
+            toast.classList.remove('opacity-0', 'translate-y-4');
+            toast.classList.add('opacity-100', '-translate-y-0');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-4');
+                toast.classList.remove('opacity-100', '-translate-y-0');
+            }, 2500);
+        }
+
+        function downloadMarkdown() {
+            const blob = new Blob([editor.value], { type: 'text/markdown' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `document-${Date.now()}.md`;
+            a.click();
+            showToast("File downloaded!");
+        }
+
+        function copyHTML() {
+            navigator.clipboard.writeText(preview.innerHTML);
+            showToast("HTML copied to clipboard!");
+        }
+
+        // --- Event Listeners ---
+
+        editor.addEventListener('input', updatePreview);
+
+        // Sync Scrolling (Simple implementation)
+        editor.addEventListener('scroll', () => {
+            const scrollPercentage = editor.scrollTop / (editor.scrollHeight - editor.clientHeight);
+            preview.parentElement.scrollTop = scrollPercentage * (preview.parentElement.scrollHeight - preview.parentElement.clientHeight);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                editor.value = e.target.result;
+                updatePreview();
+                showToast("File loaded!");
+            };
+            reader.readAsText(file);
+        });
+
+        // Keyboard Shortcuts
+        window.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                downloadMarkdown();
+            }
+        });
+
+        // Initial Content
+        editor.value = `# Welcome to ProMark 🚀
+
+ProMark is a **professional-grade** Markdown editor built for speed and aesthetics.
+
+## Features
+- [x] Live HTML Preview
+- [x] GitHub-style Styling
+- [x] Syntax Highlighting
+- [x] Dark Mode Support
+- [x] Word Counter
+
+### Code Example
+\`\`\`javascript
+function greet(name) {
+    console.log(\`Hello, \${name}!\`);
+}
+greet('GitHub User');
+\`\`\`
+
+> "Markdown is the language of the web." — Anonymous
+
+Try editing this text on the left!`;
+        updatePreview();
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZenFocus | Minimalist Pomodoro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 1s ease;
+        }
+        .progress-ring__circle {
+            transition: stroke-dashoffset 0.35s;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .timer-text {
+            font-variant-numeric: tabular-nums;
+        }
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+    </style>
+</head>
+<body class="bg-[#0f172a] text-slate-200 min-h-screen flex items-center justify-center p-4 overflow-hidden">
+
+    <!-- Background Ambient Glow -->
+    <div id="ambient-glow" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-[120px] transition-colors duration-1000"></div>
+
+    <main class="relative z-10 w-full max-w-md">
+        <!-- Header -->
+        <div class="text-center mb-12 space-y-2">
+            <h1 id="mode-label" class="text-sm font-medium tracking-[0.3em] uppercase text-slate-400 transition-all duration-500">Focus Session</h1>
+            <div class="h-px w-12 bg-indigo-500/50 mx-auto"></div>
+        </div>
+
+        <!-- Timer Display Area -->
+        <div class="relative flex items-center justify-center mb-12">
+            <!-- Progress Ring SVG -->
+            <svg class="w-72 h-72 md:w-80 md:h-80">
+                <circle class="text-slate-800/50" stroke-width="4" stroke="currentColor" fill="transparent" r="140" cx="50%" cy="50%"/>
+                <circle id="progress-ring" class="progress-ring__circle text-indigo-500" stroke-width="4" stroke-linecap="round" stroke="currentColor" fill="transparent" r="140" cx="50%" cy="50%"/>
+            </svg>
+
+            <!-- Time Text -->
+            <div class="absolute inset-0 flex flex-col items-center justify-center">
+                <span id="timer-display" class="timer-text text-7xl md:text-8xl font-light tracking-tighter">25:00</span>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="flex items-center justify-center gap-8 mb-16">
+            <button id="reset-btn" class="p-3 text-slate-400 hover:text-white transition-colors duration-300" title="Reset">
+                <i data-lucide="rotate-ccw" class="w-6 h-6"></i>
+            </button>
+            
+            <button id="play-pause-btn" class="group relative flex items-center justify-center w-20 h-20 bg-white text-slate-900 rounded-full hover:scale-105 active:scale-95 transition-all duration-300 shadow-[0_0_30px_rgba(255,255,255,0.2)]">
+                <i id="play-icon" data-lucide="play" class="w-8 h-8 fill-current"></i>
+                <i id="pause-icon" data-lucide="pause" class="w-8 h-8 fill-current hidden"></i>
+            </button>
+
+            <button id="skip-btn" class="p-3 text-slate-400 hover:text-white transition-colors duration-300" title="Skip Session">
+                <i data-lucide="skip-forward" class="w-6 h-6"></i>
+            </button>
+        </div>
+
+        <!-- Settings Toggle -->
+        <div class="flex justify-center">
+            <button id="settings-toggle" class="text-xs text-slate-500 hover:text-slate-300 transition-colors flex items-center gap-2 uppercase tracking-widest">
+                <i data-lucide="settings" class="w-4 h-4"></i> Settings
+            </button>
+        </div>
+
+        <!-- Settings Panel (Hidden by default) -->
+        <div id="settings-panel" class="fixed inset-x-0 bottom-[-100%] transition-all duration-500 ease-in-out glass p-8 rounded-t-[2rem] z-20">
+            <div class="max-w-md mx-auto space-y-8">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-lg font-medium">Timer Settings</h2>
+                    <button id="close-settings" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
+                </div>
+
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="space-y-2">
+                        <label class="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">Work</label>
+                        <input type="number" id="work-input" value="25" min="1" class="w-full bg-slate-800/50 border border-slate-700 rounded-lg p-3 text-center focus:outline-none focus:border-indigo-500 transition-colors">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">Short</label>
+                        <input type="number" id="short-input" value="5" min="1" class="w-full bg-slate-800/50 border border-slate-700 rounded-lg p-3 text-center focus:outline-none focus:border-indigo-500 transition-colors">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">Long</label>
+                        <input type="number" id="long-input" value="15" min="1" class="w-full bg-slate-800/50 border border-slate-700 rounded-lg p-3 text-center focus:outline-none focus:border-indigo-500 transition-colors">
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between pt-4">
+                    <span class="text-sm text-slate-400">Sound Notifications</span>
+                    <button id="sound-toggle" class="w-12 h-6 bg-indigo-600 rounded-full relative transition-colors duration-300">
+                        <div id="sound-knob" class="absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform duration-300"></div>
+                    </button>
+                </div>
+
+                <button id="apply-settings" class="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-medium transition-all active:scale-[0.98]">Apply Changes</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Audio Element -->
+    <audio id="notification-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"></audio>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // State Management
+        let timeLeft;
+        let timerId = null;
+        let currentMode = 'work'; // 'work', 'shortBreak', 'longBreak'
+        let isPaused = true;
+        let soundEnabled = true;
+        
+        const settings = {
+            work: 25,
+            shortBreak: 5,
+            longBreak: 15
+        };
+
+        // DOM Elements
+        const timerDisplay = document.getElementById('timer-display');
+        const progressRing = document.getElementById('progress-ring');
+        const modeLabel = document.getElementById('mode-label');
+        const playPauseBtn = document.getElementById('play-pause-btn');
+        const playIcon = document.getElementById('play-icon');
+        const pauseIcon = document.getElementById('pause-icon');
+        const resetBtn = document.getElementById('reset-btn');
+        const skipBtn = document.getElementById('skip-btn');
+        const settingsToggle = document.getElementById('settings-toggle');
+        const closeSettings = document.getElementById('close-settings');
+        const settingsPanel = document.getElementById('settings-panel');
+        const applySettingsBtn = document.getElementById('apply-settings');
+        const ambientGlow = document.getElementById('ambient-glow');
+        const notificationSound = document.getElementById('notification-sound');
+
+        // Progress Ring Setup
+        const radius = progressRing.r.baseVal.value;
+        const circumference = radius * 2 * Math.PI;
+        progressRing.style.strokeDasharray = `${circumference} ${circumference}`;
+        progressRing.style.strokeDashoffset = circumference;
+
+        // Initialization
+        function init() {
+            timeLeft = settings.work * 60;
+            updateDisplay();
+            updateProgress(0);
+        }
+
+        // Timer Logic
+        function updateDisplay() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            const formattedTime = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            timerDisplay.textContent = formattedTime;
+            document.title = `${formattedTime} - ZenFocus`;
+        }
+
+        function updateProgress(percent) {
+            const offset = circumference - (percent / 100 * circumference);
+            progressRing.style.strokeDashoffset = offset;
+        }
+
+        function toggleTimer() {
+            if (isPaused) {
+                startTimer();
+            } else {
+                pauseTimer();
+            }
+        }
+
+        function startTimer() {
+            isPaused = false;
+            playIcon.classList.add('hidden');
+            pauseIcon.classList.remove('hidden');
+            
+            timerId = setInterval(() => {
+                timeLeft--;
+                updateDisplay();
+                
+                const totalTime = settings[currentMode] * 60;
+                const elapsed = totalTime - timeLeft;
+                const percent = (elapsed / totalTime) * 100;
+                updateProgress(percent);
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerId);
+                    handleTimerEnd();
+                }
+            }, 1000);
+        }
+
+        function pauseTimer() {
+            isPaused = true;
+            clearInterval(timerId);
+            playIcon.classList.remove('hidden');
+            pauseIcon.classList.add('hidden');
+        }
+
+        function resetTimer() {
+            pauseTimer();
+            timeLeft = settings[currentMode] * 60;
+            updateDisplay();
+            updateProgress(0);
+        }
+
+        function handleTimerEnd() {
+            if (soundEnabled) notificationSound.play();
+            
+            // Simple cycle: Work -> Short Break -> Work...
+            if (currentMode === 'work') {
+                switchMode('shortBreak');
+            } else {
+                switchMode('work');
+            }
+            startTimer();
+        }
+
+        function switchMode(mode) {
+            currentMode = mode;
+            timeLeft = settings[mode] * 60;
+            
+            // Update UI based on mode
+            if (mode === 'work') {
+                modeLabel.textContent = "Focus Session";
+                modeLabel.classList.replace('text-emerald-400', 'text-slate-400');
+                progressRing.classList.replace('text-emerald-500', 'text-indigo-500');
+                ambientGlow.className = "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-[120px] transition-colors duration-1000";
+            } else if (mode === 'shortBreak') {
+                modeLabel.textContent = "Short Break";
+                modeLabel.classList.replace('text-slate-400', 'text-emerald-400');
+                progressRing.classList.replace('text-indigo-500', 'text-emerald-500');
+                ambientGlow.className = "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[120px] transition-colors duration-1000";
+            } else {
+                modeLabel.textContent = "Long Break";
+                modeLabel.classList.replace('text-slate-400', 'text-sky-400');
+                progressRing.classList.replace('text-indigo-500', 'text-sky-500');
+                ambientGlow.className = "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-sky-500/10 rounded-full blur-[120px] transition-colors duration-1000";
+            }
+
+            updateDisplay();
+            updateProgress(0);
+        }
+
+        // Event Listeners
+        playPauseBtn.addEventListener('click', toggleTimer);
+        resetBtn.addEventListener('click', resetTimer);
+        skipBtn.addEventListener('click', () => {
+            if (currentMode === 'work') switchMode('shortBreak');
+            else switchMode('work');
+            resetTimer();
+        });
+
+        // Settings Panel Logic
+        settingsToggle.addEventListener('click', () => settingsPanel.classList.remove('bottom-[-100%]'));
+        closeSettings.addEventListener('click', () => settingsPanel.classList.add('bottom-[-100%]'));
+        
+        applySettingsBtn.addEventListener('click', () => {
+            settings.work = parseInt(document.getElementById('work-input').value);
+            settings.shortBreak = parseInt(document.getElementById('short-input').value);
+            settings.longBreak = parseInt(document.getElementById('long-input').value);
+            
+            resetTimer();
+            settingsPanel.classList.add('bottom-[-100%]');
+        });
+
+        // Sound Toggle Logic
+        const soundToggleBtn = document.getElementById('sound-toggle');
+        const soundKnob = document.getElementById('sound-knob');
+        soundToggleBtn.addEventListener('click', () => {
+            soundEnabled = !soundEnabled;
+            if (soundEnabled) {
+                soundToggleBtn.classList.replace('bg-slate-700', 'bg-indigo-600');
+                soundKnob.classList.replace('translate-x-6', 'translate-x-0');
+            } else {
+                soundToggleBtn.classList.replace('bg-indigo-600', 'bg-slate-700');
+                soundKnob.classList.replace('translate-x-0', 'translate-x-6');
+            }
+        });
+
+        // Start App
+        init();
+    </script>
+</body>
+</html>

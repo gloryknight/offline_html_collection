@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HabitFlow // Professional Habit Heatmap</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #0d1117; color: #c9d1d9; }
+        .heatmap-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(12px, 1fr));
+            grid-template-rows: repeat(7, 12px);
+            gap: 3px;
+        }
+        .cell {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .cell:hover {
+            transform: scale(1.3);
+            outline: 1px solid #ffffff55;
+            z-index: 10;
+        }
+        /* GitHub Heatmap Colors */
+        .level-0 { background-color: #161b22; }
+        .level-1 { background-color: #0e4429; }
+        .level-2 { background-color: #006d32; }
+        .level-3 { background-color: #26a641; }
+        .level-4 { background-color: #39d353; }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0d1117; }
+        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #8b949e; }
+
+        .glass {
+            background: rgba(22, 27, 34, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid #30363d;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8">
+
+    <div class="max-w-6xl mx-auto">
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-white tracking-tight flex items-center gap-2">
+                    <i data-lucide="activity" class="text-green-500"></i> HabitFlow
+                </h1>
+                <p class="text-gray-400 mt-1">Visualize your consistency, master your life.</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <button onclick="openModal()" class="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 shadow-lg shadow-green-900/20">
+                    <i data-lucide="plus" class="w-4 h-4"></i> New Habit
+                </button>
+            </div>
+        </header>
+
+        <!-- Stats Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="glass p-6 rounded-2xl">
+                <p class="text-sm text-gray-400 font-medium uppercase tracking-wider">Current Streak</p>
+                <h3 id="stat-streak" class="text-4xl font-bold text-white mt-2">0 <span class="text-lg text-gray-500 font-normal">days</span></h3>
+            </div>
+            <div class="glass p-6 rounded-2xl">
+                <p class="text-sm text-gray-400 font-medium uppercase tracking-wider">Completion Rate</p>
+                <h3 id="stat-rate" class="text-4xl font-bold text-white mt-2">0%</h3>
+            </div>
+            <div class="glass p-6 rounded-2xl">
+                <p class="text-sm text-gray-400 font-medium uppercase tracking-wider">Total Completions</p>
+                <h3 id="stat-total" class="text-4xl font-bold text-white mt-2">0</h3>
+            </div>
+        </div>
+
+        <!-- Main Content: Heatmap & Habits -->
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            
+            <!-- Sidebar: Habit List -->
+            <div class="lg:col-span-1 space-y-6">
+                <section>
+                    <h2 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                        <i data-lucide="list" class="w-5 h-5"></i> Your Habits
+                    </h2>
+                    <div id="habit-list" class="space-y-3">
+                        <!-- Habit Items injected here -->
+                    </div>
+                </section>
+            </div>
+
+            <!-- Main: Heatmap Section -->
+            <div class="lg:col-span-3 space-y-6">
+                <div class="glass p-6 rounded-2xl overflow-hidden">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-lg font-semibold text-white">Activity Overview</h2>
+                        <div class="flex items-center gap-2 text-xs text-gray-400">
+                            <span>Less</span>
+                            <div class="w-3 h-3 level-0 rounded-[2px]"></div>
+                            <div class="w-3 h-3 level-1 rounded-[2px]"></div>
+                            <div class="w-3 h-3 level-2 rounded-[2px]"></div>
+                            <div class="w-3 h-3 level-3 rounded-[2px]"></div>
+                            <div class="w-3 h-3 level-4 rounded-[2px]"></div>
+                            <span>More</span>
+                        </div>
+                    </div>
+
+                    <!-- Heatmap Container -->
+                    <div class="overflow-x-auto pb-4">
+                        <div id="heatmap-container" class="inline-grid grid-cols-[repeat(53,14px)] grid-rows-[repeat(7,14px)] gap-1 min-w-full">
+                            <!-- Heatmap cells injected here -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass p-6 rounded-2xl">
+                    <h2 class="text-lg font-semibold text-white mb-4">Recent Log</h2>
+                    <div id="log-container" class="space-y-2 max-h-48 overflow-y-auto pr-2 text-sm">
+                        <!-- Logs injected here -->
+                        <p class="text-gray-500 italic">No activity logged yet.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Adding Habit -->
+    <div id="modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
+        <div class="glass w-full max-w-md rounded-2xl p-8 shadow-2xl animate-in fade-in zoom-in duration-200">
+            <h3 class="text-xl font-bold text-white mb-6">Create New Habit</h3>
+            <input type="text" id="habit-input" placeholder="e.g., Morning Meditation" 
+                class="w-full bg-[#0d1117] border border-[#30363d] rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-green-500 mb-6">
+            <div class="flex gap-3 justify-end">
+                <button onclick="closeModal()" class="px-4 py-2 text-gray-400 hover:text-white transition">Cancel</button>
+                <button onclick="addHabit()" class="bg-green-600 hover:bg-green-500 text-white px-6 py-2 rounded-lg font-medium transition">Create Habit</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tooltip/Day Selector Modal -->
+    <div id="day-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
+        <div class="glass w-full max-w-sm rounded-2xl p-6 shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="selected-date-label" class="text-lg font-bold text-white">Date</h3>
+                <button onclick="closeDayModal()" class="text-gray-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div id="day-habit-list" class="space-y-3 mb-6">
+                <!-- Checkboxes for habits on this day -->
+            </div>
+            <button onclick="closeDayModal()" class="w-full bg-[#30363d] hover:bg-[#3c444d] text-white py-2 rounded-lg transition font-medium">Done</button>
+        </div>
+    </div>
+
+    <script>
+        // --- State Management ---
+        let habits = JSON.parse(localStorage.getItem('habits')) || [];
+        let completions = JSON.parse(localStorage.getItem('completions')) || {}; // { '2023-10-27': ['habitId1', 'habitId2'] }
+        let selectedDate = null;
+
+        // --- Initialization ---
+        function init() {
+            renderHabits();
+            renderHeatmap();
+            updateStats();
+            renderLogs();
+            lucide.createIcons();
+        }
+
+        // --- Core Logic ---
+
+        function save() {
+            localStorage.setItem('habits', JSON.stringify(habits));
+            localStorage.setItem('completions', JSON.stringify(completions));
+            updateStats();
+            renderHeatmap();
+            renderHabits();
+            renderLogs();
+        }
+
+        function addHabit() {
+            const input = document.getElementById('habit-input');
+            const name = input.value.trim();
+            if (name) {
+                habits.push({ id: Date.now().toString(), name });
+                input.value = '';
+                closeModal();
+                save();
+            }
+        }
+
+        function deleteHabit(id) {
+            if(confirm('Delete this habit and all its history?')) {
+                habits = habits.filter(h => h.id !== id);
+                // Clean up completions
+                Object.keys(completions).forEach(date => {
+                    completions[date] = completions[date].filter(hid => hid !== id);
+                });
+                save();
+            }
+        }
+
+        function toggleHabitForDay(habitId, date) {
+            if (!completions[date]) completions[date] = [];
+            const index = completions[date].indexOf(habitId);
+            if (index > -1) {
+                completions[date].splice(index, 1);
+            } else {
+                completions[date].push(habitId);
+            }
+            save();
+        }
+
+        // --- UI Rendering ---
+
+        function renderHabits() {
+            const container = document.getElementById('habit-list');
+            container.innerHTML = habits.map(habit => `
+                <div class="flex items-center justify-between group bg-[#161b22] p-3 rounded-xl border border-[#30363d] hover:border-gray-500 transition">
+                    <span class="text-sm font-medium text-gray-200">${habit.name}</span>
+                    <button onclick="deleteHabit('${habit.id}')" class="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 transition">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function renderHeatmap() {
+            const container = document.getElementById('heatmap-container');
+            container.innerHTML = '';
+            
+            // Generate last 371 days (53 weeks)
+            const today = new Date();
+            const startDate = new Date();
+            startDate.setDate(today.getDate() - 370);
+
+            for (let i = 0; i <= 370; i++) {
+                const currentDate = new Date(startDate);
+                currentDate.setDate(startDate.getDate() + i);
+                const dateStr = currentDate.toISOString().split('T')[0];
+                
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                
+                // Calculate intensity
+                const dailyCount = completions[dateStr] ? completions[dateStr].length : 0;
+                const level = Math.min(dailyCount, 4);
+                if (level > 0) cell.classList.add(`level-${level}`);
+                else cell.classList.add('level-0');
+
+                cell.onclick = () => openDayModal(dateStr);
+                cell.title = `${dateStr}: ${dailyCount} habits`;
+                
+                container.appendChild(cell);
+            }
+        }
+
+        function renderLogs() {
+            const container = document.getElementById('log-container');
+            const sortedDates = Object.keys(completions).sort().reverse();
+            
+            if (sortedDates.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 italic">No activity logged yet.</p>';
+                return;
+            }
+
+            container.innerHTML = sortedDates.slice(0, 10).map(date => {
+                const count = completions[date].length;
+                if (count === 0) return '';
+                return `
+                    <div class="flex justify-between items-center text-gray-400 border-b border-[#30363d] pb-2">
+                        <span>${new Date(date).toLocaleDateString()}</span>
+                        <span class="text-green-500 font-medium">${count} habits completed</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateStats() {
+            // Total Completions
+            let total = 0;
+            Object.values(completions).forEach(arr => total += arr.length);
+            document.getElementById('stat-total').innerText = total;
+
+            // Completion Rate (simplified: completion per day in last 30 days)
+            const today = new Date();
+            let recentCompletions = 0;
+            for(let i=0; i<30; i++) {
+                const d = new Date();
+                d.setDate(today.getDate() - i);
+                const ds = d.toISOString().split('T')[0];
+                if (completions[ds]) recentCompletions += completions[ds].length;
+            }
+            const rate = habits.length > 0 ? Math.min(Math.round((recentCompletions / (30 * habits.length)) * 100), 100) : 0;
+            document.getElementById('stat-rate').innerText = `${rate}%`;
+
+            // Streak calculation
+            let streak = 0;
+            let checkDate = new Date();
+            while(true) {
+                const ds = checkDate.toISOString().split('T')[0];
+                if (completions[ds] && completions[ds].length > 0) {
+                    streak++;
+                    checkDate.setDate(checkDate.getDate() - 1);
+                } else {
+                    break;
+                }
+            }
+            document.getElementById('stat-streak').innerHTML = `${streak} <span class="text-lg text-gray-500 font-normal">days</span>`;
+        }
+
+        // --- Modal Handlers ---
+
+        function openModal() { document.getElementById('modal').classList.remove('hidden'); }
+        function closeModal() { document.getElementById('modal').classList.add('hidden'); }
+
+        function openDayModal(date) {
+            selectedDate = date;
+            document.getElementById('selected-date-label').innerText = new Date(date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            const list = document.getElementById('day-habit-list');
+            
+            if (habits.length === 0) {
+                list.innerHTML = '<p class="text-gray-500 text-center py-4">Create a habit first!</p>';
+            } else {
+                list.innerHTML = habits.map(h => `
+                    <label class="flex items-center justify-between p-3 bg-[#0d1117] rounded-xl cursor-pointer hover:bg-[#161b22] transition">
+                        <span class="text-white">${h.name}</span>
+                        <input type="checkbox" class="w-5 h-5 accent-green-500" 
+                            ${(completions[date] || []).includes(h.id) ? 'checked' : ''} 
+                            onchange="toggleHabitForDay('${h.id}', '${date}')">
+                    </label>
+                `).join('');
+            }
+            document.getElementById('day-modal').classList.remove('hidden');
+        }
+
+        function closeDayModal() {
+            document.getElementById('day-modal').classList.add('hidden');
+        }
+
+        // Start app
+        init();
+    </script>
+</body>
+</html>

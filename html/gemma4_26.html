@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Password Architect | Professional Security Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #6366f1;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+        }
+        .strength-bar { transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.5s ease; }
+    </style>
+</head>
+<body class="bg-[#0f172a] text-slate-200 min-h-screen flex items-center justify-center p-4">
+
+    <div class="w-full max-w-lg space-y-6">
+        <!-- Header -->
+        <header class="text-center space-y-2">
+            <div class="inline-flex items-center justify-center p-3 bg-indigo-500/10 rounded-2xl mb-2">
+                <i data-lucide="shield-check" class="w-8 h-8 text-indigo-400"></i>
+            </div>
+            <h1 class="text-4xl font-bold tracking-tight text-white">Password <span class="text-indigo-500">Architect</span></h1>
+            <p class="text-slate-400 text-sm">Cryptographically secure password generation</p>
+        </header>
+
+        <!-- Main Card -->
+        <main class="glass rounded-3xl p-6 shadow-2xl space-y-8">
+            
+            <!-- Display Area -->
+            <div class="relative group">
+                <div id="password-display" class="mono w-full bg-slate-950/50 border border-slate-700 rounded-2xl py-5 px-6 text-2xl text-indigo-300 break-all min-h-[80px] flex items-center justify-between transition-all group-hover:border-indigo-500/50">
+                    <span id="password-text">••••••••</span>
+                    <button onclick="copyToClipboard()" class="p-2 hover:bg-slate-800 rounded-lg transition-colors text-slate-400 hover:text-white" title="Copy to clipboard">
+                        <i data-lucide="copy" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                <!-- Copy Feedback -->
+                <div id="copy-toast" class="absolute -top-10 left-1/2 -translate-x-1/2 bg-emerald-500 text-white px-4 py-1 rounded-full text-xs font-medium opacity-0 transition-opacity pointer-events-none">
+                    Copied!
+                </div>
+            </div>
+
+            <!-- Strength & Entropy Section -->
+            <div class="space-y-3">
+                <div class="flex justify-between items-end">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Security Strength</span>
+                    <span id="strength-label" class="text-xs font-bold text-slate-400 italic">Weak</span>
+                </div>
+                <div class="h-2 w-full bg-slate-800 rounded-full overflow-hidden">
+                    <div id="strength-bar" class="strength-bar h-full w-0 bg-red-500"></div>
+                </div>
+                <div class="flex justify-between text-[10px] text-slate-500 font-medium uppercase tracking-widest">
+                    <span>Entropy: <span id="entropy-val" class="text-slate-300">0</span> bits</span>
+                    <span>Complexity: <span id="complexity-val" class="text-slate-300">Low</span></span>
+                </div>
+            </div>
+
+            <!-- Configuration -->
+            <div class="space-y-6">
+                <!-- Length Slider -->
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <label class="text-sm font-medium text-slate-300">Password Length</label>
+                        <span id="length-display" class="mono text-indigo-400 font-bold text-lg">16</span>
+                    </div>
+                    <input type="range" id="length-slider" min="8" max="50" value="16" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                </div>
+
+                <!-- Options Grid -->
+                <div class="grid grid-cols-2 gap-4">
+                    <label class="flex items-center space-x-3 p-3 rounded-xl bg-slate-800/40 border border-transparent hover:border-slate-700 cursor-pointer transition-all group">
+                        <input type="checkbox" id="upper" checked class="w-4 h-4 rounded border-slate-700 text-indigo-600 focus:ring-indigo-500 bg-slate-900">
+                        <span class="text-sm text-slate-300 group-hover:text-white">Uppercase</span>
+                    </label>
+                    <label class="flex items-center space-x-3 p-3 rounded-xl bg-slate-800/40 border border-transparent hover:border-slate-700 cursor-pointer transition-all group">
+                        <input type="checkbox" id="lower" checked class="w-4 h-4 rounded border-slate-700 text-indigo-600 focus:ring-indigo-500 bg-slate-900">
+                        <span class="text-sm text-slate-300 group-hover:text-white">Lowercase</span>
+                    </label>
+                    <label class="flex items-center space-x-3 p-3 rounded-xl bg-slate-800/40 border border-transparent hover:border-slate-700 cursor-pointer transition-all group">
+                        <input type="checkbox" id="numbers" checked class="w-4 h-4 rounded border-slate-700 text-indigo-600 focus:ring-indigo-500 bg-slate-900">
+                        <span class="text-sm text-slate-300 group-hover:text-white">Numbers</span>
+                    </label>
+                    <label class="flex items-center space-x-3 p-3 rounded-xl bg-slate-800/40 border border-transparent hover:border-slate-700 cursor-pointer transition-all group">
+                        <input type="checkbox" id="symbols" checked class="w-4 h-4 rounded border-slate-700 text-indigo-600 focus:ring-indigo-500 bg-slate-900">
+                        <span class="text-sm text-slate-300 group-hover:text-white">Symbols</span>
+                    </label>
+                </div>
+
+                <!-- Advanced Toggle -->
+                <label class="flex items-center justify-between p-3 rounded-xl bg-indigo-500/5 border border-indigo-500/20 cursor-pointer transition-all hover:bg-indigo-500/10">
+                    <span class="text-sm text-slate-300 italic">Exclude ambiguous characters (i, l, 1, L, o, 0)</span>
+                    <input type="checkbox" id="exclude-ambiguous" class="w-4 h-4 rounded border-slate-700 text-indigo-600 focus:ring-indigo-500 bg-slate-900">
+                </label>
+            </div>
+
+            <!-- Generate Button -->
+            <button onclick="generatePassword()" class="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-bold text-lg shadow-lg shadow-indigo-500/25 transition-all active:scale-[0.98] flex items-center justify-center space-x-2">
+                <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                <span>Architect Password</span>
+            </button>
+        </main>
+
+        <!-- Footer -->
+        <footer class="text-center text-slate-500 text-[10px] uppercase tracking-[0.2em]">
+            Secure Client-Side Generation &bull; No Data Leaves Your Browser
+        </footer>
+    </div>
+
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        const charSets = {
+            upper: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+            lower: 'abcdefghijklmnopqrstuvwxyz',
+            numbers: '0123456789',
+            symbols: '!@#$%^&*()_+-=[]{}|;:,.<>?'
+        };
+
+        const ambiguousChars = ['i', 'l', 'L', '1', 'o', 'O', '0'];
+
+        // DOM Elements
+        const lengthSlider = document.getElementById('length-slider');
+        const lengthDisplay = document.getElementById('length-display');
+        const passwordText = document.getElementById('password-text');
+        const strengthBar = document.getElementById('strength-bar');
+        const strengthLabel = document.getElementById('strength-label');
+        const entropyVal = document.getElementById('entropy-val');
+        const complexityVal = document.getElementById('complexity-val');
+        const copyToast = document.getElementById('copy-toast');
+
+        // Event Listeners
+        lengthSlider.addEventListener('input', (e) => {
+            lengthDisplay.textContent = e.target.value;
+            generatePassword();
+        });
+
+        ['upper', 'lower', 'numbers', 'symbols', 'exclude-ambiguous'].forEach(id => {
+            document.getElementById(id).addEventListener('change', generatePassword);
+        });
+
+        function generatePassword() {
+            const length = parseInt(lengthSlider.value);
+            const useUpper = document.getElementById('upper').checked;
+            const useLower = document.getElementById('lower').checked;
+            const useNumbers = document.getElementById('numbers').checked;
+            const useSymbols = document.getElementById('symbols').checked;
+            const excludeAmbiguous = document.getElementById('exclude-ambiguous').checked;
+
+            let pool = '';
+            if (useUpper) pool += charSets.upper;
+            if (useLower) pool += charSets.lower;
+            if (useNumbers) pool += charSets.numbers;
+            if (useSymbols) pool += charSets.symbols;
+
+            if (excludeAmbiguous) {
+                ambiguousChars.forEach(char => {
+                    pool = pool.split(char).join('');
+                });
+            }
+
+            if (pool === '') {
+                passwordText.textContent = 'Select an option';
+                updateStrength(0, 0);
+                return;
+            }
+
+            let password = '';
+            const array = new Uint32Array(length);
+            window.crypto.getRandomValues(array);
+
+            for (let i = 0; i < length; i++) {
+                password += pool[array[i] % pool.length];
+            }
+
+            passwordText.textContent = password;
+            calculateMetrics(password, pool.length);
+        }
+
+        function calculateMetrics(password, poolSize) {
+            const entropy = Math.log2(Math.pow(poolSize, password.length));
+            updateStrength(entropy, password.length);
+        }
+
+        function updateStrength(entropy, length) {
+            entropyVal.textContent = Math.floor(entropy);
+            
+            let color = '';
+            let width = '0%';
+            let label = 'Weak';
+            let complexity = 'Low';
+
+            if (entropy < 40) {
+                color = '#ef4444'; // red-500
+                width = '25%';
+                label = 'Very Weak';
+                complexity = 'Minimal';
+            } else if (entropy < 60) {
+                color = '#f97316'; // orange-500
+                width = '50%';
+                label = 'Weak';
+                complexity = 'Low';
+            } else if (entropy < 80) {
+                color = '#eab308'; // yellow-500
+                width = '75%';
+                label = 'Good';
+                complexity = 'Moderate';
+            } else {
+                color = '#10b981'; // emerald-500
+                width = '100%';
+                label = 'Strong';
+                complexity = 'High';
+            }
+
+            if (entropy >= 120) {
+                color = '#6366f1'; // indigo-500
+                label = 'Architect Level';
+                complexity = 'Extreme';
+            }
+
+            strengthBar.style.width = width;
+            strengthBar.style.backgroundColor = color;
+            strengthLabel.textContent = label;
+            strengthLabel.style.color = color;
+            complexityVal.textContent = complexity;
+        }
+
+        async function copyToClipboard() {
+            const text = passwordText.textContent;
+            if (text === 'Select an option' || text.includes('•')) return;
+
+            try {
+                await navigator.clipboard.writeText(text);
+                copyToast.style.opacity = '1';
+                setTimeout(() => {
+                    copyToast.style.opacity = '0';
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy: ', err);
+            }
+        }
+
+        // Initial Generation
+        generatePassword();
+    </script>
+</body>
+</html>
