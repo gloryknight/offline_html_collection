@@ -1,603 +1,343 @@
-```html
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fourier Visualizer | Mathematical Epicycles</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <title>Fourier Series Visualizer</title>
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #0f172a;
-            color: #f8fafc;
-            overflow: hidden;
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --accent-color: #38bdf8;
+            --text-color: #f1f5f9;
+            --secondary-text: #94a3b8;
         }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            overflow: hidden;
+            /* Prevent scrollbars during animation */
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* Header Styling */
+        header {
+            padding: 1.5rem 2rem;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+            background: linear-gradient(to right, #38bdf8, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p.subtitle {
+            color: var(--secondary-text);
+            font-size: 0.875rem;
+        }
+
+        /* Main Layout */
+        main {
+            flex: 1;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
         canvas {
+            width: 100%;
+            height: 100%;
             cursor: crosshair;
         }
-        .glass {
-            background: rgba(30, 41, 59, 0.7);
+
+        /* Controls Panel */
+        .controls {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--card-bg);
             backdrop-filter: blur(12px);
+            padding: 1.25rem 2rem;
+            border-radius: 1rem;
             border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            z-index: 10;
         }
-        .slider {
-            -webkit-appearance: none;
-            width: 100%;
-            height: 4px;
-            background: #334155;
-            border-radius: 5px;
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--secondary-text);
+        }
+
+        select,
+        input[type="range"] {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 0.4rem 0.8rem;
+            border-radius: 0.4rem;
             outline: none;
-        }
-        .slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 18px;
-            height: 18px;
-            background: #6366f1;
-            border-radius: 50%;
             cursor: pointer;
-            transition: all 0.2s ease;
         }
-        .slider::-webkit-slider-thumb:hover {
-            transform: scale(1.2);
-            box-shadow: 0 0 10px rgba(99, 102, 241, 0.8);
+
+        select:hover {
+            border-color: var(--accent-color);
         }
-        @keyframes pulse-slow {
-            0%, 100% { opacity: 0.5; }
-            50% { opacity: 0.8; }
+
+        /* Tooltip/Info */
+        .info-box {
+            position: absolute;
+            top: 2rem;
+            right: 2rem;
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            padding: 1rem;
+            border-radius: 0.75rem;
+            font-size: 0.8rem;
+            max-width: 250px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            pointer-events: none;
         }
-        .animate-pulse-slow {
-            animation: pulse-slow 3s infinite;
+
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+                bottom: 1rem;
+                width: 90%;
+                gap: 1rem;
+            }
+
+            .info-box {
+                display: none;
+            }
         }
     </style>
 </head>
-<body class="h-screen w-full flex flex-col">
 
-    <!-- Header -->
-    <header class="p-6 flex justify-between items-center z-10">
+<body>
+
+    <header>
         <div>
-            <h1 class="text-2xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400">
-                Fourier Series Visualizer
-            </h1>
-            <p class="text-slate-400 text-sm">Decomposing complex paths into rotating circles</p>
-        </div>
-        <div class="flex gap-3">
-            <button id="btn-draw" class="glass px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-600/20 transition-all flex items-center gap-2">
-                <i data-lucide="pen-tool" class="w-4 h-4"></i> Draw Mode
-            </button>
-            <button id="btn-reset" class="glass px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-600/20 transition-all flex items-center gap-2">
-                <i data-lucide="refresh-cw" class="w-4 h-4"></i> Reset
-            </button>
+            <h1>Fourier Series Visualizer</h1>
+            <p class="subtitle">Decomposing complex waves into rotating circles (Epicycles)</p>
         </div>
     </header>
 
-    <!-- Main Visualizer Area -->
-    <main class="flex-grow relative overflow-hidden flex items-center justify-center">
-        <canvas id="mainCanvas" class="absolute inset-0 w-full h-full"></canvas>
-        
-        <!-- Drawing Overlay (Hidden until Draw Mode) -->
-        <canvas id="drawCanvas" class="absolute inset-0 w-full h-full opacity-40 pointer-events-none"></canvas>
+    <main id="canvas-container">
+        <canvas id="fourierCanvas"></canvas>
 
-        <!-- Floating Stats/Info -->
-        <div class="absolute top-6 left-6 glass p-4 rounded-xl text-xs space-y-2 pointer-events-none">
-            <div class="flex justify-between gap-8">
-                <span class="text-slate-400 uppercase tracking-widest">Harmonics</span>
-                <span id="stat-harmonics" class="font-mono text-indigo-400">0</span>
-            </div>
-            <div class="flex justify-between gap-8">
-                <span class="text-slate-400 uppercase tracking-widest">Complexity</span>
-                <span id="stat-complexity" class="font-mono text-cyan-400">Low</span>
-            </div>
+        <div class="info-box">
+            <strong>How it works:</strong><br>
+            Each circle represents a sine wave component. Summing their vectors creates the complex path shown in blue.
         </div>
 
-        <!-- UI Controls Panel -->
-        <div class="absolute bottom-8 left-1/2 -translate-x-1/2 glass p-6 rounded-2xl w-[90%] max-w-3xl flex flex-col gap-6 shadow-2xl">
-            
-            <!-- Top Row: Presets & Speed -->
-            <div class="flex flex-wrap items-center justify-between gap-4">
-                <div class="flex gap-2">
-                    <button onclick="setPreset('circle')" class="text-[10px] uppercase tracking-wider font-bold px-3 py-1 rounded border border-slate-600 hover:bg-slate-700 transition">Circle</button>
-                    <button onclick="setPreset('square')" class="text-[10px] uppercase tracking-wider font-bold px-3 py-1 rounded border border-slate-600 hover:bg-slate-700 transition">Square</button>
-                    <button onclick="setPreset('triangle')" class="text-[10px] uppercase tracking-wider font-bold px-3 py-1 rounded border border-slate-600 hover:bg-slate-700 transition">Triangle</button>
-                </div>
-
-                <div class="flex items-center gap-4">
-                    <label class="text-[10px] uppercase tracking-wider font-bold text-slate-400">Speed</label>
-                    <input type="range" id="speedSlider" min="0.1" max="3" step="0.1" value="1" class="slider w-32">
-                </div>
-
-                <div class="flex items-center gap-4">
-                    <button id="btn-play" class="w-10 h-10 flex items-center justify-center rounded-full bg-indigo-600 hover:bg-indigo-500 transition shadow-lg shadow-indigo-500/20">
-                        <i data-lucide="pause" id="playIcon" class="w-5 h-5"></i>
-                    </button>
-                </div>
+        <div class="controls">
+            <div class="control-group">
+                <label for="shapeSelect">Waveform</label>
+                <select id="shapeSelect">
+                    <option value="square">Square Wave</option>
+                    <option value="sawtooth">Sawtooth Wave</option>
+                    <option value="triangle">Triangle Wave</option>
+                    <option value="custom">Custom (Sine)</option>
+                </select>
             </div>
 
-            <!-- Bottom Row: Harmonics Slider -->
-            <div class="flex flex-col gap-2">
-                <div class="flex justify-between items-center text-[10px] uppercase tracking-wider font-bold text-slate-400">
-                    <span>Harmonic Iterations</span>
-                    <span id="harmonicsVal" class="text-indigo-400">50</span>
-                </div>
-                <input type="range" id="harmonicsSlider" min="1" max="200" step="1" value="50" class="slider">
+            <div class="control-group">
+                <label for="complexityRange">Complexity (Harmonics)</label>
+                <input type="range" id="complexityRange" min="1" max="50" value="20">
+            </div>
+
+            <div class="control-group">
+                <label for="speedRange">Animation Speed</label>
+                <input type="range" id="speedRange" min="1" max="10" value="3">
             </div>
         </div>
     </main>
 
     <script>
-        // Initialize Lucide Icons
-        lucide.createIcons();
-
-        const canvas = document.getElementById('mainCanvas');
+        /** @type {HTMLCanvasElement} */
+        const canvas = document.getElementById('fourierCanvas');
         const ctx = canvas.getContext('2d');
-        const drawCanvas = document.getElementById('drawCanvas');
-        const dctx = drawCanvas.getContext('2d');
-        
-        // UI Elements
-        const harmonicsSlider = document.getElementById('harmonicsSlider');
-        const harmonicsValDisplay = document.getElementById('harmonicsVal');
-        const speedSlider = document.getElementById('speedSlider');
-        const playBtn = document.getElementById('btn-play');
-        const playIcon = document.getElementById('playIcon');
-        const statHarmonics = document.getElementById('stat-harmonics');
-        const statComplexity = document.getElementById('stat-complexity');
-        const btnDraw = document.getElementById('btn-draw');
-        const btnReset = document.getElementById('btn-reset');
+        const shapeSelect = document.getElementById('shapeSelect');
+        const complexityRange = document.getElementById('complexityRange');
+        const speedRange = document.getElementById('speedRange');
 
-        let width, height;
         let time = 0;
-        let isPlaying = true;
-        let isDrawingMode = false;
-        let drawing = false;
-        let points = []; // User drawn path {x, y}
-        let coefficients = []; // Fourier coefficients {radius, phase, frequency}
-        
-        // Configuration
-        const config = {
-            harmonics: 50,
-            speed: 1,
-            colors: ['#6366f1', '#22d3ee', '#818cf8', '#2dd4bf']
-        };
+        let path = []; // Stores the points of the drawn wave
+
+        class Epicycle {
+            constructor(radius, time) {
+                this.radius = radius;
+                this.time = time;
+                this.angle = 0;
+            }
+
+            draw(x, y) {
+                this.angle += 0.01 * (speedRange.value / 3); // Speed controlled by slider
+
+                // Calculate new position based on rotation
+                const nextX = x + Math.cos(this.angle) * this.radius;
+                const nextY = y + Math.sin(this.angle) * this.radius;
+
+                // Draw the circle line (the orbit)
+                ctx.beginPath();
+                ctx.arc(x, y, Math.abs(this.radius), 0, Math.PI * 2);
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+                ctx.stroke();
+
+                // Draw the vector line (the radius)
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(nextX, nextY);
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                return { x: nextX, y: nextY };
+            }
+        }
+
+        let epicycles = [];
+
+        function init() {
+            resize();
+            animate();
+        }
 
         function resize() {
-            width = canvas.width = drawCanvas.width = window.innerWidth;
-            height = canvas.height = drawCanvas.height = window.innerHeight;
-            if (points.length === 0) setPreset('circle');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
         }
 
         window.addEventListener('resize', resize);
-        resize();
 
-        // --- Math Engine ---
+        function getFourierCoefficients(type, n) {
+            // Returns [radius, frequency] for the nth harmonic
+            const harmonics = [];
+            const count = parseInt(n);
 
-        function computeFourier(pathPoints) {
-            coefficients = [];
-            const N = pathPoints.length;
-            if (N < 2) return;
+            for (let i = 1; i <= count; i++) {
+                let radius = 0;
+                let freq = i;
 
-            // Map points to complex numbers and normalize
-            // We treat the input as a signal of (x,y) over time
-            for (let n = 0; n < config.harmonics; n++) {
-                let real = 0;
-                let imag = 0;
-
-                for (let k = 0; k < N; k++) {
-                    const angle = (2 * Math.PI * n * k) / N;
-                    // Discrete Fourier Transform formula
-                    real += pathPoints[k].x * Math.cos(angle);
-                    imag -= pathPoints[k].y * Math.sin(angle);
+                if (type === 'square') {
+                    // Square wave: amplitude is 1/n for odd n, else 0
+                    if (i % 2 !== 0) {
+                        radius = 1 / i;
+                    }
+                } else if (type === 'sawtooth') {
+                    // Sawtooth wave: amplitude is 1/n
+                    radius = 1 / i;
+                } else if (type === 'triangle') {
+                    // Triangle wave: amplitude is 1/n^2 for odd n, else 0
+                    if (i % 2 !== 0) {
+                        radius = 1 / (i * i);
+                    }
+                } else {
+                    // Custom simple sine
+                    radius = 1 / i;
                 }
 
-                // Scale by 2/N (Standard DFT scaling)
-                const radius = (2 / N) * Math.sqrt(real * real + imag * imag);
-                const phase = Math.atan2(imag, real);
-                const freq = n; // Fundamental frequency is 1 unit per cycle
-
-                if (radius > 0.1) {
-                    coefficients.push({ radius, phase, freq });
+                if (radius > 0) {
+                    harmonics.push({ radius: radius * 150, freq: freq }); // Scale for visibility
                 }
             }
+            return harmonics;
         }
 
-        function setPreset(type) {
-            points = [];
-            isDrawingMode = false;
-            btnDraw.classList.remove('bg-indigo-600', 'text-white');
-            btnDraw.classList.add('glass');
-            dctx.clearRect(0, 0, width, height);
+        function animate() {
+            // Clear canvas with a slight trail effect
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            const centerX = width / 2;
-            const centerY = height / 2;
-            const N = 300; // Precision
+            const type = shapeSelect.value;
+            const harmonics = getFourierCoefficients(type, complexityRange.value);
 
-            if (type === 'circle') {
-                for (let i = 0; i < N; i++) {
-                    const theta = (i / N) * Math.PI * 2;
-                    points.push({ x: Math.cos(theta) * 150, y: Math.sin(theta) * 150 });
-                }
-            } else if (type === 'square') {
-                for (let i = 0; i < N; i++) {
-                    const t = (i / N) * Math.PI * 2;
-                    // Square wave approximation logic for path
-                    const x = Math.sign(Math.cos(t)) * 150;
-                    const y = Math.sign(Math.sin(t)) * 150;
-                    // This is a simplification, actually we need the points to follow the boundary
-                    // For better visuals in this demo, let's use a parametric square:
-                }
-                // Better Square path approach:
-                for (let i = 0; i < N; i++) {
-                    const t = (i / N) * Math.PI * 2;
-                    const s = 150;
-                    let x, y;
-                    if (Math.abs(Math.cos(t)) > Math.abs(Math.sin(t))) {
-                        x = Math.sign(Math.cos(t)) * s;
-                        y = Math.tan(t) * s * (Math.abs(Math.cos(t)) > 0.1 ? 1 : 0); // This is getting messy, let's use a simpler parametric square
-                    }
-                }
-                // Let's just create a clean geometric path for presets:
-                points = [];
-                for(let i=0; i<N; i++) {
-                    const t = (i/N) * Math.PI * 2;
-                    const x = 150 * Math.max(Math.abs(Math.cos(t)), Math.abs(Math.sin(t))) * Math.sign(Math.cos(t)); // wait, that's not right
-                }
-                // Actual parametric square:
-                for (let i = 0; i < N; i++) {
-                    const t = (i / N) * Math.PI * 2;
-                    const x = 150 * (Math.abs(Math.cos(t)) + Math.abs(Math.sin(t)) === 1 ? 1 : 1); // placeholder
-                }
+            // Center of the screen for epicycles
+            let x = canvas.width / 2;
+            let y = canvas.height / 2;
+
+            // Create/Update Epicycles
+            epicycles = [];
+            harmonics.forEach(h => {
+                // We adjust angle based on frequency and time
+                const e = new Epicycle(h.radius, h.freq);
+                // Manual angle manipulation to simulate the summation
+                e.angle = time * h.freq;
+                epicycles.push(e);
+            });
+
+            // Draw all epicycles
+            let currentPos = { x, y };
+            epicycles.forEach(epicycle => {
+                currentPos = epicycle.draw(currentPos.x, currentPos.y);
+            });
+
+            // Store the tip position for the trace
+            path.unshift(currentPos);
+
+            // Draw the resulting wave path
+            ctx.beginPath();
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 3;
+            ctx.lineJoin = 'round';
+
+            for (let i = 0; i < path.length; i++) {
+                // We draw the wave moving from right to left across the screen
+                // To make it look like a standard graph, we offset x
+                const drawX = path[i].x + (path.length - i) * 2;
+                // But actually, let's just draw the trace as it moves:
+                ctx.lineTo(path[i].x, path[i].y);
             }
-            
-            // Simplified approach for high-quality presets
-            if(type === 'square') {
-                points = [];
-                for(let i=0; i<N; i++) {
-                    const t = (i/N) * Math.PI * 2;
-                    const x = 150 * Math.sign(Math.cos(t)); // This is too crude. Let's just use hardcoded paths for stability.
-                }
+            ctx.stroke();
+
+            // Limit path length to prevent memory leak/slowdown
+            if (path.length > 500) {
+                path.pop();
             }
 
-            // Robust preset generation
-            if (type === 'circle') {
-                points = Array.from({length: N}, (_, i) => ({ x: Math.cos((i/N)*Math.PI*2)*150, y: Math.sin((i/N)*Math.PI*2)*150 }));
-            } else if (type === 'square') {
-                points = [];
-                for(let i=0; i<N; i++) {
-                    const t = (i/N) * Math.PI * 2;
-                    const x = 150 * (Math.abs(Math.cos(t)) > Math.abs(Math.sin(t)) ? Math.sign(Math.cos(t)) : Math.tan(t)*something); // No, let's do it manually:
-                }
-                // Real square path points:
-                for (let i = 0; i < N; i++) {
-                    const t = (i / N) * Math.PI * 2;
-                    const val = (t < Math.PI/2 || t > 3*Math.PI/2) ? 1 : 0; // etc... too much code for one line
-                }
-            }
+            // Increment time for rotation
+            time += 0.02 * (speedRange.value / 3);
 
-            // Final fallback: Use hardcoded logic for the three shapes to ensure "impressive" result
-            if (type === 'circle') {
-                points = Array.from({length: N}, (_, i) => ({ x: Math.cos((i/N)*Math.PI*2)*150, y: Math.sin((i/N)*Math.PI*2)*150 }));
-            } else if (type === 'square') {
-                points = [];
-                for(let i=0; i<N; i++) {
-                    const t = (i/N) * Math.PI * 2;
-                    // Parametric square: x = sign(cos) * max(|cos|,|sin|) is wrong, use:
-                    const s = 150;
-                    let px, py;
-                    if (Math.abs(Math.cos(t)) > Math.abs(Math.sin(t))) {
-                        px = Math.sign(Math.cos(t)) * s;
-                        py = Math.tan(t) * s * 0; // Placeholder logic
-                    }
-                }
-                // Let's just use a simplified polygon for the demo to ensure it works perfectly:
-                points = [];
-                for (let i=0; i<N; i++) {
-                   const t = (i/N) * Math.PI * 2;
-                   const x = 150 * Math.sign(Math.cos(t)) * (Math.abs(Math.sin(t)) < 0.1 ? 1 : 1); // Still not great.
-                }
-            }
-
-            // RE-RE-DESIGNED PRESETS for perfection:
-            if (type === 'circle') {
-                points = Array.from({length: N}, (_, i) => ({ x: Math.cos((i/N)*Math.PI*2)*150, y: Math.sin((i/N)*Math.PI*2)*150 }));
-            } else if (type === 'square') {
-                points = [];
-                for(let i=0; i<N; i++) {
-                    const t = (i/N) * Math.PI * 2;
-                    // The trick for a square: max(|cos|, |sin|) normalized
-                    const x = 150 * (Math.abs(Math.cos(t)) > Math.abs(Math.sin(t)) ? Math.sign(Math.cos(t)) : Math.tan(t)*something); // No...
-                }
-            }
-            // Actually, let's just use the most reliable way to generate these shapes:
-            if (type === 'circle') {
-                points = Array.from({length: N}, (_, i) => ({ x: Math.cos((i/N)*Math.PI*2)*150, y: Math.sin((i/N)*Math.PI*2)*150 }));
-            } else if (type === 'square') {
-                points = [];
-                for(let i=0; i<N; i++) {
-                    const t = (i/N) * Math.PI * 2;
-                    const x = 150 * Math.sign(Math.cos(t)) * (Math.abs(Math.sin(t)) < 0.2 ? 1 : 1); // Just a placeholder for the concept
-                }
-            }
-
-            // Let's use high-quality math-based parametric shapes:
-            if (type === 'circle') {
-                points = Array.from({length: N}, (_, i) => ({ x: Math.cos((i/N)*Math.PI*2)*150, y: Math.sin((i/N)*Math.PI*2)*150 }));
-            } else if (type === 'square') {
-                points = [];
-                for(let i=0; i<N; i++) {
-                    const t = (i/N) * Math.PI * 2;
-                    // This is the magic parametric equation for a square
-                    const x = 150 * (Math.cos(t) / (Math.abs(Math.cos(t)) + Math.abs(Math.sin(t)))); // Wait, no.
-                }
-            }
-
-            // OKAY - Final approach: Hardcoded path arrays for stability and "wow" factor
-            if (type === 'circle') {
-               points = Array.from({length: N}, (_, i) => ({ x: Math.cos((i/N)*Math.PI*2)*150, y: Math.sin((i/N)*Math.PI*2)*150 }));
-            } else if (type === 'square') {
-               points = [];
-               for(let i=0; i<N; i++) {
-                   const t = (i/N) * Math.PI * 2;
-                   // Square-ish: use the property that |x|+|y|=constant is a diamond, so we'll do something similar
-                   const x = 150 * (Math.cos(t) / Math.max(Math.abs(Math.cos(t)), Math.abs(Math.sin(t)))); // No.
-               }
-            }
-
-            // FINAL ATTEMPT - PROPER PARAMETRIC SHAPES:
-            if (type === 'circle') {
-                points = Array.from({length: N}, (_, i) => ({ x: Math.cos((i/N)*Math.PI*2)*150, y: Math.sin((i/N)*Math.PI*2)*150 }));
-            } else if (type === 'square') {
-                points = [];
-                for(let i=0; i<N; i++) {
-                    const t = (i/N) * Math.PI * 2;
-                    // Parametric square: x = sign(cos)*150, y = tan*... NO.
-                    // Let's use the property that a square is just a circle with high-frequency harmonics.
-                    // We will generate points along the perimeter of a square manually.
-                }
-                for (let i=0; i<N; i++) {
-                    const t = (i/N) * Math.PI * 2;
-                    // This is actually the correct way to get a square path:
-                    const x_val = Math.sign(Math.cos(t)) * 150;
-                    const y_val = Math.sign(Math.sin(t)) * 150;
-                    // But we need it continuous...
-                }
-                // Let's use a simpler "Star/Square" approach that works:
-                points = [];
-                for (let i=0; i<N; i++) {
-                    const t = (i/N) * Math.PI * 2;
-                    const r = 150 / (Math.abs(Math.cos(t)) + Math.abs(Math.sin(t))); // This is a diamond, but we'll use it.
-                    // Actually let's do:
-                    const x = 150 * (Math.abs(Math.cos(t)) > 0.9 ? Math.sign(Math.cos(t)) : Math.cos(t) / (Math.abs(Math.sin(t))+0.1)); // Still not working well.
-                }
-            }
-
-            // RE-STARTING LOGIC - The goal is a working demo, so let's use standard math functions for the path points:
-            if (type === 'circle') {
-                points = Array.from({length: N}, (_, i) => ({ x: Math.cos((i/N)*Math.PI*2)*150, y: Math.sin((i/N)*Math.PI*2)*150 }));
-            } else if (type === 'square') {
-                points = [];
-                for(let i=0; i<N; i++) {
-                    const t = (i/N) * Math.PI * 2;
-                    // This is a working parametric square:
-                    const x = 150 * (Math.cos(t) / Math.max(Math.abs(Math.cos(t)), Math.abs(Math.sin(t)))); // No, that's not it either.
-                }
-            }
-
-            // FINAL DECISION: Use simple geometric path segments for presets to ensure it works 100%.
-            points = [];
-            const n_pts = 400;
-            if (type === 'circle') {
-                for(let i=0; i<n_pts; i++) {
-                    const a = (i/n_pts)*Math.PI*2;
-                    points.push({x: Math.cos(a)*150, y: Math.sin(a)*150});
-                }
-            } else if (type === 'square') {
-                for(let i=0; i<n_pts; i++) {
-                    const t = (i/n_pts)*Math.PI*2;
-                    // This creates a square:
-                    const x = 150 * Math.sign(Math.cos(t)) * (Math.abs(Math.cos(t)) > 0.9 ? 1 : 1); // Still messy.
-                }
-                // Let's just use the "Lissajous" or simple shapes that are easy to code:
-                points = [];
-                for(let i=0; i<n_pts; i++) {
-                    const t = (i/n_pts)*Math.PI*2;
-                    // Square path via sign function is discontinuous, but we can interpolate it.
-                    // Actually, let's just use a simple diamond for 'square' to ensure code stability.
-                    points.push({ x: 150 * (Math.abs(Math.cos(t)) + Math.abs(Math.sin(t))) * Math.sign(Math.cos(t)), y: ... }); // Too complex.
-                }
-            }
-
-            // I will use the most robust method for presets in a single file environment:
-            if (type === 'circle') {
-                points = Array.from({length: n_pts}, (_, i) => ({ x: Math.cos((i/n_pts)*Math.PI*2)*150, y: Math.sin((i/n_pts)*Math.PI*2)*150 }));
-            } else if (type === 'square') {
-                points = [];
-                for(let i=0; i<n_pts; i++) {
-                    const t = (i/n_pts) * Math.PI * 2;
-                    // A square in polar: r = a / (|cos| + |sin|) is a diamond... 
-                    // Let's just use the "Lissajous" approach for presets to keep it clean and functional.
-                    points.push({ x: 150 * Math.sign(Math.cos(t)) * (Math.abs(Math.cos(t)) > 0.9 ? 1 : 1), y: ... }); // No.
-                }
-            }
-
-            // ACTUAL WORKING PRESETS:
-            if (type === 'circle') {
-                points = Array.from({length: n_pts}, (_, i) => ({ x: Math.cos((i/n_pts)*Math.PI*2)*150, y: Math.sin((i/n_pts)*Math.PI*2)*150 }));
-            } else if (type === 'square') {
-                points = [];
-                for(let i=0; i<n_pts; i++) {
-                    const t = (i/n_pts) * Math.PI * 2;
-                    // Parametric square: x = s * sign(cos), y = s * tan... No.
-                    // Let's use the "max" function logic which is mathematically sound for a square perimeter:
-                    const r = 150 / Math.max(Math.abs(Math.cos(t)), Math.abs(Math.sin(t))); // This is not quite right but looks like a rounded square.
-                    // Let's just do it manually:
-                    let x, y;
-                    const s = 150;
-                    if (t < Math.PI/2) { x = s; y = s * Math.tan(t); } // Still not working for a full loop.
-                }
-            }
-
-            // FINAL ATTEMPT - I will use standard shapes that are easy to define:
-            if (type === 'circle') {
-                points = Array.from({length: n_pts}, (_, i) => ({ x: Math.cos((i/n_pts)*Math.PI*2)*150, y: Math.sin((i/n_pts)*Math.PI*2)*150 }));
-            } else if (type === 'square') {
-                points = [];
-                for(let i=0; i<n_pts; i++) {
-                    const t = (i/n_pts) * Math.PI * 2;
-                    // This is a working parametric square:
-                    const x = 150 * (Math.abs(Math.cos(t)) > Math.abs(Math.sin(t)) ? Math.sign(Math.cos(t)) : Math.tan(t)*something); // Still not it.
-                }
-            }
-
-            // OK, let's stop overthinking the presets and provide a clean implementation:
-            if (type === 'circle') {
-                points = Array.from({length: n_pts}, (_, i) => ({ x: Math.cos((i/n_pts)*Math.PI*2)*150, y: Math.sin((i/n_pts)*Math.PI*2)*150 }));
-            } else if (type === 'square') {
-                points = [];
-                for(let i=0; i<n_pts; i++) {
-                    const t = (i/n_pts) * Math.PI * 2;
-                    // The correct parametric square:
-                    const x = 150 * (Math.cos(t) / Math.max(Math.abs(Math.cos(t)), Math.abs(Math.sin(t)))); // No.
-                }
-            }
-
-            // Let's just use hard-coded paths for the three presets to guarantee it looks "Impressive" as requested:
-            if (type === 'circle') {
-                points = Array.from({length: n_pts}, (_, i) => ({ x: Math.cos((i/n_pts)*Math.PI*2)*150, y: Math.sin((i/n_pts)*Math.PI*2)*150 }));
-            } else if (type === 'square') {
-                points = [];
-                for(let i=0; i<n_pts; i++) {
-                    const t = (i/n_pts) * Math.PI * 2;
-                    // This is the most reliable way to generate a square:
-                    const x = 150 * (Math.abs(Math.cos(t)) > Math.abs(Math.sin(t)) ? Math.sign(Math.cos(t)) : Math.tan(t) * something); // Still not right.
-                }
-            }
-
-            // I'll use a simple "Star" for the third one if square is too hard to parameterize perfectly in 10 lines.
-            if (type === 'circle') {
-                points = Array.from({length: n_pts}, (_, i) => ({ x: Math.cos((i/n_pts)*Math.PI*2)*150, y: Math.sin((i/n_pts)*Math.PI*2)*150 }));
-            } else if (type === 'square') {
-                points = [];
-                for(let i=0; i<n_pts; i++) {
-                    const t = (i/n_pts) * Math.PI * 2;
-                    // This is a mathematically perfect parametric square:
-                    // x(t) = s * sign(cos(t)), but we need to interpolate the sides.
-                    // Actually, let's just use a very high-order circle approximation or simple polygon.
-                }
-            }
-
-            // FINAL - Let's go with these robust versions:
-            if (type === 'circle') {
-                points = Array.from({length: n_pts}, (_, i) => ({ x: Math.cos((i/n_pts)*Math.PI*2)*150, y: Math.sin((i/n_pts)*Math.PI*2)*150 }));
-            } else if (type === 'square') {
-                points = [];
-                for(let i=0; i<n_pts; i++) {
-                    const t = (i/n_pts) * Math.PI * 2;
-                    // This is a working parametric square: r(theta) = s / max(|cos|, |sin|)
-                    const r = 150 / Math.max(Math.abs(Math.cos(t)), Math.abs(Math.sin(t)));
-                    points.push({ x: r * Math.cos(t), y: r * Math.sin(t) });
-                }
-            } else if (type === 'triangle') {
-                points = [];
-                for(let i=0; i<n_pts; i++) {
-                    const t = (i/n_pts) * Math.PI * 2;
-                    // This is a working parametric triangle: r(theta) = s / max(|cos|, |sqrt(3)sin + cos|...)
-                    // Simpler: use the polar equation for a regular n-gon:
-                    const n_sides = 3;
-                    const angle = (Math.PI * 2) / n_sides;
-                    const r = 150 / Math.cos(t % angle - angle/2); // This is close enough for a visualizer
-                    // Let's just do it manually:
-                    let x, y;
-                    if (t < 2*Math.PI/3) { /* segment 1 */ }
-                }
-                // Actually, let's use this: r = s / max(cos(n*theta), ...)
-                for(let i=0; i<n_pts; i++) {
-                    const t = (i/n_pts) * Math.PI * 2;
-                    const r = 150 / (Math.max(Math.abs(Math.cos(t)), Math.abs(Math.cos(t - 2*Math.PI/3)), Math.abs(Math.cos(t - 4*Math.PI/3)))); // No.
-                }
-            }
-
-            // OKAY, I will use a simpler logic for all presets to ensure it's actually "working":
-            if (type === 'circle') {
-                points = Array.from({length: n_pts}, (_, i) => ({ x: Math.cos((i/n_pts)*Math.PI*2)*150, y: Math.sin((i/n_pts)*Math.PI*2)*150 }));
-            } else if (type === 'square') {
-                points = [];
-                for(let i=0; i<n_pts; i++) {
-                    const t = (i/n_pts) * Math.PI * 2;
-                    const r = 150 / Math.max(Math.abs(Math.cos(t)), Math.abs(Math.sin(t)));
-                    points.push({ x: r * Math.cos(t), y: r * Math.sin(t) });
-                }
-            } else if (type === 'triangle') {
-                points = [];
-                for(let i=0; i<n_pts; i++) {
-                    const t = (i/n_pts) * Math.PI * 2;
-                    // A triangle is just a polygon with n=3
-                    const r = 150 / Math.max(Math.abs(Math.cos(t)), Math.abs(Math.cos(t - 2*Math.PI/3)), Math.abs(Math.cos(t - 4*Math.PI/3))); // Not quite, but works for visual
-                    // Corrected Triangle:
-                    const r_tri = 150 / (Math.max(Math.cos(t % (2*Math.PI/3) - Math.PI/3), Math.cos((t-2*Math.PI/3)% (2*Math.PI/3) - Math.PI/3), Math.cos((t-4*Math.PI/3)% (2*Math.PI/3) - Math.PI/3))); // Too much
-                }
-                // Final attempt at triangle:
-                points = [];
-                for(let i=0; i<n_pts; i++) {
-                    const t = (i/n_pts)*Math.PI*2;
-                    // This is a very simple way to draw a triangle path
-                    const r = 150 / Math.max(Math.abs(Math.cos(t)), Math.abs(Math.cos(t - 2*Math.PI/3)), Math.abs(Math.cos(t - 4*Math.PI/3))); // This is a hexagon...
-                }
-                // Let's just use:
-                points = Array.from({length: n_pts}, (_, i) => {
-                    const t = (i/n_pts)*Math.PI*2;
-                    return { x: 150 * Math.sign(Math.cos(t)) * (Math.abs(Math.sin(t)) < 0.1 ? 1 : 1), y: ... }; // No.
-                });
-            }
-
-            // RE-RE-RE-START - Let's use a robust method to generate polygon points for ANY n:
-            function getPolygonPoints(sides, radius) {
-                const pts = [];
-                const n_pts = 400;
-                for (let i = 0; i < n_pts; i++) {
-                    const t = (i / n_pts) * Math.PI * 2;
-                    // The formula for a regular polygon in polar coordinates:
-                    // r(theta) = R * cos(pi/n) / cos( (theta mod 2pi/n) - pi/n )
-                    const anglePerSide = (Math.PI * 2) / sides;
-                    const r = radius * Math.cos(anglePerSide / 2) / Math.cos((t % anglePerSide) - anglePerSide / 2);
-                    pts.push({ x: r * Math.cos(t), y: r * Math.sin(t) });
-                }
-                return pts;
-            }
-
-            if (type === 'circle') points = getPolygonPoints(100, 150); // High-side polygon is circle
-            else if (type === 'square') points = getPolygonPoints(4, 150);
-            else if (type === 'triangle') points = getPolygonPoints(3, 150);
-
-            computeFourier(points);
-            time = 0;
+            requestAnimationFrame(animate);
         }
 
-        // --- Interaction Handlers ---
+        init();
+    </script>
+</body>
 
-        btnDraw.addEventListener('click', () => {
-            isDrawingMode = !isDrawingMode;
-            if (isDrawingMode) {
-                btnDraw.classList.replace('glass', 'bg-indigo-600');
-                btnDraw.classList.add('text-white');
-                dctx.clearRect(0, 0, width, height);
-            } else {
-                btnDraw.classList.replace('bg-indigo-600', 'glass');
-                btnDraw.classList.remove('text-white');
-            }
-        });
-
-        btnReset.addEventListener('click', () => setPreset('circle'));
-
-        harmonicsSlider.addEventListener('input', (e) => {
-            config.harmonics = parseInt(e.target.value);
-            harmonicsValDisplay.innerText = config.harmonics;
-            statHarmonics.innerText = config.harmonics;
-            statComplexity.innerText = config.harmonics > 100 ? 'High' : (config.harmonics > 30 ? 'Medium' : 'Low');
-            computeFourier(points);
-        });
-
-        speedSlider.addEventListener('input', (e) => {
-            config.
+</html>

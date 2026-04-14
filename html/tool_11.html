@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,21 +11,43 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        .bar { transition: height 0.1s ease, background-color 0.1s ease; }
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .bar {
+            transition: height 0.1s ease, background-color 0.1s ease;
+        }
+
         .glass {
             background: rgba(255, 255, 255, 0.03);
             backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
-        input[type=range] { cursor: pointer; }
-        /* Custom scrollbar */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #0f172a; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        input[type=range] {
+            cursor: pointer;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
     </style>
 </head>
+
 <body class="bg-[#0f172a] text-slate-200 min-h-screen flex flex-col">
 
     <!-- Header -->
@@ -34,26 +57,30 @@
                 <div class="bg-indigo-600 p-1.5 rounded-lg">
                     <i data-lucide="layers" class="w-6 h-6 text-white"></i>
                 </div>
-                <h1 class="text-xl font-bold tracking-tight text-white">Sort<span class="text-indigo-500">Vision</span></h1>
+                <h1 class="text-xl font-bold tracking-tight text-white">Sort<span class="text-indigo-500">Vision</span>
+                </h1>
             </div>
             <div class="hidden md:flex items-center gap-4 text-sm text-slate-400">
-                <span class="flex items-center gap-1"><i data-lucide="cpu" class="w-4 h-4"></i> Complexity: <span id="complexity-display" class="text-indigo-400 font-mono">O(n²)</span></span>
+                <span class="flex items-center gap-1"><i data-lucide="cpu" class="w-4 h-4"></i> Complexity: <span
+                        id="complexity-display" class="text-indigo-400 font-mono">O(n²)</span></span>
             </div>
         </div>
     </header>
 
     <main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-8">
-        
+
         <!-- Controls Dashboard -->
         <section class="glass rounded-2xl p-6 shadow-2xl">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                
+
                 <!-- Algorithm Selection -->
                 <div class="space-y-3">
-                    <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+                    <label
+                        class="text-xs font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-2">
                         <i data-lucide="git-branch" class="w-3 h-3"></i> Algorithm
                     </label>
-                    <select id="algo-select" class="w-full bg-slate-800 border border-slate-700 text-white rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+                    <select id="algo-select"
+                        class="w-full bg-slate-800 border border-slate-700 text-white rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
                         <option value="bubble">Bubble Sort</option>
                         <option value="selection">Selection Sort</option>
                         <option value="insertion">Insertion Sort</option>
@@ -64,31 +91,37 @@
                 <!-- Array Size -->
                 <div class="space-y-3">
                     <div class="flex justify-between items-center">
-                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+                        <label
+                            class="text-xs font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-2">
                             <i data-lucide="maximize" class="w-3 h-3"></i> Array Size
                         </label>
                         <span id="size-val" class="text-xs font-mono text-indigo-400">50</span>
                     </div>
-                    <input type="range" id="size-slider" min="10" max="150" value="50" class="w-full h-2 bg-slate-700 rounded-lg appearance-none accent-indigo-500">
+                    <input type="range" id="size-slider" min="10" max="150" value="50"
+                        class="w-full h-2 bg-slate-700 rounded-lg appearance-none accent-indigo-500">
                 </div>
 
                 <!-- Speed -->
                 <div class="space-y-3">
                     <div class="flex justify-between items-center">
-                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+                        <label
+                            class="text-xs font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-2">
                             <i data-lucide="zap" class="w-3 h-3"></i> Speed
                         </label>
                         <span id="speed-val" class="text-xs font-mono text-indigo-400">Fast</span>
                     </div>
-                    <input type="range" id="speed-slider" min="1" max="100" value="80" class="w-full h-2 bg-slate-700 rounded-lg appearance-none accent-indigo-500">
+                    <input type="range" id="speed-slider" min="1" max="100" value="80"
+                        class="w-full h-2 bg-slate-700 rounded-lg appearance-none accent-indigo-500">
                 </div>
 
                 <!-- Actions -->
                 <div class="flex items-end gap-3">
-                    <button id="reset-btn" class="flex-1 flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white font-medium py-2 px-4 rounded-lg transition-all border border-slate-700">
+                    <button id="reset-btn"
+                        class="flex-1 flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white font-medium py-2 px-4 rounded-lg transition-all border border-slate-700">
                         <i data-lucide="refresh-cw" class="w-4 h-4"></i> Reset
                     </button>
-                    <button id="start-btn" class="flex-[2] flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-lg transition-all shadow-lg shadow-indigo-500/20">
+                    <button id="start-btn"
+                        class="flex-[2] flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-lg transition-all shadow-lg shadow-indigo-500/20">
                         <i data-lucide="play" class="w-4 h-4"></i> Start
                     </button>
                 </div>
@@ -97,13 +130,16 @@
         </section>
 
         <!-- Visualization Area -->
-        <section class="flex-grow relative flex items-end justify-center gap-1 min-h-[400px] bg-slate-950/50 rounded-2xl border border-slate-800 p-6 overflow-hidden">
-            <div id="visualizer-container" class="w-full h-full flex items-end justify-center gap-[1px]">
+        <section
+            class="flex-grow relative flex justify-center gap-1 min-h-[400px] bg-slate-950/50 rounded-2xl border border-slate-800 p-6 overflow-hidden">
+            <!-- FIXED: Changed h-full to flex-grow so it has a measurable height -->
+            <div id="visualizer-container" class="w-full flex-grow flex items-end justify-center gap-[1px]">
                 <!-- Bars will be injected here -->
             </div>
 
             <!-- Overlay for sorting status -->
-            <div id="status-overlay" class="absolute top-4 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full bg-slate-900/80 border border-slate-700 text-xs font-medium hidden">
+            <div id="status-overlay"
+                class="absolute top-4 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full bg-slate-900/80 border border-slate-700 text-xs font-medium hidden">
                 <span id="status-text" class="text-indigo-400 uppercase tracking-widest">Sorting...</span>
             </div>
         </section>
@@ -116,10 +152,8 @@
     </footer>
 
     <script>
-        // Initialize Lucide Icons
         lucide.createIcons();
 
-        // DOM Elements
         const container = document.getElementById('visualizer-container');
         const sizeSlider = document.getElementById('size-slider');
         const speedSlider = document.getElementById('speed-slider');
@@ -132,18 +166,16 @@
         const statusOverlay = document.getElementById('status-overlay');
         const statusText = document.getElementById('status-text');
 
-        // State
         let array = [];
         let isSorting = false;
         let stopRequested = false;
         const COLORS = {
-            DEFAULT: '#6366f1', // indigo-500
-            COMPARE: '#f59e0b', // amber-500
-            SWAP: '#ef4444',    // red-500
-            SORTED: '#10b981'   // emerald-500
+            DEFAULT: '#6366f1',
+            COMPARE: '#f59e0b',
+            SWAP: '#ef4444',
+            SORTED: '#10b981'
         };
 
-        // Complexity Map
         const COMPLEXITY = {
             bubble: 'O(n²)',
             selection: 'O(n²)',
@@ -151,7 +183,6 @@
             quick: 'O(n log n)'
         };
 
-        // Initialization
         function init() {
             generateArray();
             setupEventListeners();
@@ -185,9 +216,9 @@
             array = [];
             container.innerHTML = '';
             for (let i = 0; i < size; i++) {
-                const val = Math.floor(Math.random() * 90) + 5; // 5 to 95% height
+                const val = Math.floor(Math.random() * 90) + 5;
                 array.push(val);
-                
+
                 const bar = document.createElement('div');
                 bar.classList.add('bar', 'flex-1');
                 bar.style.height = `${val}%`;
@@ -207,16 +238,17 @@
 
         async function startSorting() {
             if (isSorting) return;
-            
+
             isSorting = true;
             stopRequested = false;
             startBtn.disabled = true;
             startBtn.classList.add('opacity-50', 'cursor-not-allowed');
             statusOverlay.classList.remove('hidden');
             statusText.innerText = `${algoSelect.value} sorting...`;
+            statusText.classList.replace('text-emerald-400', 'text-indigo-400');
 
             const algo = algoSelect.value;
-            
+
             try {
                 if (algo === 'bubble') await bubbleSort();
                 else if (algo === 'selection') await selectionSort();
@@ -237,9 +269,8 @@
             startBtn.classList.remove('opacity-50', 'cursor-not-allowed');
         }
 
-        // Utilities
         const sleep = () => {
-            const ms = Math.max(2, 101 - parseInt(speedSlider.value)); // Inverse relationship
+            const ms = Math.max(2, 101 - parseInt(speedSlider.value));
             return new Promise(resolve => setTimeout(resolve, ms));
         };
 
@@ -258,32 +289,25 @@
             }
         }
 
-        // Algorithms
         async function bubbleSort() {
             const n = array.length;
-            const bars = container.children;
-
             for (let i = 0; i < n; i++) {
                 for (let j = 0; j < n - i - 1; j++) {
                     if (stopRequested) return;
-                    
                     updateBar(j, array[j], COLORS.COMPARE);
-                    updateBar(j + 1, array[j+1], COLORS.COMPARE);
+                    updateBar(j + 1, array[j + 1], COLORS.COMPARE);
                     await sleep();
 
                     if (array[j] > array[j + 1]) {
-                        // Swap values
                         let temp = array[j];
                         array[j] = array[j + 1];
                         array[j + 1] = temp;
-                        
                         updateBar(j, array[j], COLORS.SWAP);
-                        updateBar(j+1, array[j+1], COLORS.SWAP);
+                        updateBar(j + 1, array[j + 1], COLORS.SWAP);
                         await sleep();
                     }
-
                     updateBar(j, array[j], COLORS.DEFAULT);
-                    updateBar(j + 1, array[j+1], COLORS.DEFAULT);
+                    updateBar(j + 1, array[j + 1], COLORS.DEFAULT);
                 }
                 updateBar(n - i - 1, array[n - i - 1], COLORS.SORTED);
             }
@@ -291,17 +315,13 @@
 
         async function selectionSort() {
             const n = array.length;
-            const bars = container.children;
-
             for (let i = 0; i < n; i++) {
                 let minIdx = i;
                 updateBar(i, array[i], COLORS.SWAP);
-
                 for (let j = i + 1; j < n; j++) {
                     if (stopRequested) return;
                     updateBar(j, array[j], COLORS.COMPARE);
                     await sleep();
-
                     if (array[j] < array[minIdx]) {
                         if (minIdx !== i) updateBar(minIdx, array[minIdx], COLORS.DEFAULT);
                         minIdx = j;
@@ -310,7 +330,6 @@
                         updateBar(j, array[j], COLORS.DEFAULT);
                     }
                 }
-
                 if (minIdx !== i) {
                     let temp = array[i];
                     array[i] = array[minIdx];
@@ -329,50 +348,42 @@
                 if (stopRequested) return;
                 let key = array[i];
                 let j = i - 1;
-
                 updateBar(i, array[i], COLORS.SWAP);
                 await sleep();
-
                 while (j >= 0 && array[j] > key) {
                     if (stopRequested) return;
                     updateBar(j, array[j], COLORS.COMPARE);
                     array[j + 1] = array[j];
-                    updateBar(j + 1, array[j+1], COLORS.SWAP);
+                    updateBar(j + 1, array[j + 1], COLORS.SWAP);
                     await sleep();
                     updateBar(j, array[j], COLORS.SORTED);
                     j--;
                 }
                 array[j + 1] = key;
-                updateBar(j + 1, array[j+1], COLORS.SORTED);
+                updateBar(j + 1, array[j + 1], COLORS.SORTED);
             }
             markAllSorted();
         }
 
         async function quickSort(start, end) {
             if (start >= end || stopRequested) {
-                if (start >= 0 && start < array.length) updateBar(start, array[start], COLORS.SORTED);
                 return;
             }
-
             let index = await partition(start, end);
-            await Promise.all([
-                quickSort(start, index - 1),
-                quickSort(index + 1, end)
-            ]);
+            // FIXED: Run sequentially instead of Promise.all for better visualization
+            await quickSort(start, index - 1);
+            await quickSort(index + 1, end);
         }
 
         async function partition(start, end) {
-            const bars = container.children;
             let pivotValue = array[end];
             let pivotIndex = start;
-
-            updateBar(end, array[end], COLORS.COMPARE); // Highlight pivot
+            updateBar(end, array[end], COLORS.COMPARE);
 
             for (let i = start; i < end; i++) {
                 if (stopRequested) return;
                 updateBar(i, array[i], COLORS.COMPARE);
                 await sleep();
-
                 if (array[i] < pivotValue) {
                     [array[i], array[pivotIndex]] = [array[pivotIndex], array[i]];
                     updateBar(i, array[i], COLORS.SWAP);
@@ -390,8 +401,8 @@
             return pivotIndex;
         }
 
-        // Boot
         init();
     </script>
 </body>
+
 </html>

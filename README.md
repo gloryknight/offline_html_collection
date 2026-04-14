@@ -41,4 +41,4 @@ A collection of offline first web tools.
 38. [Interactive Particle Background](https://gloryknight.github.io/offline_html_collection/html/tool_38.html) - Lightweight, high-performance background for landing pages.
 39. [CSS Grid Playground](https://gloryknight.github.io/offline_html_collection/html/tool_39.html) - Visual tool to build and export complex CSS Grid layouts.
 40. [Digital Clock (Modern)](https://gloryknight.github.io/offline_html_collection/html/tool_40.html) - Typography-focused clock with smooth transitions.
-
+41. [HTML Live Previewer](https://gloryknight.github.io/offline_html_collection/html/tool_41.html) - Real-time HTML editor with instant preview in a modal..
