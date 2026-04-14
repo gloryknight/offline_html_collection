@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" class="scroll-smooth">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,6 +17,7 @@
             margin: 0;
             overflow-x: hidden;
         }
+
         canvas {
             position: fixed;
             top: 0;
@@ -23,17 +25,20 @@
             z-index: 0;
             pointer-events: none;
         }
+
         .glass {
             background: rgba(255, 255, 255, 0.03);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
+
         .text-gradient {
             background: linear-gradient(to right, #fff, #9ca3af);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
+
         .hero-glow {
             position: absolute;
             top: 50%;
@@ -44,14 +49,27 @@
             background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
             z-index: -1;
         }
+
         @keyframes float {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-20px); }
-            100% { transform: translateY(0px); }
+            0% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-20px);
+            }
+
+            100% {
+                transform: translateY(0px);
+            }
         }
-        .animate-float { animation: float 6s ease-in-out infinite; }
+
+        .animate-float {
+            animation: float 6s ease-in-out infinite;
+        }
     </style>
 </head>
+
 <body class="text-gray-300">
 
     <!-- Background Canvas -->
@@ -69,7 +87,8 @@
                 <a href="#showcase" class="hover:text-white transition-colors">Showcase</a>
                 <a href="#docs" class="hover:text-white transition-colors">Docs</a>
             </div>
-            <button class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2 rounded-full text-sm font-semibold transition-all transform hover:scale-105 active:scale-95">
+            <button
+                class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2 rounded-full text-sm font-semibold transition-all transform hover:scale-105 active:scale-95">
                 Get Started
             </button>
         </div>
@@ -79,20 +98,24 @@
     <section class="relative min-h-screen flex items-center justify-center px-6 pt-20 overflow-hidden">
         <div class="hero-glow"></div>
         <div class="max-w-4xl text-center z-10">
-            <span class="inline-block py-1 px-3 rounded-full glass text-xs font-semibold tracking-widest text-indigo-400 mb-6 uppercase animate-pulse">
+            <span
+                class="inline-block py-1 px-3 rounded-full glass text-xs font-semibold tracking-widest text-indigo-400 mb-6 uppercase animate-pulse">
                 v2.0 Engine Released
             </span>
             <h1 class="text-5xl md:text-8xl font-extrabold text-white leading-tight mb-8 tracking-tighter">
                 Design with <span class="text-gradient">Motion</span> & Light.
             </h1>
             <p class="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed">
-                A lightweight, high-performance particle engine designed for modern web experiences. Minimal footprint, maximum impact.
+                A lightweight, high-performance particle engine designed for modern web experiences. Minimal footprint,
+                maximum impact.
             </p>
             <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                <a href="#" class="w-full sm:w-auto px-8 py-4 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition-all shadow-lg shadow-white/5">
+                <a href="#"
+                    class="w-full sm:w-auto px-8 py-4 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition-all shadow-lg shadow-white/5">
                     View Demo
                 </a>
-                <a href="#" class="w-full sm:w-auto px-8 py-4 glass text-white font-semibold rounded-xl hover:bg-white/10 transition-all border border-white/20">
+                <a href="#"
+                    class="w-full sm:w-auto px-8 py-4 glass text-white font-semibold rounded-xl hover:bg-white/10 transition-all border border-white/20">
                     GitHub Repository
                 </a>
             </div>
@@ -104,35 +127,42 @@
         <div class="max-w-7xl mx-auto">
             <div class="text-center mb-20">
                 <h2 class="text-3xl md:text-5xl font-bold text-white mb-4 tracking-tight">Engineered for Speed</h2>
-                <p class="text-gray-400 max-w-xl mx-auto">Optimized math and canvas rendering to ensure 60FPS even on mobile devices.</p>
+                <p class="text-gray-400 max-w-xl mx-auto">Optimized math and canvas rendering to ensure 60FPS even on
+                    mobile devices.</p>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <!-- Card 1 -->
                 <div class="glass p-8 rounded-3xl hover:border-indigo-500/50 transition-all group">
-                    <div class="w-12 h-12 bg-indigo-500/20 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                    <div
+                        class="w-12 h-12 bg-indigo-500/20 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                         <i data-lucide="zap" class="text-indigo-400"></i>
                     </div>
                     <h3 class="text-xl font-bold text-white mb-3">Ultra Lightweight</h3>
-                    <p class="text-gray-400 leading-relaxed">Zero dependencies. Just pure, optimized Vanilla JavaScript and HTML5 Canvas.</p>
+                    <p class="text-gray-400 leading-relaxed">Zero dependencies. Just pure, optimized Vanilla JavaScript
+                        and HTML5 Canvas.</p>
                 </div>
 
                 <!-- Card 2 -->
                 <div class="glass p-8 rounded-3xl hover:border-indigo-500/50 transition-all group">
-                    <div class="w-12 h-12 bg-purple-500/20 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                    <div
+                        class="w-12 h-12 bg-purple-500/20 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                         <i data-lucide="mouse-pointer-2" class="text-purple-400"></i>
                     </div>
                     <h3 class="text-xl font-bold text-white mb-3">Interactive</h3>
-                    <p class="text-gray-400 leading-relaxed">Particles react dynamically to mouse movements and touch gestures in real-time.</p>
+                    <p class="text-gray-400 leading-relaxed">Particles react dynamically to mouse movements and touch
+                        gestures in real-time.</p>
                 </div>
 
                 <!-- Card 3 -->
                 <div class="glass p-8 rounded-3xl hover:border-indigo-500/50 transition-all group">
-                    <div class="w-12 h-12 bg-blue-500/20 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                    <div
+                        class="w-12 h-12 bg-blue-500/20 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                         <i data-lucide="smartphone" class="text-blue-400"></i>
                     </div>
                     <h3 class="text-xl font-bold text-white mb-3">Fully Responsive</h3>
-                    <p class="text-gray-400 leading-relaxed">Automatically adjusts particle density based on screen resolution and size.</p>
+                    <p class="text-gray-400 leading-relaxed">Automatically adjusts particle density based on screen
+                        resolution and size.</p>
                 </div>
             </div>
         </div>
@@ -140,11 +170,12 @@
 
     <!-- Footer -->
     <footer class="py-12 px-6 border-t border-white/5 relative z-10">
-        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8 text-sm text-gray-500">
+        <div
+            class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8 text-sm text-gray-500">
             <div class="flex items-center gap-2 font-bold text-white tracking-tighter opacity-50">
                 <i data-lucide="layers" class="w-4 h-4"></i> LUMINA
             </div>
-            <p>&copy; 2023 Lumina Engine. Open Source under MIT.</p>
+            <p>&copy; 2026 Lumina Engine. Open Source under MIT.</p>
             <div class="flex gap-6">
                 <a href="#" class="hover:text-white transition-colors"><i data-lucide="github" class="w-5 h-5"></i></a>
                 <a href="#" class="hover:text-white transition-colors"><i data-lucide="twitter" class="w-5 h-5"></i></a>
@@ -213,7 +244,7 @@
                 let dx = mouse.x - this.x;
                 let dy = mouse.y - this.y;
                 let distance = Math.sqrt(dx * dx + dy * dy);
-                
+
                 if (distance < mouse.radius) {
                     if (mouse.x < this.x && this.x < canvas.width - this.size * 10) {
                         this.x += 3;
@@ -240,10 +271,10 @@
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
             particlesArray = [];
-            
+
             // Adjust density based on screen size
             let numberOfParticles = (canvas.width * canvas.height) / 9000;
-            
+
             for (let i = 0; i < numberOfParticles; i++) {
                 let size = (Math.random() * 2) + 1;
                 let x = (Math.random() * ((innerWidth - size * 2) - (size * 2)) + size * 2);
@@ -261,8 +292,8 @@
             for (let a = 0; a < particlesArray.length; a++) {
                 for (let b = a; b < particlesArray.length; b++) {
                     let distance = ((particlesArray[a].x - particlesArray[b].x) * (particlesArray[a].x - particlesArray[b].x))
-                                 + ((particlesArray[a].y - particlesArray[b].y) * (particlesArray[a].y - particlesArray[b].y));
-                    
+                        + ((particlesArray[a].y - particlesArray[b].y) * (particlesArray[a].y - particlesArray[b].y));
+
                     if (distance < (canvas.width / 7) * (canvas.height / 7)) {
                         opacityValue = 1 - (distance / 20000);
                         ctx.strokeStyle = `rgba(99, 102, 241, ${opacityValue * 0.2})`;
@@ -290,4 +321,5 @@
         animate();
     </script>
 </body>
+
 </html>
