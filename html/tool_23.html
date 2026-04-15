@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,13 +11,19 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #0d1117; color: #c9d1d9; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0d1117;
+            color: #c9d1d9;
+        }
+
         .heatmap-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(12px, 1fr));
             grid-template-rows: repeat(7, 12px);
             gap: 3px;
         }
+
         .cell {
             width: 12px;
             height: 12px;
@@ -24,22 +31,51 @@
             transition: all 0.2s ease;
             cursor: pointer;
         }
+
         .cell:hover {
             transform: scale(1.3);
             outline: 1px solid #ffffff55;
             z-index: 10;
         }
-        /* GitHub Heatmap Colors */
-        .level-0 { background-color: #161b22; }
-        .level-1 { background-color: #0e4429; }
-        .level-2 { background-color: #006d32; }
-        .level-3 { background-color: #26a641; }
-        .level-4 { background-color: #39d353; }
 
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: #0d1117; }
-        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #8b949e; }
+        /* GitHub Heatmap Colors */
+        .level-0 {
+            background-color: #161b22;
+        }
+
+        .level-1 {
+            background-color: #0e4429;
+        }
+
+        .level-2 {
+            background-color: #006d32;
+        }
+
+        .level-3 {
+            background-color: #26a641;
+        }
+
+        .level-4 {
+            background-color: #39d353;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #0d1117;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #30363d;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #8b949e;
+        }
 
         .glass {
             background: rgba(22, 27, 34, 0.8);
@@ -48,6 +84,7 @@
         }
     </style>
 </head>
+
 <body class="min-h-screen p-4 md:p-8">
 
     <div class="max-w-6xl mx-auto">
@@ -60,7 +97,8 @@
                 <p class="text-gray-400 mt-1">Visualize your consistency, master your life.</p>
             </div>
             <div class="flex items-center gap-3">
-                <button onclick="openModal()" class="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 shadow-lg shadow-green-900/20">
+                <button onclick="openModal()"
+                    class="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 shadow-lg shadow-green-900/20">
                     <i data-lucide="plus" class="w-4 h-4"></i> New Habit
                 </button>
             </div>
@@ -70,7 +108,8 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <div class="glass p-6 rounded-2xl">
                 <p class="text-sm text-gray-400 font-medium uppercase tracking-wider">Current Streak</p>
-                <h3 id="stat-streak" class="text-4xl font-bold text-white mt-2">0 <span class="text-lg text-gray-500 font-normal">days</span></h3>
+                <h3 id="stat-streak" class="text-4xl font-bold text-white mt-2">0 <span
+                        class="text-lg text-gray-500 font-normal">days</span></h3>
             </div>
             <div class="glass p-6 rounded-2xl">
                 <p class="text-sm text-gray-400 font-medium uppercase tracking-wider">Completion Rate</p>
@@ -84,7 +123,7 @@
 
         <!-- Main Content: Heatmap & Habits -->
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            
+
             <!-- Sidebar: Habit List -->
             <div class="lg:col-span-1 space-y-6">
                 <section>
@@ -115,7 +154,8 @@
 
                     <!-- Heatmap Container -->
                     <div class="overflow-x-auto pb-4">
-                        <div id="heatmap-container" class="inline-grid grid-cols-[repeat(53,14px)] grid-rows-[repeat(7,14px)] gap-1 min-w-full">
+                        <div id="heatmap-container"
+                            class="inline-grid grid-cols-[repeat(53,14px)] grid-rows-[repeat(7,14px)] gap-1 min-w-full">
                             <!-- Heatmap cells injected here -->
                         </div>
                     </div>
@@ -136,33 +176,39 @@
     <div id="modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
         <div class="glass w-full max-w-md rounded-2xl p-8 shadow-2xl animate-in fade-in zoom-in duration-200">
             <h3 class="text-xl font-bold text-white mb-6">Create New Habit</h3>
-            <input type="text" id="habit-input" placeholder="e.g., Morning Meditation" 
+            <input type="text" id="habit-input" placeholder="e.g., Morning Meditation"
                 class="w-full bg-[#0d1117] border border-[#30363d] rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-green-500 mb-6">
             <div class="flex gap-3 justify-end">
-                <button onclick="closeModal()" class="px-4 py-2 text-gray-400 hover:text-white transition">Cancel</button>
-                <button onclick="addHabit()" class="bg-green-600 hover:bg-green-500 text-white px-6 py-2 rounded-lg font-medium transition">Create Habit</button>
+                <button onclick="closeModal()"
+                    class="px-4 py-2 text-gray-400 hover:text-white transition">Cancel</button>
+                <button onclick="addHabit()"
+                    class="bg-green-600 hover:bg-green-500 text-white px-6 py-2 rounded-lg font-medium transition">Create
+                    Habit</button>
             </div>
         </div>
     </div>
 
     <!-- Tooltip/Day Selector Modal -->
-    <div id="day-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
+    <div id="day-modal"
+        class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
         <div class="glass w-full max-w-sm rounded-2xl p-6 shadow-2xl animate-in fade-in zoom-in duration-200">
             <div class="flex justify-between items-center mb-4">
                 <h3 id="selected-date-label" class="text-lg font-bold text-white">Date</h3>
-                <button onclick="closeDayModal()" class="text-gray-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+                <button onclick="closeDayModal()" class="text-gray-400 hover:text-white"><i data-lucide="x"
+                        class="w-5 h-5"></i></button>
             </div>
             <div id="day-habit-list" class="space-y-3 mb-6">
                 <!-- Checkboxes for habits on this day -->
             </div>
-            <button onclick="closeDayModal()" class="w-full bg-[#30363d] hover:bg-[#3c444d] text-white py-2 rounded-lg transition font-medium">Done</button>
+            <button onclick="closeDayModal()"
+                class="w-full bg-[#30363d] hover:bg-[#3c444d] text-white py-2 rounded-lg transition font-medium">Done</button>
         </div>
     </div>
 
     <script>
         // --- State Management ---
         let habits = JSON.parse(localStorage.getItem('habits')) || [];
-        let completions = JSON.parse(localStorage.getItem('completions')) || {}; // { '2023-10-27': ['habitId1', 'habitId2'] }
+        let completions = JSON.parse(localStorage.getItem('completions')) || {}; // { '2026-03-27': ['habitId1', 'habitId2'] }
         let selectedDate = null;
 
         // --- Initialization ---
@@ -197,7 +243,7 @@
         }
 
         function deleteHabit(id) {
-            if(confirm('Delete this habit and all its history?')) {
+            if (confirm('Delete this habit and all its history?')) {
                 habits = habits.filter(h => h.id !== id);
                 // Clean up completions
                 Object.keys(completions).forEach(date => {
@@ -236,7 +282,7 @@
         function renderHeatmap() {
             const container = document.getElementById('heatmap-container');
             container.innerHTML = '';
-            
+
             // Generate last 371 days (53 weeks)
             const today = new Date();
             const startDate = new Date();
@@ -246,10 +292,10 @@
                 const currentDate = new Date(startDate);
                 currentDate.setDate(startDate.getDate() + i);
                 const dateStr = currentDate.toISOString().split('T')[0];
-                
+
                 const cell = document.createElement('div');
                 cell.className = 'cell';
-                
+
                 // Calculate intensity
                 const dailyCount = completions[dateStr] ? completions[dateStr].length : 0;
                 const level = Math.min(dailyCount, 4);
@@ -258,7 +304,7 @@
 
                 cell.onclick = () => openDayModal(dateStr);
                 cell.title = `${dateStr}: ${dailyCount} habits`;
-                
+
                 container.appendChild(cell);
             }
         }
@@ -266,7 +312,7 @@
         function renderLogs() {
             const container = document.getElementById('log-container');
             const sortedDates = Object.keys(completions).sort().reverse();
-            
+
             if (sortedDates.length === 0) {
                 container.innerHTML = '<p class="text-gray-500 italic">No activity logged yet.</p>';
                 return;
@@ -293,7 +339,7 @@
             // Completion Rate (simplified: completion per day in last 30 days)
             const today = new Date();
             let recentCompletions = 0;
-            for(let i=0; i<30; i++) {
+            for (let i = 0; i < 30; i++) {
                 const d = new Date();
                 d.setDate(today.getDate() - i);
                 const ds = d.toISOString().split('T')[0];
@@ -305,7 +351,7 @@
             // Streak calculation
             let streak = 0;
             let checkDate = new Date();
-            while(true) {
+            while (true) {
                 const ds = checkDate.toISOString().split('T')[0];
                 if (completions[ds] && completions[ds].length > 0) {
                     streak++;
@@ -326,7 +372,7 @@
             selectedDate = date;
             document.getElementById('selected-date-label').innerText = new Date(date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
             const list = document.getElementById('day-habit-list');
-            
+
             if (habits.length === 0) {
                 list.innerHTML = '<p class="text-gray-500 text-center py-4">Create a habit first!</p>';
             } else {
@@ -350,4 +396,5 @@
         init();
     </script>
 </body>
+
 </html>
