@@ -1,0 +1,2246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Background Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #8b5cf6;
+            --accent: #06b6d4;
+            --dark-bg: #0f172a;
+            --card-bg: #1e293b;
+            --border: #334155;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+            min-height: 100vh;
+        }
+
+        .glass-card {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+        }
+
+        .gradient-border {
+            position: relative;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+        }
+
+        .gradient-border::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            padding: 1px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6, #06b6d4);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+        }
+
+        .input-field {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            color: #e2e8f0;
+            transition: all 0.3s ease;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px -10px rgba(99, 102, 241, 0.5);
+        }
+
+        .btn-secondary {
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            color: #a5b4fc;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(99, 102, 241, 0.2);
+            border-color: #6366f1;
+        }
+
+        .range-slider {
+            -webkit-appearance: none;
+            background: rgba(99, 102, 241, 0.2);
+            border-radius: 10px;
+            height: 6px;
+        }
+
+        .range-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(99, 102, 241, 0.5);
+        }
+
+        .tab-btn {
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+        }
+
+        .preview-canvas {
+            border-radius: 12px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .object-item {
+            transition: all 0.3s ease;
+        }
+
+        .object-item:hover {
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .progress-bar {
+            background: linear-gradient(90deg, #6366f1, #8b5cf6, #06b6d4);
+            background-size: 200% 100%;
+            animation: progressGradient 2s linear infinite;
+        }
+
+        @keyframes progressGradient {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 200% 50%; }
+        }
+
+        .color-swatch {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .color-swatch:hover {
+            transform: scale(1.1);
+        }
+
+        .select-field {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            color: #e2e8f0;
+        }
+
+        .select-field:focus {
+            outline: none;
+            border-color: #6366f1;
+        }
+
+        .checkbox-custom {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 2px solid rgba(99, 102, 241, 0.3);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .checkbox-custom:checked {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border-color: #6366f1;
+        }
+
+        .status-badge {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border-radius: 4px;
+        }
+
+        .tooltip {
+            position: relative;
+        }
+
+        .tooltip::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .tooltip:hover::after {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="text-gray-100">
+    <!-- Header -->
+    <header class="glass-card sticky top-0 z-50 border-b border-indigo-500/20">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">Video Background Generator</h1>
+                    <p class="text-xs text-gray-400">Create animated backgrounds for podcasts, stories & music</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <span id="statusBadge" class="hidden status-badge px-3 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400">
+                    Recording...
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Left Panel - Configuration -->
+            <div class="lg:col-span-1 space-y-4">
+                <!-- Video Settings -->
+                <div class="glass-card rounded-2xl p-5 gradient-border">
+                    <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                        Video Settings
+                    </h2>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-2">Resolution</label>
+                            <select id="resolution" class="select-field w-full px-3 py-2 rounded-lg">
+                                <option value="1920x1080">1920x1080 (Full HD)</option>
+                                <option value="1280x720">1280x720 (HD)</option>
+                                <option value="3840x2160">3840x2160 (4K)</option>
+                                <option value="1080x1920">1080x1920 (Portrait HD)</option>
+                                <option value="1080x1080">1080x1080 (Square)</option>
+                                <option value="custom">Custom</option>
+                            </select>
+                        </div>
+
+                        <div id="customResolution" class="hidden grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">Width</label>
+                                <input type="number" id="customWidth" value="1920" class="input-field w-full px-3 py-2 rounded-lg text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">Height</label>
+                                <input type="number" id="customHeight" value="1080" class="input-field w-full px-3 py-2 rounded-lg text-sm">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-2">Duration (seconds)</label>
+                            <div class="flex items-center gap-3">
+                                <input type="range" id="duration" min="1" max="300" value="10" class="range-slider flex-1">
+                                <input type="number" id="durationValue" value="10" class="input-field w-16 px-2 py-1 rounded text-center text-sm">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-2">Frame Rate (FPS)</label>
+                            <select id="frameRate" class="select-field w-full px-3 py-2 rounded-lg">
+                                <option value="24">24 FPS (Cinematic)</option>
+                                <option value="30" selected>30 FPS (Standard)</option>
+                                <option value="60">60 FPS (Smooth)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-2">Output Format</label>
+                            <select id="outputFormat" class="select-field w-full px-3 py-2 rounded-lg">
+                                <option value="webm">WebM (VP9)</option>
+                                <option value="mp4">MP4 (H.264)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-2">Video Quality (Bitrate)</label>
+                            <select id="videoQuality" class="select-field w-full px-3 py-2 rounded-lg">
+                                <option value="8000000">High (8 Mbps)</option>
+                                <option value="5000000" selected>Medium (5 Mbps)</option>
+                                <option value="2500000">Low (2.5 Mbps)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Background Settings -->
+                <div class="glass-card rounded-2xl p-5 gradient-border">
+                    <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path>
+                        </svg>
+                        Background
+                    </h2>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-2">Background Type</label>
+                            <select id="bgType" class="select-field w-full px-3 py-2 rounded-lg">
+                                <option value="solid">Solid Color</option>
+                                <option value="gradient" selected>Gradient</option>
+                                <option value="animated">Animated Gradient</option>
+                            </select>
+                        </div>
+
+                        <div id="solidBgSettings">
+                            <label class="block text-sm text-gray-400 mb-2">Background Color</label>
+                            <div class="flex items-center gap-2">
+                                <input type="color" id="bgColor" value="#0f172a" class="w-10 h-10 rounded-lg cursor-pointer border-0">
+                                <input type="text" id="bgColorText" value="#0f172a" class="input-field flex-1 px-3 py-2 rounded-lg text-sm">
+                            </div>
+                        </div>
+
+                        <div id="gradientBgSettings">
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs text-gray-400 mb-1">Start Color</label>
+                                    <input type="color" id="bgGradientStart" value="#0f172a" class="w-full h-8 rounded cursor-pointer border-0">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-400 mb-1">End Color</label>
+                                    <input type="color" id="bgGradientEnd" value="#1e1b4b" class="w-full h-8 rounded cursor-pointer border-0">
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <label class="block text-xs text-gray-400 mb-1">Gradient Angle</label>
+                                <input type="range" id="bgGradientAngle" min="0" max="360" value="135" class="range-slider w-full">
+                            </div>
+                        </div>
+
+                        <div id="animatedBgSettings" class="hidden">
+                            <div class="grid grid-cols-3 gap-2">
+                                <div>
+                                    <label class="block text-xs text-gray-400 mb-1">Color 1</label>
+                                    <input type="color" id="bgAnimColor1" value="#6366f1" class="w-full h-8 rounded cursor-pointer border-0">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-400 mb-1">Color 2</label>
+                                    <input type="color" id="bgAnimColor2" value="#8b5cf6" class="w-full h-8 rounded cursor-pointer border-0">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-400 mb-1">Color 3</label>
+                                    <input type="color" id="bgAnimColor3" value="#06b6d4" class="w-full h-8 rounded cursor-pointer border-0">
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <label class="block text-xs text-gray-400 mb-1">Animation Speed</label>
+                                <input type="range" id="bgAnimSpeed" min="1" max="10" value="3" class="range-slider w-full">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Audio Settings -->
+                <div class="glass-card rounded-2xl p-5 gradient-border">
+                    <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path>
+                        </svg>
+                        Audio
+                    </h2>
+
+                    <div class="space-y-4">
+                        <div class="border-2 border-dashed border-indigo-500/30 rounded-xl p-4 text-center">
+                            <input type="file" id="audioFile" accept="audio/mp3,audio/webm,audio/mpeg" class="hidden">
+                            <label for="audioFile" class="cursor-pointer">
+                                <div class="text-gray-400 mb-2">
+                                    <svg class="w-8 h-8 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                    </svg>
+                                </div>
+                                <p class="text-sm text-gray-400">Click to upload audio</p>
+                                <p class="text-xs text-gray-500 mt-1">MP3 or WebM format</p>
+                            </label>
+                        </div>
+
+                        <div id="audioInfo" class="hidden bg-indigo-500/10 rounded-lg p-3">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path>
+                                    </svg>
+                                    <span id="audioFileName" class="text-sm truncate max-w-[150px]">audio.mp3</span>
+                                </div>
+                                <button id="removeAudio" class="text-red-400 hover:text-red-300">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                            <p id="audioDuration" class="text-xs text-gray-400 mt-1">Duration: 0:00</p>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" id="matchAudioDuration" class="checkbox-custom" checked>
+                            <label for="matchAudioDuration" class="text-sm text-gray-300">Match video duration to audio</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Center Panel - Preview -->
+            <div class="lg:col-span-1 space-y-4">
+                <div class="glass-card rounded-2xl p-5 gradient-border">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg font-semibold">Preview</h2>
+                        <div class="flex items-center gap-2">
+                            <button id="playPauseBtn" class="btn-secondary px-3 py-1.5 rounded-lg text-sm flex items-center gap-1">
+                                <svg id="playIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <span id="playPauseText">Play</span>
+                            </button>
+                            <button id="resetBtn" class="btn-secondary px-3 py-1.5 rounded-lg text-sm">Reset</button>
+                        </div>
+                    </div>
+
+                    <div class="relative">
+                        <canvas id="previewCanvas" class="preview-canvas w-full" style="aspect-ratio: 16/9;"></canvas>
+                        <div id="previewOverlay" class="absolute inset-0 flex items-center justify-center bg-black/50 rounded-xl">
+                            <p class="text-gray-400 text-sm">Click Play to preview</p>
+                        </div>
+                    </div>
+
+                    <!-- Progress -->
+                    <div class="mt-4">
+                        <div class="flex justify-between text-xs text-gray-400 mb-1">
+                            <span id="currentTime">0:00</span>
+                            <span id="totalTime">0:10</span>
+                        </div>
+                        <div class="h-1 bg-gray-700 rounded-full overflow-hidden">
+                            <div id="progressBar" class="h-full progress-bar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Export Controls -->
+                <div class="glass-card rounded-2xl p-5 gradient-border">
+                    <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                        </svg>
+                        Export
+                    </h2>
+
+                    <div class="space-y-4">
+                        <button id="exportBtn" class="btn-primary w-full py-3 rounded-xl flex items-center justify-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                            </svg>
+                            <span id="exportText">Generate Video</span>
+                        </button>
+
+                        <div id="exportProgress" class="hidden">
+                            <div class="flex justify-between text-xs text-gray-400 mb-1">
+                                <span id="exportStatus">Preparing...</span>
+                                <span id="exportPercent">0%</span>
+                            </div>
+                            <div class="h-2 bg-gray-700 rounded-full overflow-hidden">
+                                <div id="exportProgressBar" class="h-full progress-bar transition-all duration-300" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <div id="downloadSection" class="hidden">
+                            <a id="downloadLink" class="btn-secondary w-full py-3 rounded-xl flex items-center justify-center gap-2 cursor-pointer">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                                </svg>
+                                Download Video
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Presets -->
+                <div class="glass-card rounded-2xl p-5 gradient-border">
+                    <h2 class="text-lg font-semibold mb-4">Quick Presets</h2>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button data-preset="calm" class="preset-btn btn-secondary px-3 py-2 rounded-lg text-sm">🌊 Calm Waves</button>
+                        <button data-preset="energetic" class="preset-btn btn-secondary px-3 py-2 rounded-lg text-sm">⚡ Energetic</button>
+                        <button data-preset="minimal" class="preset-btn btn-secondary px-3 py-2 rounded-lg text-sm">◯ Minimal</button>
+                        <button data-preset="particles" class="preset-btn btn-secondary px-3 py-2 rounded-lg text-sm">✨ Particles</button>
+                        <button data-preset="neon" class="preset-btn btn-secondary px-3 py-2 rounded-lg text-sm">💫 Neon</button>
+                        <button data-preset="cosmic" class="preset-btn btn-secondary px-3 py-2 rounded-lg text-sm">🌌 Cosmic</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel - Objects Configuration -->
+            <div class="lg:col-span-1 space-y-4">
+                <!-- Objects List -->
+                <div class="glass-card rounded-2xl p-5 gradient-border">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg font-semibold flex items-center gap-2">
+                            <svg class="w-5 h-5 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                            </svg>
+                            Objects
+                        </h2>
+                        <button id="addObjectBtn" class="btn-primary px-3 py-1.5 rounded-lg text-sm flex items-center gap-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                            </svg>
+                            Add Object
+                        </button>
+                    </div>
+
+                    <div id="objectsList" class="space-y-2 max-h-64 overflow-y-auto">
+                        <!-- Objects will be added here dynamically -->
+                    </div>
+                </div>
+
+                <!-- Object Editor -->
+                <div id="objectEditor" class="glass-card rounded-2xl p-5 gradient-border">
+                    <h2 class="text-lg font-semibold mb-4">Object Editor</h2>
+
+                    <!-- Tabs -->
+                    <div class="flex gap-1 mb-4 bg-gray-800/50 rounded-lg p-1">
+                        <button data-tab="shape" class="tab-btn flex-1 px-3 py-1.5 rounded-md text-sm active">Shape</button>
+                        <button data-tab="motion" class="tab-btn flex-1 px-3 py-1.5 rounded-md text-sm">Motion</button>
+                        <button data-tab="effects" class="tab-btn flex-1 px-3 py-1.5 rounded-md text-sm">Effects</button>
+                    </div>
+
+                    <!-- Shape Tab -->
+                    <div id="shapeTab" class="tab-content space-y-4">
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-2">Shape Type</label>
+                            <select id="shapeType" class="select-field w-full px-3 py-2 rounded-lg">
+                                <option value="circle">Circle</option>
+                                <option value="square">Square</option>
+                                <option value="triangle">Triangle</option>
+                                <option value="star">Star</option>
+                                <option value="hexagon">Hexagon</option>
+                                <option value="ring">Ring</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-2">Size</label>
+                            <div class="flex items-center gap-3">
+                                <input type="range" id="objectSize" min="10" max="200" value="50" class="range-slider flex-1">
+                                <span id="objectSizeValue" class="text-sm text-gray-300 w-12 text-right">50px</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-2">Color</label>
+                            <div class="flex items-center gap-2">
+                                <input type="color" id="objectColor" value="#6366f1" class="w-10 h-10 rounded-lg cursor-pointer border-0">
+                                <input type="text" id="objectColorText" value="#6366f1" class="input-field flex-1 px-3 py-2 rounded-lg text-sm">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-2">Opacity</label>
+                            <div class="flex items-center gap-3">
+                                <input type="range" id="objectOpacity" min="0" max="100" value="80" class="range-slider flex-1">
+                                <span id="objectOpacityValue" class="text-sm text-gray-300 w-12 text-right">80%</span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" id="objectGlow" class="checkbox-custom">
+                            <label for="objectGlow" class="text-sm text-gray-300">Enable Glow</label>
+                        </div>
+
+                        <div id="glowSettings" class="hidden space-y-2 pl-4 border-l-2 border-indigo-500/30">
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">Glow Intensity</label>
+                                <input type="range" id="glowIntensity" min="5" max="50" value="20" class="range-slider w-full">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">Glow Color</label>
+                                <input type="color" id="glowColor" value="#6366f1" class="w-full h-8 rounded cursor-pointer border-0">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Motion Tab -->
+                    <div id="motionTab" class="tab-content hidden space-y-4">
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-2">Motion Type</label>
+                            <select id="motionType" class="select-field w-full px-3 py-2 rounded-lg">
+                                <option value="bounce">Bouncing</option>
+                                <option value="linear">Linear</option>
+                                <option value="circular">Circular</option>
+                                <option value="wave">Wave</option>
+                                <option value="random">Random</option>
+                                <option value="vibrate">Vibration</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-2">Speed</label>
+                            <div class="flex items-center gap-3">
+                                <input type="range" id="motionSpeed" min="1" max="100" value="30" class="range-slider flex-1">
+                                <span id="motionSpeedValue" class="text-sm text-gray-300 w-12 text-right">30</span>
+                            </div>
+                        </div>
+
+                        <div id="bounceSettings">
+                            <div class="flex items-center gap-2 mb-2">
+                                <input type="checkbox" id="edgeBounce" class="checkbox-custom" checked>
+                                <label for="edgeBounce" class="text-sm text-gray-300">Bounce off edges</label>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-2">Direction</label>
+                            <select id="motionDirection" class="select-field w-full px-3 py-2 rounded-lg">
+                                <option value="random">Random</option>
+                                <option value="right">Right</option>
+                                <option value="left">Left</option>
+                                <option value="up">Up</option>
+                                <option value="down">Down</option>
+                                <option value="diagonal">Diagonal</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-2">Easing</label>
+                            <select id="motionEasing" class="select-field w-full px-3 py-2 rounded-lg">
+                                <option value="linear">Linear</option>
+                                <option value="easeInOut">Ease In Out</option>
+                                <option value="easeIn">Ease In</option>
+                                <option value="easeOut">Ease Out</option>
+                                <option value="spring">Spring</option>
+                                <option value="elastic">Elastic</option>
+                                <option value="bounce">Bounce</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Effects Tab -->
+                    <div id="effectsTab" class="tab-content hidden space-y-4">
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" id="effectColorShift" class="checkbox-custom">
+                            <label for="effectColorShift" class="text-sm text-gray-300">Color Cycling</label>
+                        </div>
+
+                        <div id="colorShiftSettings" class="hidden space-y-2 pl-4 border-l-2 border-indigo-500/30">
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">Cycle Speed</label>
+                                <input type="range" id="colorShiftSpeed" min="1" max="10" value="3" class="range-slider w-full">
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" id="effectPulse" class="checkbox-custom">
+                            <label for="effectPulse" class="text-sm text-gray-300">Pulsing Size</label>
+                        </div>
+
+                        <div id="pulseSettings" class="hidden space-y-2 pl-4 border-l-2 border-indigo-500/30">
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">Pulse Range (%)</label>
+                                <input type="range" id="pulseRange" min="5" max="50" value="20" class="range-slider w-full">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">Pulse Speed</label>
+                                <input type="range" id="pulseSpeed" min="1" max="10" value="3" class="range-slider w-full">
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" id="effectRotation" class="checkbox-custom">
+                            <label for="effectRotation" class="text-sm text-gray-300">Rotation</label>
+                        </div>
+
+                        <div id="rotationSettings" class="hidden space-y-2 pl-4 border-l-2 border-indigo-500/30">
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">Rotation Speed</label>
+                                <input type="range" id="rotationSpeed" min="1" max="20" value="5" class="range-slider w-full">
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" id="effectTrail" class="checkbox-custom">
+                            <label for="effectTrail" class="text-sm text-gray-300">Motion Trail</label>
+                        </div>
+
+                        <div id="trailSettings" class="hidden space-y-2 pl-4 border-l-2 border-indigo-500/30">
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">Trail Length</label>
+                                <input type="range" id="trailLength" min="2" max="20" value="5" class="range-slider w-full">
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" id="effectFade" class="checkbox-custom">
+                            <label for="effectFade" class="text-sm text-gray-300">Fade In/Out</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // =====================================================
+        // STATE MANAGEMENT
+        // =====================================================
+        const state = {
+            isPlaying: false,
+            isExporting: false,
+            animationFrame: null,
+            startTime: 0,
+            elapsedTime: 0,
+            objects: [],
+            selectedObjectId: null,
+            audioFile: null,
+            audioBuffer: null,
+            audioDuration: 0,
+            settings: {
+                resolution: { width: 1920, height: 1080 },
+                duration: 10,
+                frameRate: 30,
+                outputFormat: 'webm',
+                videoQuality: 5000000,
+                background: {
+                    type: 'gradient',
+                    solidColor: '#0f172a',
+                    gradientStart: '#0f172a',
+                    gradientEnd: '#1e1b4b',
+                    gradientAngle: 135,
+                    animColors: ['#6366f1', '#8b5cf6', '#06b6d4'],
+                    animSpeed: 3
+                }
+            }
+        };
+
+        let objectIdCounter = 0;
+
+        // =====================================================
+        // DOM ELEMENTS
+        // =====================================================
+        const elements = {
+            previewCanvas: document.getElementById('previewCanvas'),
+            previewOverlay: document.getElementById('previewOverlay'),
+            playPauseBtn: document.getElementById('playPauseBtn'),
+            playPauseText: document.getElementById('playPauseText'),
+            playIcon: document.getElementById('playIcon'),
+            resetBtn: document.getElementById('resetBtn'),
+            progressBar: document.getElementById('progressBar'),
+            currentTime: document.getElementById('currentTime'),
+            totalTime: document.getElementById('totalTime'),
+            exportBtn: document.getElementById('exportBtn'),
+            exportText: document.getElementById('exportText'),
+            exportProgress: document.getElementById('exportProgress'),
+            exportProgressBar: document.getElementById('exportProgressBar'),
+            exportStatus: document.getElementById('exportStatus'),
+            exportPercent: document.getElementById('exportPercent'),
+            downloadSection: document.getElementById('downloadSection'),
+            downloadLink: document.getElementById('downloadLink'),
+            statusBadge: document.getElementById('statusBadge'),
+            objectsList: document.getElementById('objectsList'),
+            objectEditor: document.getElementById('objectEditor'),
+            addObjectBtn: document.getElementById('addObjectBtn'),
+            // Video settings
+            resolution: document.getElementById('resolution'),
+            customResolution: document.getElementById('customResolution'),
+            customWidth: document.getElementById('customWidth'),
+            customHeight: document.getElementById('customHeight'),
+            duration: document.getElementById('duration'),
+            durationValue: document.getElementById('durationValue'),
+            frameRate: document.getElementById('frameRate'),
+            outputFormat: document.getElementById('outputFormat'),
+            videoQuality: document.getElementById('videoQuality'),
+            // Background
+            bgType: document.getElementById('bgType'),
+            solidBgSettings: document.getElementById('solidBgSettings'),
+            gradientBgSettings: document.getElementById('gradientBgSettings'),
+            animatedBgSettings: document.getElementById('animatedBgSettings'),
+            bgColor: document.getElementById('bgColor'),
+            bgColorText: document.getElementById('bgColorText'),
+            bgGradientStart: document.getElementById('bgGradientStart'),
+            bgGradientEnd: document.getElementById('bgGradientEnd'),
+            bgGradientAngle: document.getElementById('bgGradientAngle'),
+            bgAnimColor1: document.getElementById('bgAnimColor1'),
+            bgAnimColor2: document.getElementById('bgAnimColor2'),
+            bgAnimColor3: document.getElementById('bgAnimColor3'),
+            bgAnimSpeed: document.getElementById('bgAnimSpeed'),
+            // Audio
+            audioFile: document.getElementById('audioFile'),
+            audioInfo: document.getElementById('audioInfo'),
+            audioFileName: document.getElementById('audioFileName'),
+            audioDuration: document.getElementById('audioDuration'),
+            removeAudio: document.getElementById('removeAudio'),
+            matchAudioDuration: document.getElementById('matchAudioDuration'),
+            // Object editor
+            shapeType: document.getElementById('shapeType'),
+            objectSize: document.getElementById('objectSize'),
+            objectSizeValue: document.getElementById('objectSizeValue'),
+            objectColor: document.getElementById('objectColor'),
+            objectColorText: document.getElementById('objectColorText'),
+            objectOpacity: document.getElementById('objectOpacity'),
+            objectOpacityValue: document.getElementById('objectOpacityValue'),
+            objectGlow: document.getElementById('objectGlow'),
+            glowSettings: document.getElementById('glowSettings'),
+            glowIntensity: document.getElementById('glowIntensity'),
+            glowColor: document.getElementById('glowColor'),
+            motionType: document.getElementById('motionType'),
+            motionSpeed: document.getElementById('motionSpeed'),
+            motionSpeedValue: document.getElementById('motionSpeedValue'),
+            edgeBounce: document.getElementById('edgeBounce'),
+            motionDirection: document.getElementById('motionDirection'),
+            motionEasing: document.getElementById('motionEasing'),
+            effectColorShift: document.getElementById('effectColorShift'),
+            colorShiftSettings: document.getElementById('colorShiftSettings'),
+            colorShiftSpeed: document.getElementById('colorShiftSpeed'),
+            effectPulse: document.getElementById('effectPulse'),
+            pulseSettings: document.getElementById('pulseSettings'),
+            pulseRange: document.getElementById('pulseRange'),
+            pulseSpeed: document.getElementById('pulseSpeed'),
+            effectRotation: document.getElementById('effectRotation'),
+            rotationSettings: document.getElementById('rotationSettings'),
+            rotationSpeed: document.getElementById('rotationSpeed'),
+            effectTrail: document.getElementById('effectTrail'),
+            trailSettings: document.getElementById('trailSettings'),
+            trailLength: document.getElementById('trailLength'),
+            effectFade: document.getElementById('effectFade')
+        };
+
+        const ctx = elements.previewCanvas.getContext('2d');
+
+        // =====================================================
+        // UTILITY FUNCTIONS
+        // =====================================================
+        function generateId() {
+            return `obj_${++objectIdCounter}`;
+        }
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : { r: 0, g: 0, b: 0 };
+        }
+
+        function rgbToHsl(r, g, b) {
+            r /= 255; g /= 255; b /= 255;
+            const max = Math.max(r, g, b), min = Math.min(r, g, b);
+            let h, s, l = (max + min) / 2;
+            if (max === min) {
+                h = s = 0;
+            } else {
+                const d = max - min;
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                switch (max) {
+                    case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+                    case g: h = ((b - r) / d + 2) / 6; break;
+                    case b: h = ((r - g) / d + 4) / 6; break;
+                }
+            }
+            return { h: h * 360, s: s * 100, l: l * 100 };
+        }
+
+        function hslToHex(h, s, l) {
+            s /= 100; l /= 100;
+            const a = s * Math.min(l, 1 - l);
+            const f = n => {
+                const k = (n + h / 30) % 12;
+                const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+                return Math.round(255 * color).toString(16).padStart(2, '0');
+            };
+            return `#${f(0)}${f(8)}${f(4)}`;
+        }
+
+        function lerp(a, b, t) {
+            return a + (b - a) * t;
+        }
+
+        function easeInOutQuad(t) {
+            return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+        }
+
+        // =====================================================
+        // OBJECT MANAGEMENT
+        // =====================================================
+        function createDefaultObject() {
+            const id = generateId();
+            const canvasWidth = state.settings.resolution.width;
+            const canvasHeight = state.settings.resolution.height;
+
+            return {
+                id,
+                name: `Object ${objectIdCounter}`,
+                shape: {
+                    type: 'circle',
+                    size: 50,
+                    color: '#6366f1',
+                    opacity: 0.8,
+                    glow: false,
+                    glowIntensity: 20,
+                    glowColor: '#6366f1'
+                },
+                motion: {
+                    type: 'bounce',
+                    speed: 30,
+                    direction: 'random',
+                    easing: 'linear',
+                    edgeBounce: true
+                },
+                effects: {
+                    colorShift: false,
+                    colorShiftSpeed: 3,
+                    pulse: false,
+                    pulseRange: 20,
+                    pulseSpeed: 3,
+                    rotation: false,
+                    rotationSpeed: 5,
+                    trail: false,
+                    trailLength: 5,
+                    fade: false
+                },
+                position: {
+                    x: Math.random() * canvasWidth,
+                    y: Math.random() * canvasHeight,
+                    vx: (Math.random() - 0.5) * 4,
+                    vy: (Math.random() - 0.5) * 4,
+                    angle: Math.random() * 360,
+                    trail: []
+                },
+                baseColor: '#6366f1',
+                baseSize: 50
+            };
+        }
+
+        function addObject() {
+            const obj = createDefaultObject();
+            state.objects.push(obj);
+            renderObjectsList();
+            selectObject(obj.id);
+        }
+
+        function removeObject(id) {
+            state.objects = state.objects.filter(obj => obj.id !== id);
+            if (state.selectedObjectId === id) {
+                state.selectedObjectId = state.objects[0]?.id || null;
+            }
+            renderObjectsList();
+            if (state.selectedObjectId) {
+                selectObject(state.selectedObjectId);
+            }
+        }
+
+        function selectObject(id) {
+            state.selectedObjectId = id;
+            renderObjectsList();
+            updateObjectEditor();
+        }
+
+        function getSelectedObject() {
+            return state.objects.find(obj => obj.id === state.selectedObjectId);
+        }
+
+        function renderObjectsList() {
+            elements.objectsList.innerHTML = state.objects.map(obj => `
+                <div class="object-item flex items-center justify-between p-2 rounded-lg cursor-pointer ${obj.id === state.selectedObjectId ? 'bg-indigo-500/20 border border-indigo-500/30' : ''}" data-id="${obj.id}">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded flex items-center justify-center" style="background: ${obj.shape.color}20; border: 1px solid ${obj.shape.color}">
+                            ${getShapeIcon(obj.shape.type)}
+                        </div>
+                        <span class="text-sm">${obj.name}</span>
+                    </div>
+                    <button class="delete-object text-red-400 hover:text-red-300 p-1" data-id="${obj.id}">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                    </button>
+                </div>
+            `).join('');
+
+            // Add click handlers
+            document.querySelectorAll('.object-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    if (!e.target.closest('.delete-object')) {
+                        selectObject(item.dataset.id);
+                    }
+                });
+            });
+
+            document.querySelectorAll('.delete-object').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    removeObject(btn.dataset.id);
+                });
+            });
+        }
+
+        function getShapeIcon(type) {
+            const icons = {
+                circle: '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="8"/></svg>',
+                square: '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>',
+                triangle: '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><polygon points="12,4 20,20 4,20"/></svg>',
+                star: '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><polygon points="12,2 15,9 22,9 17,14 19,22 12,17 5,22 7,14 2,9 9,9"/></svg>',
+                hexagon: '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><polygon points="12,2 21,7 21,17 12,22 3,17 3,7"/></svg>',
+                ring: '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="8"/></svg>'
+            };
+            return icons[type] || icons.circle;
+        }
+
+        // =====================================================
+        // OBJECT EDITOR
+        // =====================================================
+        function updateObjectEditor() {
+            const obj = getSelectedObject();
+            if (!obj) {
+                elements.objectEditor.classList.add('opacity-50', 'pointer-events-none');
+                return;
+            }
+
+            elements.objectEditor.classList.remove('opacity-50', 'pointer-events-none');
+
+            // Shape tab
+            elements.shapeType.value = obj.shape.type;
+            elements.objectSize.value = obj.shape.size;
+            elements.objectSizeValue.textContent = `${obj.shape.size}px`;
+            elements.objectColor.value = obj.shape.color;
+            elements.objectColorText.value = obj.shape.color;
+            elements.objectOpacity.value = obj.shape.opacity * 100;
+            elements.objectOpacityValue.textContent = `${Math.round(obj.shape.opacity * 100)}%`;
+            elements.objectGlow.checked = obj.shape.glow;
+            elements.glowSettings.classList.toggle('hidden', !obj.shape.glow);
+            elements.glowIntensity.value = obj.shape.glowIntensity;
+            elements.glowColor.value = obj.shape.glowColor;
+
+            // Motion tab
+            elements.motionType.value = obj.motion.type;
+            elements.motionSpeed.value = obj.motion.speed;
+            elements.motionSpeedValue.textContent = obj.motion.speed;
+            elements.edgeBounce.checked = obj.motion.edgeBounce;
+            elements.motionDirection.value = obj.motion.direction;
+            elements.motionEasing.value = obj.motion.easing;
+
+            // Effects tab
+            elements.effectColorShift.checked = obj.effects.colorShift;
+            elements.colorShiftSettings.classList.toggle('hidden', !obj.effects.colorShift);
+            elements.colorShiftSpeed.value = obj.effects.colorShiftSpeed;
+            elements.effectPulse.checked = obj.effects.pulse;
+            elements.pulseSettings.classList.toggle('hidden', !obj.effects.pulse);
+            elements.pulseRange.value = obj.effects.pulseRange;
+            elements.pulseSpeed.value = obj.effects.pulseSpeed;
+            elements.effectRotation.checked = obj.effects.rotation;
+            elements.rotationSettings.classList.toggle('hidden', !obj.effects.rotation);
+            elements.rotationSpeed.value = obj.effects.rotationSpeed;
+            elements.effectTrail.checked = obj.effects.trail;
+            elements.trailSettings.classList.toggle('hidden', !obj.effects.trail);
+            elements.trailLength.value = obj.effects.trailLength;
+            elements.effectFade.checked = obj.effects.fade;
+        }
+
+        function setupObjectEditorListeners() {
+            // Shape tab
+            elements.shapeType.addEventListener('change', (e) => {
+                const obj = getSelectedObject();
+                if (obj) {
+                    obj.shape.type = e.target.value;
+                    renderObjectsList();
+                }
+            });
+
+            elements.objectSize.addEventListener('input', (e) => {
+                const obj = getSelectedObject();
+                if (obj) {
+                    obj.shape.size = parseInt(e.target.value);
+                    obj.baseSize = obj.shape.size;
+                    elements.objectSizeValue.textContent = `${e.target.value}px`;
+                }
+            });
+
+            elements.objectColor.addEventListener('input', (e) => {
+                const obj = getSelectedObject();
+                if (obj) {
+                    obj.shape.color = e.target.value;
+                    obj.baseColor = e.target.value;
+                    elements.objectColorText.value = e.target.value;
+                    renderObjectsList();
+                }
+            });
+
+            elements.objectColorText.addEventListener('change', (e) => {
+                const obj = getSelectedObject();
+                if (obj) {
+                    obj.shape.color = e.target.value;
+                    obj.baseColor = e.target.value;
+                    elements.objectColor.value = e.target.value;
+                    renderObjectsList();
+                }
+            });
+
+            elements.objectOpacity.addEventListener('input', (e) => {
+                const obj = getSelectedObject();
+                if (obj) {
+                    obj.shape.opacity = parseInt(e.target.value) / 100;
+                    elements.objectOpacityValue.textContent = `${e.target.value}%`;
+                }
+            });
+
+            elements.objectGlow.addEventListener('change', (e) => {
+                const obj = getSelectedObject();
+                if (obj) {
+                    obj.shape.glow = e.target.checked;
+                    elements.glowSettings.classList.toggle('hidden', !e.target.checked);
+                }
+            });
+
+            elements.glowIntensity.addEventListener('input', (e) => {
+                const obj = getSelectedObject();
+                if (obj) obj.shape.glowIntensity = parseInt(e.target.value);
+            });
+
+            elements.glowColor.addEventListener('input', (e) => {
+                const obj = getSelectedObject();
+                if (obj) obj.shape.glowColor = e.target.value;
+            });
+
+            // Motion tab
+            elements.motionType.addEventListener('change', (e) => {
+                const obj = getSelectedObject();
+                if (obj) obj.motion.type = e.target.value;
+            });
+
+            elements.motionSpeed.addEventListener('input', (e) => {
+                const obj = getSelectedObject();
+                if (obj) {
+                    obj.motion.speed = parseInt(e.target.value);
+                    elements.motionSpeedValue.textContent = e.target.value;
+                }
+            });
+
+            elements.edgeBounce.addEventListener('change', (e) => {
+                const obj = getSelectedObject();
+                if (obj) obj.motion.edgeBounce = e.target.checked;
+            });
+
+            elements.motionDirection.addEventListener('change', (e) => {
+                const obj = getSelectedObject();
+                if (obj) obj.motion.direction = e.target.value;
+            });
+
+            elements.motionEasing.addEventListener('change', (e) => {
+                const obj = getSelectedObject();
+                if (obj) obj.motion.easing = e.target.value;
+            });
+
+            // Effects tab
+            elements.effectColorShift.addEventListener('change', (e) => {
+                const obj = getSelectedObject();
+                if (obj) {
+                    obj.effects.colorShift = e.target.checked;
+                    elements.colorShiftSettings.classList.toggle('hidden', !e.target.checked);
+                }
+            });
+
+            elements.colorShiftSpeed.addEventListener('input', (e) => {
+                const obj = getSelectedObject();
+                if (obj) obj.effects.colorShiftSpeed = parseInt(e.target.value);
+            });
+
+            elements.effectPulse.addEventListener('change', (e) => {
+                const obj = getSelectedObject();
+                if (obj) {
+                    obj.effects.pulse = e.target.checked;
+                    elements.pulseSettings.classList.toggle('hidden', !e.target.checked);
+                }
+            });
+
+            elements.pulseRange.addEventListener('input', (e) => {
+                const obj = getSelectedObject();
+                if (obj) obj.effects.pulseRange = parseInt(e.target.value);
+            });
+
+            elements.pulseSpeed.addEventListener('input', (e) => {
+                const obj = getSelectedObject();
+                if (obj) obj.effects.pulseSpeed = parseInt(e.target.value);
+            });
+
+            elements.effectRotation.addEventListener('change', (e) => {
+                const obj = getSelectedObject();
+                if (obj) {
+                    obj.effects.rotation = e.target.checked;
+                    elements.rotationSettings.classList.toggle('hidden', !e.target.checked);
+                }
+            });
+
+            elements.rotationSpeed.addEventListener('input', (e) => {
+                const obj = getSelectedObject();
+                if (obj) obj.effects.rotationSpeed = parseInt(e.target.value);
+            });
+
+            elements.effectTrail.addEventListener('change', (e) => {
+                const obj = getSelectedObject();
+                if (obj) {
+                    obj.effects.trail = e.target.checked;
+                    elements.trailSettings.classList.toggle('hidden', !e.target.checked);
+                }
+            });
+
+            elements.trailLength.addEventListener('input', (e) => {
+                const obj = getSelectedObject();
+                if (obj) obj.effects.trailLength = parseInt(e.target.value);
+            });
+
+            elements.effectFade.addEventListener('change', (e) => {
+                const obj = getSelectedObject();
+                if (obj) obj.effects.fade = e.target.checked;
+            });
+        }
+
+        // =====================================================
+        // TAB NAVIGATION
+        // =====================================================
+        function setupTabs() {
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+
+                    document.querySelectorAll('.tab-content').forEach(content => {
+                        content.classList.add('hidden');
+                    });
+
+                    const tabId = `${btn.dataset.tab}Tab`;
+                    document.getElementById(tabId).classList.remove('hidden');
+                });
+            });
+        }
+
+        // =====================================================
+        // VIDEO SETTINGS
+        // =====================================================
+        function setupVideoSettings() {
+            elements.resolution.addEventListener('change', (e) => {
+                if (e.target.value === 'custom') {
+                    elements.customResolution.classList.remove('hidden');
+                } else {
+                    elements.customResolution.classList.add('hidden');
+                    const [width, height] = e.target.value.split('x').map(Number);
+                    state.settings.resolution = { width, height };
+                }
+                updateCanvasSize();
+            });
+
+            elements.customWidth.addEventListener('change', () => {
+                state.settings.resolution.width = parseInt(elements.customWidth.value) || 1920;
+                updateCanvasSize();
+            });
+
+            elements.customHeight.addEventListener('change', () => {
+                state.settings.resolution.height = parseInt(elements.customHeight.value) || 1080;
+                updateCanvasSize();
+            });
+
+            elements.duration.addEventListener('input', (e) => {
+                state.settings.duration = parseInt(e.target.value);
+                elements.durationValue.value = e.target.value;
+                elements.totalTime.textContent = formatTime(state.settings.duration);
+            });
+
+            elements.durationValue.addEventListener('change', (e) => {
+                state.settings.duration = parseInt(e.target.value) || 10;
+                elements.duration.value = state.settings.duration;
+                elements.totalTime.textContent = formatTime(state.settings.duration);
+            });
+
+            elements.frameRate.addEventListener('change', (e) => {
+                state.settings.frameRate = parseInt(e.target.value);
+            });
+
+            elements.outputFormat.addEventListener('change', (e) => {
+                state.settings.outputFormat = e.target.value;
+            });
+
+            elements.videoQuality.addEventListener('change', (e) => {
+                state.settings.videoQuality = parseInt(e.target.value);
+            });
+        }
+
+        function updateCanvasSize() {
+            const { width, height } = state.settings.resolution;
+            elements.previewCanvas.width = width;
+            elements.previewCanvas.height = height;
+
+            // Reset object positions for new canvas size
+            state.objects.forEach(obj => {
+                obj.position.x = Math.min(obj.position.x, width - obj.shape.size);
+                obj.position.y = Math.min(obj.position.y, height - obj.shape.size);
+            });
+        }
+
+        // =====================================================
+        // BACKGROUND SETTINGS
+        // =====================================================
+        function setupBackgroundSettings() {
+            elements.bgType.addEventListener('change', (e) => {
+                state.settings.background.type = e.target.value;
+                elements.solidBgSettings.classList.toggle('hidden', e.target.value !== 'solid');
+                elements.gradientBgSettings.classList.toggle('hidden', e.target.value !== 'gradient');
+                elements.animatedBgSettings.classList.toggle('hidden', e.target.value !== 'animated');
+            });
+
+            elements.bgColor.addEventListener('input', (e) => {
+                state.settings.background.solidColor = e.target.value;
+                elements.bgColorText.value = e.target.value;
+            });
+
+            elements.bgColorText.addEventListener('change', (e) => {
+                state.settings.background.solidColor = e.target.value;
+                elements.bgColor.value = e.target.value;
+            });
+
+            elements.bgGradientStart.addEventListener('input', (e) => {
+                state.settings.background.gradientStart = e.target.value;
+            });
+
+            elements.bgGradientEnd.addEventListener('input', (e) => {
+                state.settings.background.gradientEnd = e.target.value;
+            });
+
+            elements.bgGradientAngle.addEventListener('input', (e) => {
+                state.settings.background.gradientAngle = parseInt(e.target.value);
+            });
+
+            elements.bgAnimColor1.addEventListener('input', (e) => {
+                state.settings.background.animColors[0] = e.target.value;
+            });
+
+            elements.bgAnimColor2.addEventListener('input', (e) => {
+                state.settings.background.animColors[1] = e.target.value;
+            });
+
+            elements.bgAnimColor3.addEventListener('input', (e) => {
+                state.settings.background.animColors[2] = e.target.value;
+            });
+
+            elements.bgAnimSpeed.addEventListener('input', (e) => {
+                state.settings.background.animSpeed = parseInt(e.target.value);
+            });
+        }
+
+        // =====================================================
+        // AUDIO HANDLING
+        // =====================================================
+        function setupAudioHandling() {
+            elements.audioFile.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                state.audioFile = file;
+                elements.audioFileName.textContent = file.name;
+
+                // Get audio duration
+                const audio = new Audio();
+                audio.src = URL.createObjectURL(file);
+                audio.addEventListener('loadedmetadata', () => {
+                    state.audioDuration = audio.duration;
+                    elements.audioDuration.textContent = `Duration: ${formatTime(audio.duration)}`;
+
+                    if (elements.matchAudioDuration.checked) {
+                        state.settings.duration = Math.ceil(audio.duration);
+                        elements.duration.value = state.settings.duration;
+                        elements.durationValue.value = state.settings.duration;
+                        elements.totalTime.textContent = formatTime(state.settings.duration);
+                    }
+                });
+
+                elements.audioInfo.classList.remove('hidden');
+            });
+
+            elements.removeAudio.addEventListener('click', () => {
+                state.audioFile = null;
+                state.audioDuration = 0;
+                elements.audioInfo.classList.add('hidden');
+                elements.audioFile.value = '';
+            });
+
+            elements.matchAudioDuration.addEventListener('change', (e) => {
+                if (e.target.checked && state.audioDuration > 0) {
+                    state.settings.duration = Math.ceil(state.audioDuration);
+                    elements.duration.value = state.settings.duration;
+                    elements.durationValue.value = state.settings.duration;
+                    elements.totalTime.textContent = formatTime(state.settings.duration);
+                }
+            });
+        }
+
+        // =====================================================
+        // RENDERING
+        // =====================================================
+        function drawBackground(time) {
+            const { width, height } = state.settings.resolution;
+            const bg = state.settings.background;
+
+            if (bg.type === 'solid') {
+                ctx.fillStyle = bg.solidColor;
+                ctx.fillRect(0, 0, width, height);
+            } else if (bg.type === 'gradient') {
+                const angle = bg.gradientAngle * Math.PI / 180;
+                const x1 = width / 2 - Math.cos(angle) * width;
+                const y1 = height / 2 - Math.sin(angle) * height;
+                const x2 = width / 2 + Math.cos(angle) * width;
+                const y2 = height / 2 + Math.sin(angle) * height;
+
+                const gradient = ctx.createLinearGradient(x1, y1, x2, y2);
+                gradient.addColorStop(0, bg.gradientStart);
+                gradient.addColorStop(1, bg.gradientEnd);
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, width, height);
+            } else if (bg.type === 'animated') {
+                const t = (time * bg.animSpeed * 0.001) % 1;
+                const gradient = ctx.createLinearGradient(0, 0, width, height);
+
+                const offset1 = (t * 2) % 1;
+                const offset2 = (t * 2 + 0.33) % 1;
+                const offset3 = (t * 2 + 0.66) % 1;
+
+                gradient.addColorStop(0, bg.animColors[0]);
+                gradient.addColorStop(0.33, bg.animColors[1]);
+                gradient.addColorStop(0.66, bg.animColors[2]);
+                gradient.addColorStop(1, bg.animColors[0]);
+
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, width, height);
+            }
+        }
+
+        function drawShape(obj, time) {
+            const { shape, position, effects } = obj;
+            const { width, height } = state.settings.resolution;
+
+            let size = shape.size;
+            let color = shape.color;
+            let opacity = shape.opacity;
+
+            // Apply effects
+            if (effects.pulse) {
+                const pulseFactor = Math.sin(time * effects.pulseSpeed * 0.003) * (effects.pulseRange / 100);
+                size = shape.size * (1 + pulseFactor);
+            }
+
+            if (effects.colorShift) {
+                const rgb = hexToRgb(shape.color);
+                const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
+                const newHue = (hsl.h + time * effects.colorShiftSpeed * 0.05) % 360;
+                color = hslToHex(newHue, hsl.s, hsl.l);
+            }
+
+            if (effects.fade) {
+                const progress = state.elapsedTime / (state.settings.duration * 1000);
+                if (progress < 0.1) {
+                    opacity = shape.opacity * easeInOutQuad(progress / 0.1);
+                } else if (progress > 0.9) {
+                    opacity = shape.opacity * easeInOutQuad((1 - progress) / 0.1);
+                }
+            }
+
+            // Draw trail
+            if (effects.trail && position.trail.length > 0) {
+                position.trail.forEach((trailPos, index) => {
+                    const trailOpacity = (index / position.trail.length) * opacity * 0.5;
+                    drawShapeAt(trailPos.x, trailPos.y, shape.type, size, color, trailOpacity, position.angle, shape.glow, shape.glowIntensity, shape.glowColor);
+                });
+            }
+
+            // Draw main shape
+            drawShapeAt(position.x, position.y, shape.type, size, color, opacity, position.angle, shape.glow, shape.glowIntensity, shape.glowColor);
+        }
+
+        function drawShapeAt(x, y, type, size, color, opacity, angle, glow, glowIntensity, glowColor) {
+            ctx.save();
+            ctx.globalAlpha = opacity;
+            ctx.translate(x, y);
+            ctx.rotate(angle * Math.PI / 180);
+
+            if (glow) {
+                ctx.shadowColor = glowColor;
+                ctx.shadowBlur = glowIntensity;
+            }
+
+            ctx.fillStyle = color;
+            ctx.beginPath();
+
+            switch (type) {
+                case 'circle':
+                    ctx.arc(0, 0, size / 2, 0, Math.PI * 2);
+                    break;
+                case 'square':
+                    ctx.rect(-size / 2, -size / 2, size, size);
+                    break;
+                case 'triangle':
+                    ctx.moveTo(0, -size / 2);
+                    ctx.lineTo(size / 2, size / 2);
+                    ctx.lineTo(-size / 2, size / 2);
+                    ctx.closePath();
+                    break;
+                case 'star':
+                    for (let i = 0; i < 5; i++) {
+                        const outerAngle = (i * 72 - 90) * Math.PI / 180;
+                        const innerAngle = ((i * 72) + 36 - 90) * Math.PI / 180;
+                        if (i === 0) {
+                            ctx.moveTo(Math.cos(outerAngle) * size / 2, Math.sin(outerAngle) * size / 2);
+                        } else {
+                            ctx.lineTo(Math.cos(outerAngle) * size / 2, Math.sin(outerAngle) * size / 2);
+                        }
+                        ctx.lineTo(Math.cos(innerAngle) * size / 4, Math.sin(innerAngle) * size / 4);
+                    }
+                    ctx.closePath();
+                    break;
+                case 'hexagon':
+                    for (let i = 0; i < 6; i++) {
+                        const hexAngle = (i * 60 - 30) * Math.PI / 180;
+                        if (i === 0) {
+                            ctx.moveTo(Math.cos(hexAngle) * size / 2, Math.sin(hexAngle) * size / 2);
+                        } else {
+                            ctx.lineTo(Math.cos(hexAngle) * size / 2, Math.sin(hexAngle) * size / 2);
+                        }
+                    }
+                    ctx.closePath();
+                    break;
+                case 'ring':
+                    ctx.arc(0, 0, size / 2, 0, Math.PI * 2);
+                    ctx.arc(0, 0, size / 3, 0, Math.PI * 2, true);
+                    break;
+            }
+
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function updateObjectPosition(obj, deltaTime) {
+            const { motion, position, effects } = obj;
+            const { width, height } = state.settings.resolution;
+            const speedFactor = motion.speed / 30;
+
+            // Store trail position
+            if (effects.trail) {
+                position.trail.push({ x: position.x, y: position.y });
+                if (position.trail.length > effects.trailLength) {
+                    position.trail.shift();
+                }
+            } else {
+                position.trail = [];
+            }
+
+            // Rotation
+            if (effects.rotation) {
+                position.angle += effects.rotationSpeed * deltaTime * 0.001;
+            }
+
+            switch (motion.type) {
+                case 'bounce':
+                    const vx = position.vx * speedFactor;
+                    const vy = position.vy * speedFactor;
+
+                    position.x += vx * deltaTime * 0.1;
+                    position.y += vy * deltaTime * 0.1;
+
+                    if (motion.edgeBounce) {
+                        if (position.x <= obj.shape.size / 2 || position.x >= width - obj.shape.size / 2) {
+                            position.vx *= -1;
+                            position.x = Math.max(obj.shape.size / 2, Math.min(width - obj.shape.size / 2, position.x));
+                        }
+                        if (position.y <= obj.shape.size / 2 || position.y >= height - obj.shape.size / 2) {
+                            position.vy *= -1;
+                            position.y = Math.max(obj.shape.size / 2, Math.min(height - obj.shape.size / 2, position.y));
+                        }
+                    }
+                    break;
+
+                case 'linear':
+                    const dir = getDirectionVector(motion.direction);
+                    position.x += dir.x * motion.speed * deltaTime * 0.05;
+                    position.y += dir.y * motion.speed * deltaTime * 0.05;
+
+                    // Wrap around
+                    if (position.x < -obj.shape.size) position.x = width + obj.shape.size;
+                    if (position.x > width + obj.shape.size) position.x = -obj.shape.size;
+                    if (position.y < -obj.shape.size) position.y = height + obj.shape.size;
+                    if (position.y > height + obj.shape.size) position.y = -obj.shape.size;
+                    break;
+
+                case 'circular':
+                    const centerX = width / 2;
+                    const centerY = height / 2;
+                    const radius = Math.min(width, height) / 3;
+                    const angularSpeed = motion.speed * 0.001;
+                    const angle = state.elapsedTime * angularSpeed;
+                    position.x = centerX + Math.cos(angle) * radius;
+                    position.y = centerY + Math.sin(angle) * radius;
+                    break;
+
+                case 'wave':
+                    position.x += motion.speed * deltaTime * 0.05;
+                    position.y = height / 2 + Math.sin(state.elapsedTime * 0.002 * motion.speed) * (height / 3);
+
+                    if (position.x > width + obj.shape.size) position.x = -obj.shape.size;
+                    break;
+
+                case 'random':
+                    if (Math.random() < 0.02) {
+                        position.vx = (Math.random() - 0.5) * motion.speed;
+                        position.vy = (Math.random() - 0.5) * motion.speed;
+                    }
+                    position.x += position.vx * deltaTime * 0.1;
+                    position.y += position.vy * deltaTime * 0.1;
+
+                    if (motion.edgeBounce) {
+                        if (position.x <= obj.shape.size / 2 || position.x >= width - obj.shape.size / 2) {
+                            position.vx *= -1;
+                        }
+                        if (position.y <= obj.shape.size / 2 || position.y >= height - obj.shape.size / 2) {
+                            position.vy *= -1;
+                        }
+                    }
+                    break;
+
+                case 'vibrate':
+                    const vibrateAmount = motion.speed * 0.1;
+                    position.x += (Math.random() - 0.5) * vibrateAmount;
+                    position.y += (Math.random() - 0.5) * vibrateAmount;
+                    break;
+            }
+        }
+
+        function getDirectionVector(direction) {
+            const dirs = {
+                random: { x: Math.random() - 0.5, y: Math.random() - 0.5 },
+                right: { x: 1, y: 0 },
+                left: { x: -1, y: 0 },
+                up: { x: 0, y: -1 },
+                down: { x: 0, y: 1 },
+                diagonal: { x: 0.707, y: 0.707 }
+            };
+            return dirs[direction] || dirs.random;
+        }
+
+        function render(timestamp) {
+            if (!state.startTime) state.startTime = timestamp;
+
+            const deltaTime = timestamp - (state.lastFrame || timestamp);
+            state.lastFrame = timestamp;
+            state.elapsedTime = timestamp - state.startTime;
+
+            // Check if duration exceeded
+            if (state.elapsedTime >= state.settings.duration * 1000) {
+                stopAnimation();
+                return;
+            }
+
+            // Clear and draw background
+            ctx.clearRect(0, 0, state.settings.resolution.width, state.settings.resolution.height);
+            drawBackground(state.elapsedTime);
+
+            // Update and draw objects
+            state.objects.forEach(obj => {
+                updateObjectPosition(obj, deltaTime);
+                drawShape(obj, state.elapsedTime);
+            });
+
+            // Update progress
+            const progress = (state.elapsedTime / (state.settings.duration * 1000)) * 100;
+            elements.progressBar.style.width = `${progress}%`;
+            elements.currentTime.textContent = formatTime(state.elapsedTime / 1000);
+
+            if (state.isPlaying) {
+                state.animationFrame = requestAnimationFrame(render);
+            }
+        }
+
+        function startAnimation() {
+            state.isPlaying = true;
+            state.startTime = 0;
+            state.lastFrame = 0;
+            elements.previewOverlay.classList.add('hidden');
+            elements.playPauseText.textContent = 'Pause';
+            elements.statusBadge.classList.remove('hidden');
+            state.animationFrame = requestAnimationFrame(render);
+        }
+
+        function stopAnimation() {
+            state.isPlaying = false;
+            if (state.animationFrame) {
+                cancelAnimationFrame(state.animationFrame);
+            }
+            elements.playPauseText.textContent = 'Play';
+            elements.statusBadge.classList.add('hidden');
+        }
+
+        function resetAnimation() {
+            stopAnimation();
+            state.elapsedTime = 0;
+            elements.progressBar.style.width = '0%';
+            elements.currentTime.textContent = '0:00';
+            elements.previewOverlay.classList.remove('hidden');
+
+            // Reset object positions
+            state.objects.forEach(obj => {
+                obj.position.x = Math.random() * state.settings.resolution.width;
+                obj.position.y = Math.random() * state.settings.resolution.height;
+                obj.position.trail = [];
+            });
+
+            // Draw initial frame
+            drawBackground(0);
+            state.objects.forEach(obj => drawShape(obj, 0));
+        }
+
+        // =====================================================
+        // VIDEO EXPORT
+        // =====================================================
+        async function exportVideo() {
+            if (state.objects.length === 0) {
+                alert('Please add at least one object before exporting.');
+                return;
+            }
+
+            state.isExporting = true;
+            elements.exportProgress.classList.remove('hidden');
+            elements.downloadSection.classList.add('hidden');
+            elements.exportBtn.disabled = true;
+            elements.exportText.textContent = 'Exporting...';
+            elements.statusBadge.textContent = 'Exporting...';
+            elements.statusBadge.classList.remove('hidden');
+
+            const { width, height } = state.settings.resolution;
+            const exportCanvas = document.createElement('canvas');
+            exportCanvas.width = width;
+            exportCanvas.height = height;
+            const exportCtx = exportCanvas.getContext('2d');
+
+            const totalFrames = state.settings.duration * state.settings.frameRate;
+            const frameInterval = 1000 / state.settings.frameRate;
+
+            // Prepare MIME type
+            const mimeType = state.settings.outputFormat === 'mp4'
+                ? 'video/mp4'
+                : 'video/webm;codecs=vp9';
+
+            // Check if the format is supported
+            if (!MediaRecorder.isTypeSupported(mimeType)) {
+                alert(`Format ${mimeType} is not supported in this browser. Trying WebM instead.`);
+                state.settings.outputFormat = 'webm';
+            }
+
+            // Create media recorder
+            const stream = exportCanvas.captureStream(state.settings.frameRate);
+
+            // Add audio if available
+            let audioContext, audioSource, audioDestination;
+            if (state.audioFile) {
+                try {
+                    audioContext = new AudioContext();
+                    const audioBuffer = await state.audioFile.arrayBuffer();
+                    const decodedAudio = await audioContext.decodeAudioData(audioBuffer);
+
+                    audioDestination = audioContext.createMediaStreamDestination();
+                    audioSource = audioContext.createBufferSource();
+                    audioSource.buffer = decodedAudio;
+                    audioSource.connect(audioDestination);
+
+                    stream.addTrack(audioDestination.stream.getAudioTracks()[0]);
+                } catch (e) {
+                    console.error('Error processing audio:', e);
+                }
+            }
+
+            const mediaRecorder = new MediaRecorder(stream, {
+                mimeType: state.settings.outputFormat === 'mp4'
+                    ? 'video/webm;codecs=vp9' // Use WebM for recording, will have extension .mp4
+                    : 'video/webm;codecs=vp9',
+                videoBitsPerSecond: state.settings.videoQuality
+            });
+
+            const chunks = [];
+            mediaRecorder.ondataavailable = (e) => {
+                if (e.data.size > 0) chunks.push(e.data);
+            };
+
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(chunks, { type: 'video/webm' });
+                const url = URL.createObjectURL(blob);
+
+                elements.downloadLink.href = url;
+                elements.downloadLink.download = `background-video.${state.settings.outputFormat}`;
+                elements.downloadSection.classList.remove('hidden');
+
+                state.isExporting = false;
+                elements.exportBtn.disabled = false;
+                elements.exportText.textContent = 'Generate Video';
+                elements.statusBadge.classList.add('hidden');
+
+                if (audioContext) {
+                    audioContext.close();
+                }
+            };
+
+            // Start audio if available
+            if (audioSource) {
+                audioSource.start(0);
+            }
+
+            mediaRecorder.start();
+
+            // Render frames
+            let currentFrame = 0;
+            const exportState = {
+                startTime: 0,
+                elapsedTime: 0
+            };
+
+            // Clone objects for export
+            const exportObjects = JSON.parse(JSON.stringify(state.objects));
+
+            function renderExportFrame() {
+                const time = currentFrame * frameInterval;
+                exportState.elapsedTime = time;
+
+                // Draw background
+                const bg = state.settings.background;
+                if (bg.type === 'solid') {
+                    exportCtx.fillStyle = bg.solidColor;
+                    exportCtx.fillRect(0, 0, width, height);
+                } else if (bg.type === 'gradient') {
+                    const angle = bg.gradientAngle * Math.PI / 180;
+                    const x1 = width / 2 - Math.cos(angle) * width;
+                    const y1 = height / 2 - Math.sin(angle) * height;
+                    const x2 = width / 2 + Math.cos(angle) * width;
+                    const y2 = height / 2 + Math.sin(angle) * height;
+
+                    const gradient = exportCtx.createLinearGradient(x1, y1, x2, y2);
+                    gradient.addColorStop(0, bg.gradientStart);
+                    gradient.addColorStop(1, bg.gradientEnd);
+                    exportCtx.fillStyle = gradient;
+                    exportCtx.fillRect(0, 0, width, height);
+                } else if (bg.type === 'animated') {
+                    const t = (time * bg.animSpeed * 0.001) % 1;
+                    const gradient = exportCtx.createLinearGradient(0, 0, width, height);
+                    gradient.addColorStop(0, bg.animColors[0]);
+                    gradient.addColorStop(0.33, bg.animColors[1]);
+                    gradient.addColorStop(0.66, bg.animColors[2]);
+                    gradient.addColorStop(1, bg.animColors[0]);
+                    exportCtx.fillStyle = gradient;
+                    exportCtx.fillRect(0, 0, width, height);
+                }
+
+                // Draw objects
+                exportObjects.forEach(obj => {
+                    // Update position
+                    const speedFactor = obj.motion.speed / 30;
+
+                    switch (obj.motion.type) {
+                        case 'bounce':
+                            obj.position.x += obj.position.vx * speedFactor * frameInterval * 0.1;
+                            obj.position.y += obj.position.vy * speedFactor * frameInterval * 0.1;
+
+                            if (obj.motion.edgeBounce) {
+                                if (obj.position.x <= obj.shape.size / 2 || obj.position.x >= width - obj.shape.size / 2) {
+                                    obj.position.vx *= -1;
+                                }
+                                if (obj.position.y <= obj.shape.size / 2 || obj.position.y >= height - obj.shape.size / 2) {
+                                    obj.position.vy *= -1;
+                                }
+                            }
+                            break;
+                        case 'linear':
+                            const dir = getDirectionVector(obj.motion.direction);
+                            obj.position.x += dir.x * obj.motion.speed * frameInterval * 0.05;
+                            obj.position.y += dir.y * obj.motion.speed * frameInterval * 0.05;
+                            if (obj.position.x < -obj.shape.size) obj.position.x = width + obj.shape.size;
+                            if (obj.position.x > width + obj.shape.size) obj.position.x = -obj.shape.size;
+                            if (obj.position.y < -obj.shape.size) obj.position.y = height + obj.shape.size;
+                            if (obj.position.y > height + obj.shape.size) obj.position.y = -obj.shape.size;
+                            break;
+                        case 'circular':
+                            const centerX = width / 2;
+                            const centerY = height / 2;
+                            const radius = Math.min(width, height) / 3;
+                            const angularSpeed = obj.motion.speed * 0.001;
+                            const angle = time * angularSpeed;
+                            obj.position.x = centerX + Math.cos(angle) * radius;
+                            obj.position.y = centerY + Math.sin(angle) * radius;
+                            break;
+                        case 'wave':
+                            obj.position.x += obj.motion.speed * frameInterval * 0.05;
+                            obj.position.y = height / 2 + Math.sin(time * 0.002 * obj.motion.speed) * (height / 3);
+                            if (obj.position.x > width + obj.shape.size) obj.position.x = -obj.shape.size;
+                            break;
+                        case 'vibrate':
+                            obj.position.x += (Math.random() - 0.5) * obj.motion.speed * 0.1;
+                            obj.position.y += (Math.random() - 0.5) * obj.motion.speed * 0.1;
+                            break;
+                    }
+
+                    // Calculate effects
+                    let size = obj.shape.size;
+                    let color = obj.shape.color;
+
+                    if (obj.effects.pulse) {
+                        const pulseFactor = Math.sin(time * obj.effects.pulseSpeed * 0.003) * (obj.effects.pulseRange / 100);
+                        size = obj.shape.size * (1 + pulseFactor);
+                    }
+
+                    if (obj.effects.colorShift) {
+                        const rgb = hexToRgb(obj.shape.color);
+                        const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
+                        const newHue = (hsl.h + time * obj.effects.colorShiftSpeed * 0.05) % 360;
+                        color = hslToHex(newHue, hsl.s, hsl.l);
+                    }
+
+                    // Rotation
+                    if (obj.effects.rotation) {
+                        obj.position.angle += obj.effects.rotationSpeed * frameInterval * 0.001;
+                    }
+
+                    // Draw shape
+                    exportCtx.save();
+                    let opacity = obj.shape.opacity;
+
+                    if (obj.effects.fade) {
+                        const progress = time / (state.settings.duration * 1000);
+                        if (progress < 0.1) {
+                            opacity = obj.shape.opacity * easeInOutQuad(progress / 0.1);
+                        } else if (progress > 0.9) {
+                            opacity = obj.shape.opacity * easeInOutQuad((1 - progress) / 0.1);
+                        }
+                    }
+
+                    exportCtx.globalAlpha = opacity;
+                    exportCtx.translate(obj.position.x, obj.position.y);
+                    exportCtx.rotate((obj.position.angle || 0) * Math.PI / 180);
+
+                    if (obj.shape.glow) {
+                        exportCtx.shadowColor = obj.shape.glowColor;
+                        exportCtx.shadowBlur = obj.shape.glowIntensity;
+                    }
+
+                    exportCtx.fillStyle = color;
+                    exportCtx.beginPath();
+
+                    switch (obj.shape.type) {
+                        case 'circle':
+                            exportCtx.arc(0, 0, size / 2, 0, Math.PI * 2);
+                            break;
+                        case 'square':
+                            exportCtx.rect(-size / 2, -size / 2, size, size);
+                            break;
+                        case 'triangle':
+                            exportCtx.moveTo(0, -size / 2);
+                            exportCtx.lineTo(size / 2, size / 2);
+                            exportCtx.lineTo(-size / 2, size / 2);
+                            exportCtx.closePath();
+                            break;
+                        case 'star':
+                            for (let i = 0; i < 5; i++) {
+                                const outerAngle = (i * 72 - 90) * Math.PI / 180;
+                                const innerAngle = ((i * 72) + 36 - 90) * Math.PI / 180;
+                                if (i === 0) {
+                                    exportCtx.moveTo(Math.cos(outerAngle) * size / 2, Math.sin(outerAngle) * size / 2);
+                                } else {
+                                    exportCtx.lineTo(Math.cos(outerAngle) * size / 2, Math.sin(outerAngle) * size / 2);
+                                }
+                                exportCtx.lineTo(Math.cos(innerAngle) * size / 4, Math.sin(innerAngle) * size / 4);
+                            }
+                            exportCtx.closePath();
+                            break;
+                        case 'hexagon':
+                            for (let i = 0; i < 6; i++) {
+                                const hexAngle = (i * 60 - 30) * Math.PI / 180;
+                                if (i === 0) {
+                                    exportCtx.moveTo(Math.cos(hexAngle) * size / 2, Math.sin(hexAngle) * size / 2);
+                                } else {
+                                    exportCtx.lineTo(Math.cos(hexAngle) * size / 2, Math.sin(hexAngle) * size / 2);
+                                }
+                            }
+                            exportCtx.closePath();
+                            break;
+                        case 'ring':
+                            exportCtx.arc(0, 0, size / 2, 0, Math.PI * 2);
+                            exportCtx.arc(0, 0, size / 3, 0, Math.PI * 2, true);
+                            break;
+                    }
+
+                    exportCtx.fill();
+                    exportCtx.restore();
+                });
+
+                // Update progress
+                currentFrame++;
+                const progress = (currentFrame / totalFrames) * 100;
+                elements.exportProgressBar.style.width = `${progress}%`;
+                elements.exportPercent.textContent = `${Math.round(progress)}%`;
+                elements.exportStatus.textContent = `Rendering frame ${currentFrame}/${totalFrames}`;
+
+                if (currentFrame < totalFrames) {
+                    // Use setTimeout to allow UI updates
+                    setTimeout(renderExportFrame, 0);
+                } else {
+                    mediaRecorder.stop();
+                    elements.exportStatus.textContent = 'Finalizing...';
+                }
+            }
+
+            renderExportFrame();
+        }
+
+        // =====================================================
+        // PRESETS
+        // =====================================================
+        const presets = {
+            calm: {
+                background: {
+                    type: 'gradient',
+                    gradientStart: '#0c4a6e',
+                    gradientEnd: '#164e63',
+                    gradientAngle: 135
+                },
+                objects: [
+                    { shape: { type: 'circle', size: 80, color: '#38bdf8', opacity: 0.3 }, motion: { type: 'wave', speed: 15 }, effects: { pulse: true, pulseSpeed: 1 } },
+                    { shape: { type: 'circle', size: 60, color: '#22d3ee', opacity: 0.4 }, motion: { type: 'wave', speed: 20 }, effects: { pulse: true, pulseSpeed: 2 } },
+                    { shape: { type: 'circle', size: 100, color: '#06b6d4', opacity: 0.2 }, motion: { type: 'circular', speed: 10 }, effects: {} }
+                ]
+            },
+            energetic: {
+                background: {
+                    type: 'animated',
+                    animColors: ['#dc2626', '#ea580c', '#facc15'],
+                    animSpeed: 5
+                },
+                objects: [
+                    { shape: { type: 'triangle', size: 60, color: '#fef08a', opacity: 0.8, glow: true, glowColor: '#fef08a' }, motion: { type: 'bounce', speed: 60 }, effects: { rotation: true, rotationSpeed: 10 } },
+                    { shape: { type: 'square', size: 50, color: '#fb923c', opacity: 0.7 }, motion: { type: 'bounce', speed: 50 }, effects: { rotation: true, rotationSpeed: 8 } },
+                    { shape: { type: 'star', size: 40, color: '#fbbf24', opacity: 0.9, glow: true, glowColor: '#fbbf24' }, motion: { type: 'bounce', speed: 70 }, effects: {} }
+                ]
+            },
+            minimal: {
+                background: {
+                    type: 'solid',
+                    solidColor: '#1f2937'
+                },
+                objects: [
+                    { shape: { type: 'circle', size: 120, color: '#4b5563', opacity: 0.5 }, motion: { type: 'circular', speed: 8 }, effects: {} }
+                ]
+            },
+            particles: {
+                background: {
+                    type: 'gradient',
+                    gradientStart: '#0f172a',
+                    gradientEnd: '#1e1b4b',
+                    gradientAngle: 180
+                },
+                objects: Array.from({ length: 15 }, (_, i) => ({
+                    shape: { type: 'circle', size: Math.random() * 20 + 10, color: '#a5b4fc', opacity: Math.random() * 0.5 + 0.3, glow: true, glowColor: '#818cf8' },
+                    motion: { type: 'bounce', speed: Math.random() * 30 + 20 },
+                    effects: { trail: true, trailLength: 3 }
+                }))
+            },
+            neon: {
+                background: {
+                    type: 'solid',
+                    solidColor: '#030712'
+                },
+                objects: [
+                    { shape: { type: 'ring', size: 100, color: '#f0abfc', opacity: 0.9, glow: true, glowIntensity: 30, glowColor: '#f0abfc' }, motion: { type: 'bounce', speed: 25 }, effects: { pulse: true, pulseSpeed: 3, colorShift: true, colorShiftSpeed: 2 } },
+                    { shape: { type: 'ring', size: 80, color: '#22d3ee', opacity: 0.8, glow: true, glowIntensity: 25, glowColor: '#22d3ee' }, motion: { type: 'bounce', speed: 30 }, effects: { pulse: true, pulseSpeed: 4, colorShift: true, colorShiftSpeed: 3 } },
+                    { shape: { type: 'hexagon', size: 60, color: '#4ade80', opacity: 0.7, glow: true, glowIntensity: 20, glowColor: '#4ade80' }, motion: { type: 'bounce', speed: 35 }, effects: { rotation: true, rotationSpeed: 5 } }
+                ]
+            },
+            cosmic: {
+                background: {
+                    type: 'animated',
+                    animColors: ['#1e1b4b', '#312e81', '#4c1d95'],
+                    animSpeed: 2
+                },
+                objects: [
+                    ...Array.from({ length: 20 }, () => ({
+                        shape: { type: 'circle', size: Math.random() * 8 + 2, color: '#fff', opacity: Math.random() * 0.8 + 0.2, glow: true, glowIntensity: 10, glowColor: '#fff' },
+                        motion: { type: 'random', speed: Math.random() * 10 + 5 },
+                        effects: {}
+                    })),
+                    { shape: { type: 'star', size: 40, color: '#fef3c7', opacity: 0.9, glow: true, glowIntensity: 25, glowColor: '#fef3c7' }, motion: { type: 'circular', speed: 15 }, effects: { pulse: true, pulseRange: 30 } }
+                ]
+            }
+        };
+
+        function applyPreset(presetName) {
+            const preset = presets[presetName];
+            if (!preset) return;
+
+            // Apply background
+            Object.assign(state.settings.background, preset.background);
+
+            // Update background UI
+            elements.bgType.value = preset.background.type;
+            elements.solidBgSettings.classList.toggle('hidden', preset.background.type !== 'solid');
+            elements.gradientBgSettings.classList.toggle('hidden', preset.background.type !== 'gradient');
+            elements.animatedBgSettings.classList.toggle('hidden', preset.background.type !== 'animated');
+
+            if (preset.background.solidColor) {
+                elements.bgColor.value = preset.background.solidColor;
+                elements.bgColorText.value = preset.background.solidColor;
+            }
+            if (preset.background.gradientStart) {
+                elements.bgGradientStart.value = preset.background.gradientStart;
+            }
+            if (preset.background.gradientEnd) {
+                elements.bgGradientEnd.value = preset.background.gradientEnd;
+            }
+            if (preset.background.gradientAngle) {
+                elements.bgGradientAngle.value = preset.background.gradientAngle;
+            }
+            if (preset.background.animColors) {
+                elements.bgAnimColor1.value = preset.background.animColors[0];
+                elements.bgAnimColor2.value = preset.background.animColors[1];
+                elements.bgAnimColor3.value = preset.background.animColors[2];
+            }
+            if (preset.background.animSpeed) {
+                elements.bgAnimSpeed.value = preset.background.animSpeed;
+            }
+
+            // Create objects
+            state.objects = [];
+            objectIdCounter = 0;
+
+            preset.objects.forEach(objConfig => {
+                const obj = createDefaultObject();
+                Object.assign(obj.shape, objConfig.shape);
+                Object.assign(obj.motion, objConfig.motion);
+                Object.assign(obj.effects, objConfig.effects || {});
+                obj.baseColor = obj.shape.color;
+                obj.baseSize = obj.shape.size;
+                state.objects.push(obj);
+            });
+
+            renderObjectsList();
+            if (state.objects.length > 0) {
+                selectObject(state.objects[0].id);
+            }
+
+            // Redraw preview
+            drawBackground(0);
+            state.objects.forEach(obj => drawShape(obj, 0));
+        }
+
+        // =====================================================
+        // INITIALIZATION
+        // =====================================================
+        function init() {
+            // Set initial canvas size
+            updateCanvasSize();
+            elements.totalTime.textContent = formatTime(state.settings.duration);
+
+            // Setup all event listeners
+            setupTabs();
+            setupVideoSettings();
+            setupBackgroundSettings();
+            setupAudioHandling();
+            setupObjectEditorListeners();
+
+            // Play/Pause button
+            elements.playPauseBtn.addEventListener('click', () => {
+                if (state.isPlaying) {
+                    stopAnimation();
+                } else {
+                    startAnimation();
+                }
+            });
+
+            // Reset button
+            elements.resetBtn.addEventListener('click', resetAnimation);
+
+            // Export button
+            elements.exportBtn.addEventListener('click', exportVideo);
+
+            // Add object button
+            elements.addObjectBtn.addEventListener('click', addObject);
+
+            // Preset buttons
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    applyPreset(btn.dataset.preset);
+                });
+            });
+
+            // Add initial object
+            addObject();
+
+            // Draw initial frame
+            drawBackground(0);
+            state.objects.forEach(obj => drawShape(obj, 0));
+        }
+
+        // Start the app
+        init();
+    </script>
+</body>
+</html>
