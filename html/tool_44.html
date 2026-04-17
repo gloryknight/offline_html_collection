@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EV Optimal Speed Calculator</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #0f1117;
+            --card: #1a1d27;
+            --border: #2a2d3a;
+            --accent: #4f8cff;
+            --accent2: #00d4aa;
+            --accent3: #ff6b6b;
+            --text: #e4e6f0;
+            --text2: #8b8fa3;
+            --glow: rgba(79, 140, 255, 0.15);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0 20px;
+        }
+
+        header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 6px;
+        }
+
+        header p {
+            color: var(--text2);
+            font-size: 0.95rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 340px 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 900px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+        }
+
+        .card h2 {
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card h2 .icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .icon-blue {
+            background: rgba(79, 140, 255, 0.15);
+        }
+
+        .icon-green {
+            background: rgba(0, 212, 170, 0.15);
+        }
+
+        .icon-red {
+            background: rgba(255, 107, 107, 0.15);
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.82rem;
+            color: var(--text2);
+            margin-bottom: 6px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px 14px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--glow);
+        }
+
+        .form-group .hint {
+            font-size: 0.75rem;
+            color: var(--text2);
+            margin-top: 4px;
+            opacity: 0.7;
+        }
+
+        .range-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .range-row input[type="range"] {
+            flex: 1;
+            -webkit-appearance: none;
+            height: 6px;
+            background: var(--border);
+            border-radius: 3px;
+            outline: none;
+            border: none;
+            padding: 0;
+            box-shadow: none;
+        }
+
+        .range-row input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            box-shadow: 0 0 8px rgba(79, 140, 255, 0.4);
+        }
+
+        .range-val {
+            min-width: 50px;
+            text-align: right;
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: var(--accent);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.15s;
+            margin-top: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent), #3a6fd8);
+            color: white;
+            box-shadow: 0 4px 15px rgba(79, 140, 255, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(79, 140, 255, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .results {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .result-box {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .result-box .label {
+            font-size: 0.75rem;
+            color: var(--text2);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+
+        .result-box .value {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .result-box .unit {
+            font-size: 0.8rem;
+            color: var(--text2);
+            font-weight: 400;
+        }
+
+        .optimal .value {
+            color: var(--accent2);
+        }
+
+        .time .value {
+            color: var(--accent);
+        }
+
+        .stops .value {
+            color: #f0a040;
+        }
+
+        .energy .value {
+            color: var(--accent3);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 350px;
+            margin-top: 10px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .info-item {
+            background: var(--bg);
+            border-radius: 10px;
+            padding: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .info-item .info-label {
+            font-size: 0.72rem;
+            color: var(--text2);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .info-item .info-value {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-top: 2px;
+        }
+
+        .speed-table {
+            margin-top: 16px;
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .speed-table th {
+            text-align: left;
+            padding: 8px 12px;
+            color: var(--text2);
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .speed-table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid rgba(42, 45, 58, 0.5);
+        }
+
+        .speed-table tr.optimal-row {
+            background: rgba(0, 212, 170, 0.08);
+        }
+
+        .speed-table tr.optimal-row td {
+            color: var(--accent2);
+            font-weight: 600;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .badge-optimal {
+            background: rgba(0, 212, 170, 0.15);
+            color: var(--accent2);
+        }
+
+        .badge-slow {
+            background: rgba(255, 107, 107, 0.15);
+            color: var(--accent3);
+        }
+
+        .badge-fast {
+            background: rgba(240, 160, 64, 0.15);
+            color: #f0a040;
+        }
+
+        .right-col {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .section-divider {
+            height: 1px;
+            background: var(--border);
+            margin: 16px 0;
+        }
+
+        .consumption-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 4px;
+        }
+
+        .consumption-bar .bar-bg {
+            flex: 1;
+            height: 8px;
+            background: var(--border);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .consumption-bar .bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s;
+        }
+
+        .tab-bar {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 16px;
+            background: var(--bg);
+            border-radius: 10px;
+            padding: 4px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 8px 12px;
+            border: none;
+            background: transparent;
+            color: var(--text2);
+            border-radius: 8px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active {
+            background: var(--accent);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .footer-note {
+            text-align: center;
+            color: var(--text2);
+            font-size: 0.78rem;
+            margin-top: 20px;
+            opacity: 0.6;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <header>
+            <h1>⚡ EV Optimal Speed Calculator</h1>
+            <p>Find the speed that minimizes total trip time — driving + charging</p>
+        </header>
+
+        <div class="grid">
+            <!-- LEFT: Inputs -->
+            <div>
+                <div class="card">
+                    <h2><span class="icon icon-blue">🚗</span> Trip Parameters</h2>
+
+                    <div class="form-group">
+                        <label>Trip Distance</label>
+                        <div class="range-row">
+                            <input type="range" id="distance" min="20" max="2000" value="300" step="10">
+                            <span class="range-val" id="distanceVal">300 km</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Battery Capacity</label>
+                        <input type="number" id="battery" value="44" min="20" max="200" step="1">
+                        <div class="hint">kWh total capacity</div>
+                    </div>
+
+                    <div class="section-divider"></div>
+
+                    <h2><span class="icon icon-green">🔋</span> Charge States</h2>
+
+                    <div class="form-group">
+                        <label>Starting Charge</label>
+                        <div class="range-row">
+                            <input type="range" id="startCharge" min="10" max="100" value="80" step="5">
+                            <span class="range-val" id="startChargeVal">80%</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Minimum Charge During Drive</label>
+                        <div class="range-row">
+                            <input type="range" id="minCharge" min="5" max="60" value="20" step="5">
+                            <span class="range-val" id="minChargeVal">20%</span>
+                        </div>
+                        <div class="hint">Don't discharge below this before charging</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Target Charge at Destination</label>
+                        <div class="range-row">
+                            <input type="range" id="finalCharge" min="0" max="100" value="20" step="5">
+                            <span class="range-val" id="finalChargeVal">20%</span>
+                        </div>
+                        <div class="hint">Don't arrive below this (optional)</div>
+                    </div>
+
+                    <div class="section-divider"></div>
+
+                    <h2><span class="icon icon-red">⚡</span> Vehicle & Charging</h2>
+
+                    <div class="form-group">
+                        <label>Consumption at Reference Speed</label>
+                        <div class="range-row">
+                            <input type="range" id="refConsumption" min="8" max="40" value="18" step="1">
+                            <span class="range-val" id="refConsumptionVal">18</span>
+                        </div>
+                        <div class="hint">kWh / 100 km at reference speed</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Reference Speed</label>
+                        <div class="range-row">
+                            <input type="range" id="refSpeed" min="60" max="140" value="100" step="5">
+                            <span class="range-val" id="refSpeedVal">100</span>
+                        </div>
+                        <div class="hint">km/h</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Consumption Exponent</label>
+                        <div class="range-row">
+                            <input type="range" id="exponent" min="1.5" max="3.5" value="2.5" step="0.1">
+                            <span class="range-val" id="exponentVal">2.5</span>
+                        </div>
+                        <div class="hint">Typically 2.0–3.0 for highway</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Average Charging Power</label>
+                        <div class="range-row">
+                            <input type="range" id="chargePower" min="10" max="250" value="50" step="5">
+                            <span class="range-val" id="chargePowerVal">50</span>
+                        </div>
+                        <div class="hint">kW average during charge stop</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Fixed Stop Overhead</label>
+                        <div class="range-row">
+                            <input type="range" id="stopOverhead" min="0" max="15" value="3" step="1">
+                            <span class="range-val" id="stopOverheadVal">3</span>
+                        </div>
+                        <div class="hint">Minutes for walking, payment, etc.</div>
+                    </div>
+
+                    <button class="btn btn-primary" onclick="calculate()">Calculate Optimal Speed</button>
+                </div>
+            </div>
+
+            <!-- RIGHT: Results -->
+            <div class="right-col">
+                <div class="card" id="resultsCard" style="display:none;">
+                    <h2><span class="icon icon-green">📊</span> Results</h2>
+
+                    <div class="results">
+                        <div class="result-box optimal">
+                            <div class="label">Optimal Speed</div>
+                            <div class="value" id="optSpeed">—</div>
+                        </div>
+                        <div class="result-box time">
+                            <div class="label">Total Time</div>
+                            <div class="value" id="optTime">—</div>
+                        </div>
+                        <div class="result-box stops">
+                            <div class="label">Charging Stops</div>
+                            <div class="value" id="optStops">—</div>
+                        </div>
+                        <div class="result-box energy">
+                            <div class="label">Energy Used</div>
+                            <div class="value" id="optEnergy">—</div>
+                        </div>
+                    </div>
+
+                    <div class="info-grid" id="infoGrid">
+                        <div class="info-item">
+                            <div class="info-label">Driving Time</div>
+                            <div class="info-value" id="infoDriveTime">—</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Charging Time</div>
+                            <div class="info-value" id="infoChargeTime">—</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Consumption at Optimal</div>
+                            <div class="info-value" id="infoConsumption">—</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Usable Energy / Stop</div>
+                            <div class="info-value" id="infoUsable">—</div>
+                        </div>
+                    </div>
+
+                    <div class="tab-bar">
+                        <button class="tab-btn active" onclick="switchTab('chart')">📈 Chart</button>
+                        <button class="tab-btn" onclick="switchTab('table')">📋 Speed Table</button>
+                        <button class="tab-btn" onclick="switchTab('comparison')">⚖️ Comparison</button>
+                    </div>
+
+                    <div class="tab-content active" id="tab-chart">
+                        <div class="chart-container">
+                            <canvas id="speedChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="tab-content" id="tab-table">
+                        <div style="overflow-x:auto;">
+                            <table class="speed-table" id="speedTable">
+                                <thead>
+                                    <tr>
+                                        <th>Speed</th>
+                                        <th>Consumption</th>
+                                        <th>Stops</th>
+                                        <th>Total Time</th>
+                                        <th>Δ vs Optimal</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="speedTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="tab-content" id="tab-comparison">
+                        <div class="chart-container" style="height:300px;">
+                            <canvas id="comparisonChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" id="placeholderCard">
+                    <div style="text-align:center;padding:40px 20px;">
+                        <div style="font-size:3rem;margin-bottom:12px;">🔌</div>
+                        <p style="color:var(--text2);font-size:0.95rem;">Enter your trip parameters and click
+                            <strong>Calculate</strong> to find the optimal speed that minimizes your total travel time.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <p class="footer-note">Model assumes consumption ∝ v^n on highway. Charging time = energy / avg_power +
+            overhead. Real-world results may vary with traffic, weather, and charger curve.</p>
+    </div>
+
+    <script>
+        let speedChart = null;
+        let comparisonChart = null;
+
+        // Sync range inputs with display values
+        const rangeInputs = ['distance', 'startCharge', 'minCharge', 'finalCharge', 'refConsumption', 'refSpeed', 'exponent', 'chargePower', 'stopOverhead'];
+        rangeInputs.forEach(id => {
+            const el = document.getElementById(id);
+            el.addEventListener('input', () => {
+                const val = el.value;
+                const suffixes = {
+                    distance: ' km', startCharge: '%', minCharge: '%', finalCharge: '%',
+                    refConsumption: '', refSpeed: '', exponent: '', chargePower: ' kW', stopOverhead: ' min'
+                };
+                document.getElementById(id + 'Val').textContent = val + (suffixes[id] || '');
+            });
+        });
+
+        function getParams() {
+            return {
+                distance: +document.getElementById('distance').value,
+                battery: +document.getElementById('battery').value,
+                startCharge: +document.getElementById('startCharge').value,
+                minCharge: +document.getElementById('minCharge').value,
+                finalCharge: +document.getElementById('finalCharge').value,
+                refConsumption: +document.getElementById('refConsumption').value,
+                refSpeed: +document.getElementById('refSpeed').value,
+                exponent: +document.getElementById('exponent').value,
+                chargePower: +document.getElementById('chargePower').value,
+                stopOverhead: +document.getElementById('stopOverhead').value,
+            };
+        }
+
+        function consumptionAtSpeed(v, p) {
+            // kWh per 100 km
+            return p.refConsumption * Math.pow(v / p.refSpeed, p.exponent);
+        }
+
+        function calcTotalTime(speed, p) {
+            const cons = consumptionAtSpeed(speed, p); // kWh/100km
+            const totalEnergyNeeded = (cons / 100) * p.distance; // kWh
+
+            // Usable energy per charge segment
+            const usablePerSegment = (p.startCharge - p.minCharge) / 100 * p.battery;
+
+            // How many full segments do we need?
+            // Starting from startCharge%, we can use (startCharge - minCharge)% before first charge
+            // After charging, we can use (startCharge - minCharge)% again (assuming we charge to startCharge%)
+
+            const segmentsNeeded = Math.ceil(totalEnergyNeeded / usablePerSegment);
+            const stops = Math.max(0, segmentsNeeded - 1);
+
+            // If we need more segments than we can get from starting charge, we need to charge
+            // Actually: segmentsNeeded = number of "battery segments" consumed
+            // stops = segmentsNeeded - 1 (if segmentsNeeded > 1)
+
+            const drivingTime = p.distance / speed; // hours
+            const chargingTimePerStop = (usablePerSegment / p.chargePower) + (p.stopOverhead / 60); // hours
+            const totalChargingTime = stops * chargingTimePerStop;
+
+            return {
+                speed,
+                cons,
+                totalEnergyNeeded,
+                segmentsNeeded,
+                stops,
+                drivingTime,
+                chargingTimePerStop,
+                totalChargingTime,
+                totalTime: drivingTime + totalChargingTime,
+                usablePerSegment,
+            };
+        }
+
+        function calculate() {
+            const p = getParams();
+            const results = [];
+
+            // Evaluate speeds from 50 to 200 km/h in 1 km/h steps
+            for (let v = 50; v <= 200; v += 1) {
+                results.push(calcTotalTime(v, p));
+            }
+
+            // Also evaluate fractional speeds around the minimum
+            const optimal = results.reduce((a, b) => a.totalTime < b.totalTime ? a : b);
+
+            // Show results
+            document.getElementById('resultsCard').style.display = 'block';
+            document.getElementById('placeholderCard').style.display = 'none';
+
+            document.getElementById('optSpeed').textContent = optimal.speed.toFixed(0) + ' km/h';
+            document.getElementById('optTime').textContent = formatTime(optimal.totalTime);
+            document.getElementById('optStops').textContent = optimal.stops;
+            document.getElementById('optEnergy').textContent = optimal.totalEnergyNeeded.toFixed(1) + ' kWh';
+
+            document.getElementById('infoDriveTime').textContent = formatTime(optimal.drivingTime);
+            document.getElementById('infoChargeTime').textContent = formatTime(optimal.totalChargingTime);
+            document.getElementById('infoConsumption').textContent = optimal.cons.toFixed(1) + ' kWh/100km';
+            document.getElementById('infoUsable').textContent = optimal.usablePerSegment.toFixed(1) + ' kWh';
+
+            // Build speed table
+            buildSpeedTable(results, optimal);
+
+            // Build charts
+            buildSpeedChart(results, optimal);
+            buildComparisonChart(results, optimal);
+
+            // Switch to chart tab
+            switchTab('chart');
+        }
+
+        function formatTime(hours) {
+            const h = Math.floor(hours);
+            const m = Math.round((hours - h) * 60);
+            if (h === 0) return m + ' min';
+            return h + 'h ' + m + 'min';
+        }
+
+        function buildSpeedTable(results, optimal) {
+            const tbody = document.getElementById('speedTableBody');
+            tbody.innerHTML = '';
+
+            // Show a subset: optimal ± 30 km/h, plus key thresholds
+            const speeds = new Set();
+            for (let v = Math.max(50, optimal.speed - 30); v <= Math.min(200, optimal.speed + 30); v += 5) {
+                speeds.add(v);
+            }
+            speeds.add(optimal.speed);
+
+            // Also add speeds where stop count changes
+            const stopCounts = new Set(results.map(r => r.stops));
+            stopCounts.forEach(sc => {
+                const r = results.find(x => x.stops === sc);
+                if (r) speeds.add(r.speed);
+            });
+
+            const sorted = Array.from(speeds).sort((a, b) => a - b);
+
+            sorted.forEach(v => {
+                const r = results.find(x => x.speed === v);
+                if (!r) return;
+                const tr = document.createElement('tr');
+                if (v === optimal.speed) tr.className = 'optimal-row';
+
+                const delta = r.totalTime - optimal.totalTime;
+                let badge = '';
+                if (v === optimal.speed) badge = '<span class="badge badge-optimal">OPTIMAL</span>';
+                else if (delta > 0.1) badge = '<span class="badge badge-slow">+slow</span>';
+                else if (delta > 0) badge = '<span class="badge badge-fast">+' + (delta * 60).toFixed(0) + 'm</span>';
+
+                tr.innerHTML = `
+      <td>${v} km/h</td>
+      <td>${r.cons.toFixed(1)} kWh/100km</td>
+      <td>${r.stops}</td>
+      <td>${formatTime(r.totalTime)}</td>
+      <td>${badge}</td>
+    `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function buildSpeedChart(results, optimal) {
+            const ctx = document.getElementById('speedChart').getContext('2d');
+
+            const speeds = results.map(r => r.speed);
+            const times = results.map(r => r.totalTime * 60); // minutes
+            const driveTimes = results.map(r => r.drivingTime * 60);
+            const chargeTimes = results.map(r => r.totalChargingTime * 60);
+
+            if (speedChart) speedChart.destroy();
+
+            speedChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: speeds,
+                    datasets: [
+                        {
+                            label: 'Total Time',
+                            data: times,
+                            borderColor: '#4f8cff',
+                            backgroundColor: 'rgba(79,140,255,0.1)',
+                            borderWidth: 2.5,
+                            fill: true,
+                            tension: 0.3,
+                            pointRadius: speeds.filter((_, i) => i % 5 === 0).map(() => 3),
+                            pointBackgroundColor: speeds.map((_, i) => i % 5 === 0 ? '#4f8cff' : 'transparent'),
+                        },
+                        {
+                            label: 'Driving Time',
+                            data: driveTimes,
+                            borderColor: '#00d4aa',
+                            borderWidth: 1.5,
+                            borderDash: [5, 3],
+                            fill: false,
+                            tension: 0.3,
+                            pointRadius: 0,
+                        },
+                        {
+                            label: 'Charging Time',
+                            data: chargeTimes,
+                            borderColor: '#ff6b6b',
+                            borderWidth: 1.5,
+                            fill: false,
+                            tension: 0.3,
+                            pointRadius: 0,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        intersect: false,
+                        mode: 'index',
+                    },
+                    plugins: {
+                        legend: {
+                            labels: { color: '#8b8fa3', font: { size: 11 } }
+                        },
+                        tooltip: {
+                            backgroundColor: '#1a1d27',
+                            titleColor: '#e4e6f0',
+                            bodyColor: '#8b8fa3',
+                            borderColor: '#2a2d3a',
+                            borderWidth: 1,
+                            callbacks: {
+                                title: (items) => items[0].label + ' km/h',
+                                label: (item) => item.dataset.label + ': ' + item.raw.toFixed(1) + ' min',
+                                afterBody: (items) => {
+                                    const idx = items[0].dataIndex;
+                                    const r = results[idx];
+                                    return ['Stops: ' + r.stops, 'Consumption: ' + r.cons.toFixed(1) + ' kWh/100km'];
+                                }
+                            }
+                        },
+                        annotation: {}
+                    },
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'Speed (km/h)', color: '#8b8fa3' },
+                            ticks: { color: '#8b8fa3', maxTicksLimit: 15 },
+                            grid: { color: 'rgba(42,45,58,0.5)' }
+                        },
+                        y: {
+                            title: { display: true, text: 'Time (minutes)', color: '#8b8fa3' },
+                            ticks: { color: '#8b8fa3' },
+                            grid: { color: 'rgba(42,45,58,0.5)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function buildComparisonChart(results, optimal) {
+            const ctx = document.getElementById('comparisonChart').getContext('2d');
+
+            // Compare specific speeds: 80, 100, optimal, 120, 140
+            const compareSpeeds = [80, 100, optimal.speed, 120, 140].filter(s => s >= 50 && s <= 200);
+            const compResults = compareSpeeds.map(s => results.find(r => r.speed === s) || calcTotalTime(s, getParams()));
+
+            if (comparisonChart) comparisonChart.destroy();
+
+            comparisonChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: compResults.map(r => r.speed + ' km/h'),
+                    datasets: [
+                        {
+                            label: 'Driving',
+                            data: compResults.map(r => r.drivingTime * 60),
+                            backgroundColor: '#00d4aa',
+                            borderRadius: 4,
+                        },
+                        {
+                            label: 'Charging',
+                            data: compResults.map(r => r.totalChargingTime * 60),
+                            backgroundColor: '#ff6b6b',
+                            borderRadius: 4,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#8b8fa3', font: { size: 11 } }
+                        },
+                        tooltip: {
+                            backgroundColor: '#1a1d27',
+                            titleColor: '#e4e6f0',
+                            bodyColor: '#8b8fa3',
+                            borderColor: '#2a2d3a',
+                            borderWidth: 1,
+                            callbacks: {
+                                label: (item) => item.dataset.label + ': ' + item.raw.toFixed(1) + ' min',
+                                afterBody: (items) => {
+                                    const idx = items[0].dataIndex;
+                                    const r = compResults[idx];
+                                    return ['Total: ' + formatTime(r.totalTime), 'Stops: ' + r.stops];
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            stacked: true,
+                            ticks: { color: '#8b8fa3' },
+                            grid: { color: 'rgba(42,45,58,0.5)' }
+                        },
+                        y: {
+                            stacked: true,
+                            title: { display: true, text: 'Time (minutes)', color: '#8b8fa3' },
+                            ticks: { color: '#8b8fa3' },
+                            grid: { color: 'rgba(42,45,58,0.5)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-btn').forEach((btn, i) => {
+                btn.classList.toggle('active', btn.textContent.includes(
+                    tabName === 'chart' ? 'Chart' : tabName === 'table' ? 'Table' : 'Comparison'
+                ));
+            });
+            document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+            document.getElementById('tab-' + tabName).classList.add('active');
+        }
+    </script>
+
+</body>
+
+</html>
