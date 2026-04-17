@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV HTML Inspector | Professional Data Previewer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+
+        .code-font {
+            font-family: 'Fira Code', monospace;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        .table-row-hover:hover {
+            background-color: #f1f5f9;
+            cursor: pointer;
+        }
+
+        #preview-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: white;
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #94a3b8;
+        }
+
+        /* Glassmorphism effect */
+        .glass {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        .row-active {
+            background-color: #eef2ff !important;
+            /* Light indigo */
+            border-left: 4px solid #4f46e5;
+            /* Indigo accent line */
+        }
+    </style>
+</head>
+
+<body class="h-screen overflow-hidden flex flex-col">
+
+    <!-- Header -->
+    <header class="h-16 border-b bg-white flex items-center justify-between px-6 shrink-0 z-10 shadow-sm">
+        <div class="flex items-center gap-3">
+            <div class="bg-indigo-600 p-2 rounded-lg text-white">
+                <i data-lucide="table-2" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <h1 class="text-lg font-bold text-slate-800 leading-none">CSV HTML Inspector</h1>
+                <p class="text-xs text-slate-500 mt-1">Instant visual rendering of embedded markup</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-4">
+            <label for="csvInput"
+                class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md cursor-pointer transition-all font-medium text-sm shadow-sm active:scale-95">
+                <i data-lucide="upload" class="w-4 h-4"></i>
+                Upload CSV
+            </label>
+            <input type="file" id="csvInput" accept=".csv" class="hidden">
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex flex-1 overflow-hidden">
+
+        <!-- Left Sidebar: Table View -->
+        <section class="w-1/2 flex flex-col border-r bg-white">
+            <div id="tableHeader" class="p-4 border-b flex justify-between items-center bg-slate-50">
+                <span class="text-sm font-semibold text-slate-600 uppercase tracking-wider" id="rowCountLabel">No file
+                    loaded</span>
+                <div class="flex gap-2">
+                    <!-- Pagination Controls -->
+                    <button id="prevPage" class="p-1 hover:bg-slate-200 rounded disabled:opacity-30 transition-colors">
+                        <i data-lucide="chevron-left" class="w-5 h-5 text-slate-600"></i>
+                    </button>
+                    <span id="pageIndicator" class="text-sm font-medium text-slate-700 self-center px-2">0 / 0</span>
+                    <button id="nextPage" class="p-1 hover:bg-slate-200 rounded disabled:opacity-30 transition-colors">
+                        <i data-lucide="chevron-right" class="w-5 h-5 text-slate-600"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex-1 overflow-auto custom-scrollbar relative" id="tableContainer">
+                <!-- Empty State -->
+                <div id="emptyState" class="empty-state p-10 text-center">
+                    <i data-lucide="file-spreadsheet" class="w-16 h-16 mb-4 opacity-20"></i>
+                    <p class="text-lg font-medium">No data to display</p>
+                    <p class="text-sm text-slate-400">Upload a CSV file to start inspecting HTML cells.</p>
+                </div>
+
+                <!-- Table -->
+                <table id="dataTable" class="w-full text-left border-collapse hidden">
+                    <thead class="sticky top-0 bg-white shadow-sm z-10">
+                        <tr id="tableHeadRow" class="border-b border-slate-200"></tr>
+                    </thead>
+                    <tbody id="tableBody" class="divide-y divide-slate-100 text-sm text-slate-700"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Right Sidebar: Preview View -->
+        <section class="w-1/2 flex flex-col bg-slate-100 relative">
+            <div class="h-12 border-b bg-white flex items-center justify-between px-4 shrink-0">
+                <div class="flex items-center gap-2 text-sm font-semibold text-slate-600 uppercase tracking-wider">
+                    <i data-lucide="eye" class="w-4 h-4"></i>
+                    Live Preview
+                </div>
+                <button id="copyBtn"
+                    class="text-xs flex items-center gap-1 px-2 py-1 hover:bg-slate-100 rounded text-indigo-600 font-medium transition-colors opacity-0 pointer-events-none">
+                    <i data-lucide="copy" class="w-3 h-3"></i> Copy Code
+                </button>
+            </div>
+
+            <div id="previewContainer"
+                class="flex-1 relative overflow-hidden bg-white m-4 rounded-lg shadow-inner border border-slate-200">
+                <!-- Iframe for isolated rendering -->
+                <iframe id="preview-frame" sandbox="allow-scripts allow-same-origin"></iframe>
+
+                <div id="previewPlaceholder" class="empty-state absolute inset-0 bg-white">
+                    <i data-lucide="code" class="w-12 h-12 mb-3 opacity-10"></i>
+                    <p class="text-slate-400 text-sm italic">Click a cell in the table to render its content</p>
+                </div>
+            </div>
+
+            <!-- Code Snippet View (Hidden by default) -->
+            <div id="codeSnippetView"
+                class="absolute bottom-8 right-8 w-72 max-h-48 bg-slate-900 text-indigo-300 p-3 rounded-lg shadow-2xl text-[10px] code-font overflow-auto hidden border border-slate-700">
+                <div class="text-slate-500 mb-1 font-sans uppercase tracking-widest border-b border-slate-800 pb-1">Raw
+                    Content</div>
+                <pre id="rawCodeDisplay"></pre>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="h-8 bg-white border-t flex items-center justify-between px-6 text-[10px] text-slate-400 shrink-0">
+        <div>CSV HTML Inspector v1.0</div>
+        <div id="statusInfo" class="flex gap-4 uppercase tracking-widest">
+            <span>Ready</span>
+        </div>
+    </footer>
+
+    <script>
+        // State Management
+        let csvData = [];
+        let headers = [];
+        let currentPage = 1;
+        const rowsPerPage = 25;
+        let currentRawContent = '';
+
+        // DOM Elements
+        const csvInput = document.getElementById('csvInput');
+        const tableContainer = document.getElementById('tableContainer');
+        const dataTable = document.getElementById('dataTable');
+        const tableHeadRow = document.getElementById('tableHeadRow');
+        const tableBody = document.getElementById('tableBody');
+        const emptyState = document.getElementById('emptyState');
+        const rowCountLabel = document.getElementById('rowCountLabel');
+        const pageIndicator = document.getElementById('pageIndicator');
+        const prevPageBtn = document.getElementById('prevPage');
+        const nextPageBtn = document.getElementById('nextPage');
+        const previewFrame = document.getElementById('preview-frame');
+        const previewPlaceholder = document.getElementById('previewPlaceholder');
+        const copyBtn = document.getElementById('copyBtn');
+        const rawCodeDisplay = document.getElementById('rawCodeDisplay');
+        const codeSnippetView = document.getElementById('codeSnippetView');
+
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        // CSV Parsing logic
+        csvInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            Papa.parse(file, {
+                header: true,
+                skipEmptyLines: true,
+                complete: function (results) {
+                    csvData = results.data;
+                    headers = results.meta.fields;
+                    currentPage = 1;
+                    renderTable();
+                    setupHeader();
+                },
+                error: function (err) {
+                    alert("Error parsing CSV: " + err.message);
+                }
+            });
+        });
+
+        function setupHeader() {
+            tableHeadRow.innerHTML = '';
+            headers.forEach(header => {
+                const th = document.createElement('th');
+                th.className = 'px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider border-b';
+                th.textContent = header;
+                tableHeadRow.appendChild(th);
+            });
+        }
+
+        function renderTable() {
+            if (csvData.length === 0) return;
+
+            emptyState.classList.add('hidden');
+            dataTable.classList.remove('hidden');
+
+            const start = (currentPage - 1) * rowsPerPage;
+            const end = start + rowsPerPage;
+            const paginatedData = csvData.slice(start, end);
+
+            // Update Stats
+            rowCountLabel.textContent = `${csvData.length} Rows Found`;
+            pageIndicator.textContent = `${currentPage} / ${Math.ceil(csvData.length / rowsPerPage)}`;
+
+            prevPageBtn.disabled = currentPage === 1;
+            nextPageBtn.disabled = end >= csvData.length;
+
+            // Clear and build body
+            tableBody.innerHTML = '';
+            paginatedData.forEach((row, rowIndex) => {
+                const tr = document.createElement('tr');
+                tr.className = 'table-row-hover transition-colors';
+
+                headers.forEach(header => {
+                    const td = document.createElement('td');
+                    td.className = 'px-4 py-3 max-w-[250px] truncate text-slate-600 border-r last:border-r-0';
+                    td.textContent = row[header] || '';
+
+                    // Click Event for cell rendering
+                    td.addEventListener('click', (e) => {
+                        // Highlight the selected row
+                        document.querySelectorAll('.row-active').forEach(el => el.classList.remove('row-active'));
+                        const rowElement = e.target.closest('tr');
+                        rowElement.classList.add('row-active');
+
+                        renderHTML(row[header]);
+                    });
+
+                    tr.appendChild(td);
+                });
+                tableBody.appendChild(tr);
+            });
+        }
+
+        function renderHTML(content) {
+            if (!content) return;
+
+            // 1. Clean the content: Remove ```html ... ``` wrappers if they exist
+            let cleaned = content.trim();
+            const htmlRegex = /^```html\s*([\s\S]*?)```$/gi;
+            const markdownRegex = /^```\s*([\s\S]*?)```$/gi;
+
+            if (htmlRegex.test(cleaned)) {
+                cleaned = cleaned.replace(htmlRegex, '$1').trim();
+            } else if (markdownRegex.test(cleaned)) {
+                cleaned = cleaned.replace(markdownRegex, '$1').trim();
+            }
+
+            currentRawContent = cleaned;
+
+            // 2. Update UI states
+            previewPlaceholder.classList.add('hidden');
+            copyBtn.classList.remove('opacity-0', 'pointer-events-none');
+            // codeSnippetView.classList.remove('hidden');
+            rawCodeDisplay.textContent = cleaned;
+
+            // 3. Inject into Iframe for isolation (security & CSS protection)
+            const doc = previewFrame.contentDocument || previewFrame.contentWindow.document;
+            doc.open();
+            doc.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <style>
+                        body { font-family: sans-serif; margin: 0; padding: 20px; }
+                        /* Add some basic reset to make it look professional */
+                        * { box-sizing: border-box; }
+                    </style>
+                </head>
+                <body>${cleaned}</body>
+                </html>
+            `);
+            doc.close();
+        }
+
+        // Pagination Actions
+        prevPageBtn.addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                renderTable();
+            }
+        });
+
+        nextPageBtn.addEventListener('click', () => {
+            if ((currentPage * rowsPerPage) < csvData.length) {
+                currentPage++;
+                renderTable();
+            }
+        });
+
+        // Copy functionality
+        copyBtn.addEventListener('click', () => {
+            navigator.clipboard.writeText(currentRawContent).then(() => {
+                const originalHTML = copyBtn.innerHTML;
+                copyBtn.innerHTML = `<i data-lucide="check" class="w-3 h-3"></i> Copied!`;
+                lucide.createIcons();
+                setTimeout(() => {
+                    copyBtn.innerHTML = originalHTML;
+                    lucide.createIcons();
+                }, 2000);
+            });
+        });
+
+    </script>
+</body>
+
+</html>

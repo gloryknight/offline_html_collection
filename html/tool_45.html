@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV Batch LLM Processor</title>
+
+    <!-- PapaParse CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --success-color: #10b981;
+            --error-color: #ef4444;
+            --warning-color: #f59e0b;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --border-color: #e2e8f0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: #1e293b;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.5;
+        }
+
+        .container {
+            /* max-width: 1200px; */
+            margin: 0 auto;
+        }
+
+        /* Layout Grid */
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .grid-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Cards */
+        .card {
+            background: var(--card-bg);
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        h2,
+        h3 {
+            margin-top: 0;
+            color: #0f172a;
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        /* Configuration Section */
+        .config-toggle {
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+        }
+
+        .config-content {
+            display: none;
+            margin-top: 15px;
+            border-top: 1px solid var(--border-color);
+            padding-top: 15px;
+        }
+
+        .config-content.active {
+            display: block;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 10px 20px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: opacity 0.2s;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+            width: 100%;
+        }
+
+        .btn-secondary {
+            background-color: #64748b;
+            color: white;
+        }
+
+        .btn-success {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .btn-danger {
+            background-color: var(--error-color);
+            color: white;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Drag & Drop */
+        .drop-zone {
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+
+        .drop-zone:hover,
+        .drop-zone.dragover {
+            border-color: var(--primary-color);
+            background-color: #eff6ff;
+        }
+
+        /* Tables */
+        .table-container {
+            overflow-x: auto;
+            max-height: 400px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        th,
+        td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: top;
+        }
+
+        th {
+            background-color: #f1f5f9;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+
+        /* Status Badges */
+        .status-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+
+        .status-pending {
+            background-color: #e2e8f0;
+            color: #64748b;
+        }
+
+        .status-processing {
+            background-color: #fef3c7;
+            color: #d97706;
+        }
+
+        .status-success {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-failed {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            margin-bottom: 20px;
+        }
+
+        .progress-bar-bg {
+            background-color: #e2e8f0;
+            height: 10px;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            background-color: var(--primary-color);
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        /* Logs/Errors */
+        .error-msg {
+            color: var(--error-color);
+            font-size: 0.8rem;
+            margin-top: 2px;
+            display: block;
+        }
+
+        .response-preview {
+            font-family: monospace;
+            white-space: pre-wrap;
+            color: #334155;
+        }
+
+        /* Preview Area */
+        .preview-text {
+            font-family: monospace;
+            background: #f1f5f9;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+
+        .ai-response-cell {
+            white-space: pre-wrap;
+            /* Preserves newlines and wraps text */
+            word-break: break-word;
+            /* Prevents long strings from breaking layout */
+            font-size: 0.85rem;
+            max-height: 150px;
+            /* Limits height so the table stays readable */
+            overflow-y: auto;
+            /* Adds a scrollbar if text is too long */
+            padding: 4px;
+            background: #fdfdfd;
+            border: 1px solid #eee;
+        }
+
+        /* Makes table cells look clickable */
+        #results-table td {
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        #results-table td:hover {
+            background-color: #f1f5f9;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <header style="margin-bottom: 30px; border-bottom: 1px solid var(--border-color); padding-bottom: 20px;">
+            <h1>CSV Batch LLM Processor</h1>
+            <p style="color: #64748b;">Process CSV data through OpenAI-compatible endpoints locally.</p>
+        </header>
+
+        <div class="grid-layout">
+            <!-- Left Column: Config & Template -->
+            <aside>
+                <!-- Configuration Panel -->
+                <div class="card">
+                    <div class="config-toggle" onclick="toggleConfig()">
+                        <span>⚙️ Configuration</span>
+                        <span id="config-icon">▼</span>
+                    </div>
+                    <div class="config-content" id="config-panel">
+                        <div class="form-group">
+                            <label>API Base URL</label>
+                            <input type="text" id="cfg-url" value="http://localhost:1234/v1">
+                        </div>
+                        <div class="form-group">
+                            <label>API Key (Optional)</label>
+                            <input type="text" id="cfg-key">
+                        </div>
+                        <div class="form-group">
+                            <label>Model Name</label>
+                            <input type="text" id="cfg-model" value="llama3">
+                        </div>
+                        <div class="form-group">
+                            <label>Reasoning Effort</label>
+                            <select id="cfg-reasoning-effort">
+                                <option value="none">none</option>
+                                <option value="minimal">minimal</option>
+                                <option value="low">low</option>
+                                <option value="medium" selected>medium</option>
+                                <option value="high">high</option>
+                                <option value="xhigh">xhigh</option>
+                            </select>
+                        </div>
+                        <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 20px 0;">
+                        <div class="form-group">
+                            <label>Temperature (<span id="temp-val">0.7</span>)</label>
+                            <input type="range" id="cfg-temp" min="0.1" max="2.0" step="0.1" value="0.7">
+                        </div>
+                        <div class="form-group">
+                            <label>Max Tokens</label>
+                            <input type="number" id="cfg-max-tokens" value="1024">
+                        </div>
+                        <div class="form-group">
+                            <label>Rate Limit (ms delay)</label>
+                            <input type="number" id="cfg-delay" value="500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Template Editor -->
+                <div class="card">
+                    <h3>Prompt Template</h3>
+                    <p style="font-size: 0.85rem; color: #64748b;">Use <code>{{field_name}}</code> to insert column
+                        values.</p>
+                    <textarea id="template-input" rows="8"
+                        placeholder="Analyze this data: {{column_name}}..."></textarea>
+                    <div class="form-group" style="margin-top: 10px;">
+                        <label>Preview (First Row)</label>
+                        <div id="template-preview" class="preview-text">No CSV loaded...</div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Right Column: Data & Results -->
+            <main>
+                <!-- Upload Section -->
+                <div class="card" id="upload-section">
+                    <h3>1. Upload CSV</h3>
+                    <div class="drop-zone" id="drop-zone">
+                        <p>Drag & Drop CSV here or click to browse</p>
+                        <input type="file" id="csv-input" accept=".csv" style="display: none;">
+                    </div>
+                </div>
+
+                <!-- Preview Section -->
+                <div class="card" id="preview-section" style="display: none;">
+                    <h3>2. Data Preview (First 50 rows)</h3>
+                    <div class="table-container">
+                        <table id="preview-table"></table>
+                    </div>
+                </div>
+
+                <!-- Controls & Progress -->
+                <div class="card">
+                    <h3>3. Process</h3>
+
+                    <div class="progress-container">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <span id="progress-text">Ready</span>
+                            <span id="percent-text">0%</span>
+                        </div>
+                        <div class="progress-bar-bg">
+                            <div class="progress-bar-fill" id="progress-bar"></div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 10px;">
+                        <button id="btn-process" class="btn btn-primary" disabled>Process CSV</button>
+                        <button id="btn-stop" class="btn btn-danger" style="display: none;">Stop</button>
+                        <button id="btn-export" class="btn btn-success" disabled>Export Results</button>
+                    </div>
+                </div>
+
+                <!-- Results Section -->
+                <div class="card" id="results-section" style="display: none;">
+                    <h3>4. Results</h3>
+                    <div
+                        style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+                        <span id="result-count" style="color: #64748b; font-size: 0.9rem;">0 rows</span>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <button id="pagination-prev" class="btn btn-secondary"
+                                style="padding: 5px 10px; font-size: 0.85rem; width: auto;">← Prev</button>
+                            <span id="pagination-info"
+                                style="min-width: 100px; text-align: center; font-size: 0.9rem;">Page 1</span>
+                            <button id="pagination-next" class="btn btn-secondary"
+                                style="padding: 5px 10px; font-size: 0.85rem; width: auto;">Next →</button>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table id="results-table"></table>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * Configuration Manager - Handles LocalStorage persistence
+         */
+        class ConfigManager {
+            constructor() {
+                this.defaultConfig = {
+                    url: 'http://localhost:1234/v1/chat/completions',
+                    apiKey: '',
+                    model: 'default',
+                    reasoningEffort: 'medium',
+                    temperature: 0.7,
+                    maxTokens: 4024,
+                    delay: 500
+                };
+                this.load();
+            }
+
+            load() {
+                const saved = localStorage.getItem('csv_llm_processor_config');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    const merged = { ...this.defaultConfig, ...parsed };
+                    this.config = merged;
+                } else {
+                    this.config = { ...this.defaultConfig };
+                }
+            }
+
+            save() {
+                localStorage.setItem('csv_llm_processor_config', JSON.stringify(this.config));
+            }
+
+            update(key, value) {
+                this.config[key] = value;
+                this.save();
+            }
+
+            get(key) {
+                return this.config[key];
+            }
+        }
+
+        /**
+         * CSV Handler - Manages parsing and exporting via PapaParse
+         */
+        class CSVHandler {
+            constructor() {
+                this.data = []; // Array of objects
+                this.headers = []; // Array of strings
+            }
+
+            loadFile(file) {
+                return new Promise((resolve, reject) => {
+                    Papa.parse(file, {
+                        header: true,
+                        skipEmptyLines: true,
+                        complete: (results) => {
+                            // Trim whitespace from all header names
+                            const cleanHeaders = results.meta.fields.map(h => h.trim());
+
+                            // Map the data to use these clean headers
+                            this.data = results.data.map(row => {
+                                const newRow = {};
+                                for (let key in row) {
+                                    const cleanKey = key.trim();
+                                    newRow[cleanKey] = row[key];
+                                }
+                                return newRow;
+                            });
+
+                            this.headers = cleanHeaders;
+                            resolve(this);
+                        },
+                        error: (err) => reject(err)
+                    });
+                });
+            }
+
+            getPreview(limit = 50) {
+                return this.data.slice(0, limit);
+            }
+
+            getFullData() {
+                return this.data;
+            }
+
+            exportWithResults(newColumns) {
+                // Add new columns to existing data objects
+                const processedData = this.data.map(row => {
+                    // Ensure all original headers exist (in case of weird CSVs)
+                    const newRow = {};
+                    this.headers.forEach(h => { if (row.hasOwnProperty(h)) newRow[h] = row[h]; });
+
+                    // Add new columns (ai_response, ai_status, ai_meta)
+                    newColumns.forEach(col => {
+                        newRow[col] = '';
+                    });
+
+                    return newRow;
+                });
+
+                // Prepare headers including new ones
+                const allHeaders = [...this.headers, ...newColumns];
+
+                // Convert back to CSV
+                return Papa.unparse({ fields: allHeaders, data: processedData });
+            }
+        }
+
+        /**
+         * Template Engine - Handles {{field}} substitution
+         */
+        class TemplateEngine {
+            static substitute(template, data) {
+                if (!template || !data) return '';
+
+                let result = template;
+                // Replace {{column name}} patterns.
+                return result.replace(/\{\{([^}]+?)\}\}/g, (match, rawKey) => {
+                    const key = String(rawKey);
+                    return data.hasOwnProperty(key) ? data[key] : match;
+                });
+            }
+        }
+
+        /**
+         * LLM Client - Handles API communication
+         */
+        class LLMClient {
+            constructor(config) {
+                this.config = config; // ConfigManager instance or object
+            }
+
+            normalizeReasoningEffort(value) {
+                const allowed = ['none', 'minimal', 'low', 'medium', 'high', 'xhigh'];
+                return allowed.includes(value) ? value : 'medium';
+            }
+
+            async request(prompt) {
+                const url = this.config.get('url');
+                const reasoningEffort = this.normalizeReasoningEffort(this.config.get('reasoningEffort'));
+
+                const body = {
+                    model: this.config.get('model'),
+                    messages: [{ role: "user", content: prompt }],
+                    temperature: parseFloat(this.config.get('temperature')),
+                    max_tokens: parseInt(this.config.get('maxTokens'))
+                };
+
+                // Keep payload minimal: omit default reasoning_effort (medium).
+                if (reasoningEffort !== 'medium') {
+                    body.reasoning_effort = reasoningEffort;
+                }
+
+                const headers = { 'Content-Type': 'application/json' };
+
+                // Add Key if present.
+                const apiKey = this.config.get('apiKey');
+                if (apiKey) {
+                    headers['Authorization'] = `Bearer ${apiKey}`;
+                }
+
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: headers,
+                        body: JSON.stringify(body)
+                    });
+
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        throw new Error(`API Error: ${response.status} - ${errorText}`);
+                    }
+
+                    return await response.json();
+                } catch (error) {
+                    throw error;
+                }
+            }
+        }
+
+        /**
+         * UI Manager - Handles DOM updates and interaction logic
+         */
+        class UIManager {
+            constructor() {
+                this.configManager = new ConfigManager();
+                this.csvHandler = new CSVHandler();
+                this.llmClient = new LLMClient(this.configManager);
+
+                this.isProcessing = false;
+                this.stopRequested = false;
+                this.resultsData = [];
+
+                this.initElements();
+                this.bindEvents();
+                this.restoreConfigUI();
+            }
+
+            initElements() {
+                // Inputs
+                this.inputs = {
+                    url: document.getElementById('cfg-url'),
+                    key: document.getElementById('cfg-key'),
+                    model: document.getElementById('cfg-model'),
+                    reasoningEffort: document.getElementById('cfg-reasoning-effort'),
+                    temp: document.getElementById('cfg-temp'),
+                    maxTokens: document.getElementById('cfg-max-tokens'),
+                    delay: document.getElementById('cfg-delay'),
+                    template: document.getElementById('template-input')
+                };
+
+                // Displays
+                this.displays = {
+                    tempVal: document.getElementById('temp-val'),
+                    dropZone: document.getElementById('drop-zone'),
+                    csvInput: document.getElementById('csv-input'),
+                    previewSection: document.getElementById('preview-section'),
+                    previewTable: document.getElementById('preview-table'),
+                    templatePreview: document.getElementById('template-preview'),
+                    progressText: document.getElementById('progress-text'),
+                    percentText: document.getElementById('percent-text'),
+                    progressBar: document.getElementById('progress-bar'),
+                    btnProcess: document.getElementById('btn-process'),
+                    btnStop: document.getElementById('btn-stop'),
+                    btnExport: document.getElementById('btn-export'),
+                    resultsSection: document.getElementById('results-section'),
+                    resultsTable: document.getElementById('results-table')
+                };
+
+
+                // Pagination state
+                this.currentPage = 1;
+                this.rowsPerPage = 50;
+                this.totalPages = 1;
+            }
+
+            bindEvents() {
+                // ... (Keep your existing bindEvents code for config, drag/drop, etc.) ...
+                const configKeyMap = { url: 'url', key: 'apiKey', model: 'model', reasoningEffort: 'reasoningEffort', maxTokens: 'maxTokens', delay: 'delay' };
+                // Config Inputs
+                Object.keys(this.inputs).forEach(key => {
+                    if (key === 'temp' || key === 'template') return; // Handle separately / not persisted in config
+
+                    const configKey = configKeyMap[key];
+                    if (!configKey) return;
+
+                    const eventName = this.inputs[key].tagName === 'SELECT' || this.inputs[key].type === 'checkbox' ? 'change' : 'input';
+                    this.inputs[key].addEventListener(eventName, (e) => {
+                        const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
+                        this.configManager.update(configKey, value);
+                    });
+                });
+
+                // Temperature Slider
+                this.inputs.temp.addEventListener('input', (e) => {
+                    this.displays.tempVal.textContent = e.target.value;
+                    this.configManager.update('temperature', e.target.value);
+                });
+
+                // Drag and Drop
+                this.displays.dropZone.addEventListener('click', () => this.displays.csvInput.click());
+
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                    this.displays.dropZone.addEventListener(eventName, (e) => { e.preventDefault(); e.stopPropagation(); }, false);
+                });
+                ['dragenter', 'dragover'].forEach(eventName => {
+                    this.displays.dropZone.addEventListener(eventName, () => { this.displays.dropZone.classList.add('dragover'); }, false);
+                });
+                ['dragleave', 'drop'].forEach(eventName => {
+                    this.displays.dropZone.addEventListener(eventName, () => { this.displays.dropZone.classList.remove('dragover'); }, false);
+                });
+                this.displays.dropZone.addEventListener('drop', (e) => {
+                    const dt = e.dataTransfer;
+                    this.handleFileUpload(dt.files[0]);
+                });
+                this.displays.csvInput.addEventListener('change', (e) => {
+                    if (e.target.files.length > 0) this.handleFileUpload(e.target.files[0]);
+                });
+
+                // Template Input
+                this.inputs.template.addEventListener('input', () => {
+                    if (this.csvHandler.getFullData().length > 0) this.updateTemplatePreview();
+                });
+
+                // Buttons
+                this.displays.btnProcess.addEventListener('click', () => this.startProcessing());
+                this.displays.btnStop.addEventListener('click', () => this.stopProcessing());
+                this.displays.btnExport.addEventListener('click', () => this.exportResults());
+
+                // Pagination buttons
+                document.getElementById('pagination-prev').addEventListener('click', () => this.previousPage());
+                document.getElementById('pagination-next').addEventListener('click', () => this.nextPage());
+
+                // Event Delegation for the Results Table
+                this.displays.resultsTable.addEventListener('click', (e) => {
+                    const td = e.target.closest('td');
+                    if (td) this.handleCellClick(td);
+                });
+            }
+
+            // Handles clicking on any cell in the results table
+            handleCellClick(td) {
+                // 1. Find which row index we are in by looking at the ID "row-X"
+                const rowId = td.parentElement.id;
+                if (!rowId || !rowId.startsWith('row-')) return;
+
+                const rowIndex = parseInt(rowId.split('-')[1]);
+
+                // 2. Identify which column was clicked
+                // We find the index of the header matching this cell's position
+                const cellIndex = Array.from(td.parentNode.children).indexOf(td);
+                const allHeaders = [...this.csvHandler.headers, 'ai_response', 'ai_status', 'ai_meta'];
+                const columnName = allHeaders[cellIndex];
+
+                // 3. Get the FULL data from the source of truth (resultsData)
+                const fullRowData = this.resultsData[rowIndex];
+                if (!fullRowData) return;
+
+                const cellContent = fullRowData[columnName];
+
+                // 4. Validation: Skip if empty, null, or a status badge string
+                // We check against the actual value in resultsData to avoid issues with UI-only text
+                if (cellContent === undefined || cellContent === null || cellContent === '') return;
+
+                const statusValues = ['pending', 'processing', 'success', 'failed'];
+                if (statusValues.includes(String(cellContent).toLowerCase())) return;
+
+                // 5. Generate Base64 hash of the FULL content
+                try {
+                    // Using encodeURIComponent + unescape to handle UTF-8 characters correctly before btoa
+                    const base64 = btoa(unescape(encodeURIComponent(String(cellContent))));
+                    window.open(`tool_41.html#${base64}`, '_blank');
+                } catch (err) {
+                    console.error("Failed to encode cell content:", err);
+                }
+            }
+
+            restoreConfigUI() {
+                const config = this.configManager.config;
+
+                // Set config input values from persisted config keys
+                this.inputs.url.value = config.url ?? '';
+                this.inputs.key.value = config.apiKey ?? '';
+                this.inputs.model.value = config.model ?? '';
+                this.inputs.reasoningEffort.value = config.reasoningEffort ?? 'medium';
+                this.inputs.temp.value = String(config.temperature ?? 0.7);
+                this.displays.tempVal.textContent = String(config.temperature ?? 0.7);
+                this.inputs.maxTokens.value = config.maxTokens ?? 1024;
+                this.inputs.delay.value = config.delay ?? 500;
+            }
+
+            handleFileUpload(file) {
+                if (!file || !file.name.endsWith('.csv')) {
+                    alert('Please upload a .csv file');
+                    return;
+                }
+                this.csvHandler.loadFile(file).then(() => {
+                    // Show preview table
+                    const rows = this.csvHandler.getPreview(50);
+                    let html = '<thead><tr>';
+                    this.csvHandler.headers.forEach(h => html += `<th>${h}</th>`);
+                    html += '</tr></thead><tbody>';
+
+                    rows.forEach(row => {
+                        html += '<tr>';
+                        this.csvHandler.headers.forEach(h => {
+                            // Escape HTML to prevent XSS in preview
+                            const val = row[h] ? String(row[h]).replace(/</g, "&lt;").replace(/>/g, "&gt;") : '';
+                            html += `<td>${val}</td>`;
+                        });
+                        html += '</tr>';
+                    });
+                    html += '</tbody>';
+
+                    this.displays.previewTable.innerHTML = html;
+                    this.displays.previewSection.style.display = 'block';
+
+                    // Enable process button
+                    this.displays.btnProcess.disabled = false;
+
+                    // Update template preview immediately
+                    if (rows.length > 0) this.updateTemplatePreview();
+
+                }).catch(err => alert('Error parsing CSV: ' + err.message));
+            }
+
+            updateTemplatePreview() {
+                const template = this.inputs.template.value;
+                if (!template) return;
+
+                const firstRow = this.csvHandler.getPreview(1)[0];
+                if (!firstRow) return;
+
+                const substituted = TemplateEngine.substitute(template, firstRow);
+                this.displays.templatePreview.textContent = substituted;
+            }
+
+            async startProcessing() {
+                if (this.isProcessing) return;
+
+                this.isProcessing = true;
+                this.stopRequested = false;
+
+                const rawData = this.csvHandler.getFullData();
+                const total = rawData.length;
+
+                // IMPROVED DATA HANDLING: 
+                // We merge original data with AI columns into one single source of truth (resultsData)
+                this.resultsData = rawData.map(row => ({
+                    ...row,
+                    ai_response: row.ai_response || '',
+                    ai_status: (row.ai_status || '').toString().toLowerCase() || 'pending',
+                    ai_meta: row.ai_meta || ''
+                }));
+
+                this.currentPage = 1;
+                this.displays.btnProcess.disabled = true;
+                this.displays.btnStop.style.display = 'inline-block';
+                this.displays.resultsSection.style.display = 'block';
+                this.renderResultsTable();
+
+                for (let i = 0; i < total; i++) {
+                    if (this.stopRequested) break;
+
+                    const row = this.resultsData[i];
+                    this.updateProgress(i, total);
+
+                    // Skip if already successful
+                    if (row.ai_status === 'success') {
+                        this.renderResultsTable();
+                        continue;
+                    }
+
+                    this.updateRowStatus(i, 'processing');
+                    const prompt = TemplateEngine.substitute(this.inputs.template.value, row);
+
+                    try {
+                        const response = await this.llmClient.request(prompt);
+                        const jsonResponse = await this.llmClient.request(prompt);
+
+                        // 1. Extract Content (Standard OpenAI format)
+                        const content = jsonResponse.choices?.[0]?.message?.content || jsonResponse.output || "";
+                        // 2. Construct the Meta Object with Model and Usage
+                        const metaData = {
+                            model: jsonResponse.model || this.configManager.get('model'),
+                            usage: jsonResponse.usage || {},
+                            timestamp: new Date().toISOString(),
+                            template_used: this.inputs.template.value
+                        };
+                        this.resultsData[i].ai_response = content;
+                        this.resultsData[i].ai_status = 'success';
+                        this.resultsData[i].ai_meta = JSON.stringify(metaData);
+
+                    } catch (error) {
+                        // Failure
+                        this.resultsData[i].ai_status = 'failed';
+                        this.resultsData[i].ai_meta = JSON.stringify({ error: error.message });
+                    }
+
+                    // Update UI table incrementally (optional, but good for UX)
+                    this.renderResultsTable();
+                    // Rate Limiting
+                    if (!this.stopRequested) await new Promise(r => setTimeout(r, this.configManager.get('delay')));
+                }
+
+                // Cleanup after loop
+                this.isProcessing = false;
+                this.displays.btnProcess.disabled = false;
+                this.displays.btnStop.style.display = 'none';
+                this.displays.btnExport.disabled = false;
+                this.displays.progressText.textContent = this.stopRequested ? "Stopped" : "Complete";
+            }
+
+            stopProcessing() { this.stopRequested = true; }
+
+            updateProgress(current, total) {
+                const pct = Math.round((current / total) * 100);
+                this.displays.progressBar.style.width = `${pct}%`;
+                this.displays.percentText.textContent = `${pct}%`;
+                if (this.isProcessing) this.displays.progressText.textContent = `Row ${current + 1}/${total}`;
+            }
+
+            updateRowStatus(index, status) {
+                // Helper to visually mark rows in the main results table as they are processed
+                // Only update if row is on current page
+                const startIdx = (this.currentPage - 1) * this.rowsPerPage;
+                const endIdx = startIdx + this.rowsPerPage;
+                if (index >= startIdx && index < endIdx) {
+                    const rowEl = document.getElementById(`row-${index}`);
+                    if (rowEl) {
+                        const badge = rowEl.querySelector('.status-badge');
+                        if (badge) badge.className = `status-badge status-${status}`;
+                    }
+                }
+            }
+
+            previousPage() { if (this.currentPage > 1) { this.currentPage--; this.renderResultsTable(); } }
+            nextPage() { if (this.currentPage < this.totalPages) { this.currentPage++; this.renderResultsTable(); } }
+
+            renderResultsTable() {
+                const totalRows = this.resultsData.length;
+                this.totalPages = Math.max(1, Math.ceil(totalRows / this.rowsPerPage));
+                const startIdx = (this.currentPage - 1) * this.rowsPerPage;
+                const endIdx = startIdx + this.rowsPerPage;
+                const pageData = this.resultsData.slice(startIdx, endIdx);
+
+                // Update pagination info
+                document.getElementById('result-count').textContent = `${totalRows} row${totalRows !== 1 ? 's' : ''}`;
+                document.getElementById('pagination-info').textContent = `Page ${this.currentPage} of ${this.totalPages}`;
+                document.getElementById('pagination-prev').disabled = this.currentPage <= 1;
+                document.getElementById('pagination-next').disabled = this.currentPage >= this.totalPages;
+
+                let html = '<thead><tr>';
+                // Header includes original headers + AI columns
+                const allHeaders = [...this.csvHandler.headers, 'ai_response', 'ai_status', 'ai_meta'];
+                allHeaders.forEach(h => html += `<th>${h}</th>`);
+                html += '</tr></thead><tbody>';
+
+                pageData.forEach((row, pageIdx) => {
+                    const index = startIdx + pageIdx;
+                    html += `<tr id="row-${index}">`;
+
+                    // 1. Original Columns
+                    this.csvHandler.headers.forEach(h => {
+                        let val = row[h] || '';
+                        if (val.length > 100) val = val.substring(0, 100) + '...';
+                        html += `<td>${val}</td>`;
+                    });
+
+                    // 2. AI Response Column
+                    if (row.ai_status === 'success') {
+                        const text = row.ai_response || '';
+                        const display = text.length > 500 ? text.substring(0, 500) + '...' : text;
+                        html += `<td>${display}</td>`;
+                    } else if (row.ai_status === 'failed') {
+                        html += `<td><span class="status-badge status-failed">Failed</span></td>`;
+                    } else if (row.ai_status === 'processing') {
+                        html += `<td><span class="status-badge status-processing">Processing</span></td>`;
+                    } else {
+                        html += `<td><span class="status-badge status-pending">Pending</span></td>`;
+                    }
+
+                    // 3. AI Status Column
+                    let sClass = 'status-pending';
+                    if (row.ai_status === 'success') sClass = 'status-success';
+                    if (row.ai_status === 'failed') sClass = 'status-failed';
+                    html += `<td><span class="status-badge ${sClass}">${row.ai_status.toUpperCase()}</span></td>`;
+
+                    // 4. AI Meta Column
+                    html += `<td><small>${row.ai_meta ? row.ai_meta.substring(0, 30) + '...' : ''}</small></td>`;
+
+                    html += '</tr>';
+                });
+
+                html += '</tbody>';
+                this.displays.resultsTable.innerHTML = html;
+            }
+
+            exportResults() {
+                const csvContent = Papa.unparse(this.resultsData, { quoted: true, newline: '\r\n', bom: true });
+
+                // Trigger download
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(blob);
+                link.setAttribute("download", "processed_results.csv");
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        }
+
+        // Initialize App when DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            const app = new UIManager();
+        });
+
+        // Toggle Config Panel
+        function toggleConfig() {
+            const panel = document.getElementById('config-panel');
+            const icon = document.getElementById('config-icon');
+
+            if (panel.classList.contains('active')) {
+                panel.classList.remove('active');
+                icon.textContent = '▼';
+            } else {
+                panel.classList.add('active');
+                icon.textContent = '▲';
+            }
+        }
+
+    </script>
+</body>
+
+</html>

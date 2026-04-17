@@ -45,3 +45,6 @@ A collection of offline first web tools.
 42. [Video Background Generator](https://gloryknight.github.io/offline_html_collection/html/tool_42.html) - Generate video for audio using Bunny.
 43. [Text Video Creator](https://gloryknight.github.io/offline_html_collection/html/tool_43.html) - Generate video with text.
 44. [EV Optimal Speed Calculator](https://gloryknight.github.io/offline_html_collection/html/tool_44.html) - Find the speed that minimizes total trip time — driving + charging.
+45. [CSV Batch LLM Processor](https://gloryknight.github.io/offline_html_collection/html/tool_44.html) - Process CSV data through OpenAI-compatible endpoint.
+46. [CSV HTML Inspector](https://gloryknight.github.io/offline_html_collection/html/tool_44.html) - Preview CSV data in an HTML format.
+47. [CSV File Extractor](https://gloryknight.github.io/offline_html_collection/html/tool_44.html) - Convert CSV rows into individual files inside a ZIP archive instantly.
