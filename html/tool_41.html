@@ -36,7 +36,6 @@
             padding: 20px;
         }
 
-        /* --- MAIN LAYOUT --- */
         .container {
             width: 100%;
             max-width: 900px;
@@ -62,29 +61,49 @@
             margin-top: 4px;
         }
 
-        /* --- EDITOR AREA --- */
-        .editor-wrapper {
+        /* --- EDITOR AREA WITH LINE NUMBERS --- */
+        .editor-container {
             position: relative;
-            margin-bottom: 1.5rem;
-        }
-
-        textarea {
             width: 100%;
             height: 400px;
             background: #000;
+            border: 1px solid #334155;
+            border-radius: var(--radius);
+            overflow: hidden;
+            display: flex;
+        }
+
+        .line-numbers {
+            width: 45px;
+            padding: 1rem 0;
+            background: #111;
+            color: #4b5563;
+            text-align: center;
+            font-family: var(--font-mono);
+            font-size: 14px;
+            line-height: 1.5;
+            /* Must match textarea line-height */
+            user-select: none;
+            border-right: 1px solid #334155;
+            overflow: hidden;
+        }
+
+        #code-input {
+            flex: 1;
+            width: 100%;
+            height: 100%;
+            background: transparent;
             color: #d1d5db;
             font-family: var(--font-mono);
             font-size: 14px;
+            line-height: 1.5;
+            /* Must match line-numbers */
             padding: 1rem;
-            border: 1px solid #334155;
-            border-radius: var(--radius);
-            resize: vertical;
+            border: none;
+            resize: none;
             outline: none;
-            transition: border-color 0.2s;
-        }
-
-        textarea:focus {
-            border-color: var(--accent);
+            white-space: pre;
+            overflow: auto;
         }
 
         /* --- CONTROLS --- */
@@ -92,6 +111,7 @@
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
+            margin-top: 1.5rem;
         }
 
         button {
@@ -125,7 +145,7 @@
             background: #475569;
         }
 
-        /* --- MODAL / POPUP --- */
+        /* --- MODAL --- */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -135,7 +155,6 @@
             background: rgba(0, 0, 0, 0.85);
             backdrop-filter: blur(4px);
             display: none;
-            /* Hidden by default */
             justify-content: center;
             align-items: center;
             z-index: 1000;
@@ -146,7 +165,6 @@
             width: 100%;
             height: 90vh;
             background: white;
-            /* Preview is usually white */
             border-radius: var(--radius);
             position: relative;
             overflow: hidden;
@@ -186,10 +204,8 @@
             font-size: 20px;
             cursor: pointer;
             z-index: 1001;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
         }
 
-        /* Keyboard Hint */
         .hint {
             margin-top: 1rem;
             font-size: 0.75rem;
@@ -207,35 +223,28 @@
 </head>
 
 <body>
-
     <div class="container">
         <header>
             <h1>HTML Live Previewer</h1>
             <p>Enter your HTML code below to preview it in real-time.</p>
         </header>
 
-        <div class="editor-wrapper">
-            <textarea id="code-input" placeholder="<html><body><h1>Hello World</h1></body></html>"></textarea>
+        <div class="editor-container">
+            <div id="line-numbers" class="line-numbers">1</div>
+            <textarea id="code-input" spellcheck="false"
+                placeholder="<html><body><h1>Hello</h1></body></html>"></textarea>
         </div>
 
         <div class="controls">
-            <button class="btn-primary" onclick="showPreview()" title="Ctrl + Enter">
-                <span>▶</span> Preview Code
-            </button>
-            <button class="btn-secondary" onclick="pasteFromClipboard()">
-                <span>📋</span> Paste from Clipboard
-            </button>
-            <button class="btn-secondary" onclick="clearEditor()">
-                <span>🗑️</span> Clear
-            </button>
+            <button class="btn-primary" onclick="showPreview()" title="Ctrl + Enter"><span>▶</span> Preview
+                Code</button>
+            <button class="btn-secondary" onclick="pasteFromClipboard()"><span>📋</span> Paste</button>
+            <button class="btn-secondary" onclick="clearEditor()"><span>🗑️</span> Clear</button>
         </div>
 
-        <div class="hint">
-            Tip: Press <kbd>Ctrl</kbd> + <kbd>Enter</kbd> to preview quickly.
-        </div>
+        <div class="hint">Tip: Press <kbd>Ctrl</kbd> + <kbd>Enter</kbd> to preview. URL updates automatically.</div>
     </div>
 
-    <!-- The Popup Modal -->
     <div id="modal-overlay" class="modal-overlay" onclick="closeModal(event)">
         <div class="modal-content" onclick="event.stopPropagation()">
             <div class="close-modal" onclick="toggleModal(false)">&times;</div>
@@ -245,75 +254,107 @@
 
     <script>
         const codeInput = document.getElementById('code-input');
+        const lineNumbers = document.getElementById('line-numbers');
         const modal = document.getElementById('modal-overlay');
         const previewFrame = document.getElementById('preview-frame');
 
         /**
-         * Renders the HTML into the iframe and opens the modal
+         * Updates the line number gutter and URL hash
          */
-        function showPreview() {
+        function updateEditor() {
             const code = codeInput.value;
 
-            // We use srcdoc for a clean, isolated injection of the user's code
-            previewFrame.srcdoc = code;
+            // 1. Update Line Numbers
+            const lines = code.split('\n').length;
+            let lineNumbersHTML = '';
+            for (let i = 1; i <= lines; i++) {
+                lineNumbersHTML += i + '<br>';
+            }
+            lineNumbers.innerHTML = lineNumbersHTML;
 
+            // 2. Update URL Hash (Base64 encoded to handle special characters)
+            const encodedCode = btoa(unescape(encodeURIComponent(code)));
+            window.history.replaceState(null, null, '#' + encodedCode);
+        }
+
+        /**
+         * Load code from URL hash on startup
+         */
+        function loadFromHash() {
+            const hash = window.location.hash.substring(1);
+            if (hash) {
+                try {
+                    const decodedCode = decodeURIComponent(escape(atob(hash)));
+                    codeInput.value = decodedCode;
+                    showPreview()
+                } catch (e) {
+                    console.error("Failed to decode hash", e);
+                }
+            }
+            updateEditor();
+        }
+
+        function showPreview() {
+            previewFrame.srcdoc = codeInput.value;
             toggleModal(true);
         }
 
-        /**
-         * Opens or closes the modal
-         */
         function toggleModal(show) {
             modal.style.display = show ? 'flex' : 'none';
-            // Prevent scrolling on body when modal is open
             document.body.style.overflow = show ? 'hidden' : 'auto';
         }
 
-        /**
-         * Closes modal only if clicking the overlay (not the content)
-         */
         function closeModal(e) {
             if (e.target === modal) toggleModal(false);
         }
 
-        /**
-         * Uses Clipboard API to paste code instantly
-         */
         async function pasteFromClipboard() {
             try {
                 const text = await navigator.clipboard.readText();
                 codeInput.value += text;
+                updateEditor();
                 codeInput.focus();
             } catch (err) {
-                alert("Failed to read clipboard. Please use Ctrl+V.");
+                alert("Failed to read clipboard.");
             }
         }
 
         function clearEditor() {
-            if (confirm("Are you sure you want to clear all code?")) {
+            if (confirm("Clear all code?")) {
                 codeInput.value = '';
+                updateEditor();
             }
         }
 
-        /**
-         * Keyboard Shortcuts
-         */
-        document.addEventListener('keydown', (e) => {
-            // Ctrl + Enter or Cmd + Enter to Preview
-            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-                showPreview();
-            }
+        // Sync scrolling between textarea and line numbers
+        codeInput.addEventListener('scroll', () => {
+            lineNumbers.scrollTop = codeInput.scrollTop;
+        });
 
-            // Esc key to close modal
-            if (e.key === 'Escape') {
-                toggleModal(false);
+        // Listen for input to update lines and URL
+        codeInput.addEventListener('input', updateEditor);
+
+        // Keyboard Shortcuts
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') showPreview();
+            if (e.key === 'Escape') toggleModal(false);
+
+            // Support Tab key in textarea
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const start = codeInput.selectionStart;
+                const end = codeInput.selectionEnd;
+                codeInput.value = codeInput.value.substring(0, start) + "    " + codeInput.value.substring(end);
+                codeInput.selectionStart = codeInput.selectionEnd = start + 4;
+                updateEditor();
             }
         });
 
-        // Auto-focus textarea on load
-        window.onload = () => codeInput.focus();
+        window.onload = () => {
+            loadFromHash();
+            codeInput.focus();
+        };
     </script>
-
 </body>
 
 </html>
