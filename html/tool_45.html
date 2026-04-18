@@ -722,6 +722,17 @@
                 });
             }
 
+            // Helper to escape HTML and prevent layout breakage
+            escapeHTML(str) {
+                if (!str) return '';
+                return String(str)
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
+            }
+
             // Handles clicking on any cell in the results table
             handleCellClick(td) {
                 // 1. Find which row index we are in by looking at the ID "row-X"
@@ -731,9 +742,15 @@
                 const rowIndex = parseInt(rowId.split('-')[1]);
 
                 // 2. Identify which column was clicked
-                // We find the index of the header matching this cell's position
+                // We use the same logic as renderResultsTable to get headers
+                const csvHeaders = this.csvHandler.headers;
+                const aiColumns = ['ai_response', 'ai_status', 'ai_meta'];
+                const allHeaders = [...csvHeaders];
+                aiColumns.forEach(col => {
+                    if (!csvHeaders.includes(col)) allHeaders.push(col);
+                });
+
                 const cellIndex = Array.from(td.parentNode.children).indexOf(td);
-                const allHeaders = [...this.csvHandler.headers, 'ai_response', 'ai_status', 'ai_meta'];
                 const columnName = allHeaders[cellIndex];
 
                 // 3. Get the FULL data from the source of truth (resultsData)
@@ -742,16 +759,11 @@
 
                 const cellContent = fullRowData[columnName];
 
-                // 4. Validation: Skip if empty, null, or a status badge string
-                // We check against the actual value in resultsData to avoid issues with UI-only text
+                // 4. Validation: Skip if empty or null
                 if (cellContent === undefined || cellContent === null || cellContent === '') return;
-
-                const statusValues = ['pending', 'processing', 'success', 'failed'];
-                if (statusValues.includes(String(cellContent).toLowerCase())) return;
 
                 // 5. Generate Base64 hash of the FULL content
                 try {
-                    // Using encodeURIComponent + unescape to handle UTF-8 characters correctly before btoa
                     const base64 = btoa(unescape(encodeURIComponent(String(cellContent))));
                     window.open(`tool_41.html#${base64}`, '_blank');
                 } catch (err) {
@@ -841,16 +853,19 @@
                 this.displays.btnProcess.disabled = true;
                 this.displays.btnStop.style.display = 'inline-block';
                 this.displays.resultsSection.style.display = 'block';
+                
+                // Reset progress
+                this.updateProgress(0, total);
                 this.renderResultsTable();
 
                 for (let i = 0; i < total; i++) {
                     if (this.stopRequested) break;
 
                     const row = this.resultsData[i];
-                    this.updateProgress(i, total);
 
                     // Skip if already successful
                     if (row.ai_status === 'success') {
+                        this.updateProgress(i + 1, total);
                         this.renderResultsTable();
                         continue;
                     }
@@ -859,7 +874,6 @@
                     const prompt = TemplateEngine.substitute(this.inputs.template.value, row);
 
                     try {
-                        const response = await this.llmClient.request(prompt);
                         const jsonResponse = await this.llmClient.request(prompt);
 
                         // 1. Extract Content (Standard OpenAI format)
@@ -881,8 +895,10 @@
                         this.resultsData[i].ai_meta = JSON.stringify({ error: error.message });
                     }
 
-                    // Update UI table incrementally (optional, but good for UX)
+                    // Update UI table incrementally
+                    this.updateProgress(i + 1, total);
                     this.renderResultsTable();
+                    
                     // Rate Limiting
                     if (!this.stopRequested) await new Promise(r => setTimeout(r, this.configManager.get('delay')));
                 }
@@ -901,7 +917,7 @@
                 const pct = Math.round((current / total) * 100);
                 this.displays.progressBar.style.width = `${pct}%`;
                 this.displays.percentText.textContent = `${pct}%`;
-                if (this.isProcessing) this.displays.progressText.textContent = `Row ${current + 1}/${total}`;
+                this.displays.progressText.textContent = `Processed ${current}/${total}`;
             }
 
             updateRowStatus(index, status) {
@@ -912,8 +928,11 @@
                 if (index >= startIdx && index < endIdx) {
                     const rowEl = document.getElementById(`row-${index}`);
                     if (rowEl) {
-                        const badge = rowEl.querySelector('.status-badge');
-                        if (badge) badge.className = `status-badge status-${status}`;
+                        const badges = rowEl.querySelectorAll('.status-badge');
+                        badges.forEach(badge => {
+                            badge.className = `status-badge status-${status}`;
+                            badge.textContent = status.toUpperCase();
+                        });
                     }
                 }
             }
@@ -935,8 +954,14 @@
                 document.getElementById('pagination-next').disabled = this.currentPage >= this.totalPages;
 
                 let html = '<thead><tr>';
-                // Header includes original headers + AI columns
-                const allHeaders = [...this.csvHandler.headers, 'ai_response', 'ai_status', 'ai_meta'];
+                // Header includes original headers + AI columns (without duplication)
+                const csvHeaders = this.csvHandler.headers;
+                const aiColumns = ['ai_response', 'ai_status', 'ai_meta'];
+                const allHeaders = [...csvHeaders];
+                aiColumns.forEach(col => {
+                    if (!csvHeaders.includes(col)) allHeaders.push(col);
+                });
+
                 allHeaders.forEach(h => html += `<th>${h}</th>`);
                 html += '</tr></thead><tbody>';
 
@@ -944,34 +969,35 @@
                     const index = startIdx + pageIdx;
                     html += `<tr id="row-${index}">`;
 
-                    // 1. Original Columns
-                    this.csvHandler.headers.forEach(h => {
-                        let val = row[h] || '';
-                        if (val.length > 100) val = val.substring(0, 100) + '...';
-                        html += `<td>${val}</td>`;
+                    allHeaders.forEach(h => {
+                        const val = row[h];
+
+                        if (h === 'ai_response') {
+                            if (row.ai_status === 'success') {
+                                const text = val || '';
+                                // Escape for the table but allow it to be long; CSS handles the scroll
+                                html += `<td><div class="ai-response-cell">${this.escapeHTML(text)}</div></td>`;
+                            } else {
+                                const status = (row.ai_status || 'pending').toLowerCase();
+                                html += `<td><span class="status-badge status-${status}">${status.toUpperCase()}</span></td>`;
+                            }
+                        }
+                        else if (h === 'ai_status') {
+                            const status = (val || 'pending').toLowerCase();
+                            html += `<td><span class="status-badge status-${status}">${status.toUpperCase()}</span></td>`;
+                        }
+                        else if (h === 'ai_meta') {
+                            const metaText = val ? (typeof val === 'string' ? val : JSON.stringify(val)) : '';
+                            const displayMeta = metaText.length > 30 ? metaText.substring(0, 30) + '...' : metaText;
+                            html += `<td><small>${this.escapeHTML(displayMeta)}</small></td>`;
+                        }
+                        else {
+                            // Standard CSV columns
+                            let text = val ? String(val) : '';
+                            const display = text.length > 100 ? text.substring(0, 100) + '...' : text;
+                            html += `<td>${this.escapeHTML(display)}</td>`;
+                        }
                     });
-
-                    // 2. AI Response Column
-                    if (row.ai_status === 'success') {
-                        const text = row.ai_response || '';
-                        const display = text.length > 500 ? text.substring(0, 500) + '...' : text;
-                        html += `<td>${display}</td>`;
-                    } else if (row.ai_status === 'failed') {
-                        html += `<td><span class="status-badge status-failed">Failed</span></td>`;
-                    } else if (row.ai_status === 'processing') {
-                        html += `<td><span class="status-badge status-processing">Processing</span></td>`;
-                    } else {
-                        html += `<td><span class="status-badge status-pending">Pending</span></td>`;
-                    }
-
-                    // 3. AI Status Column
-                    let sClass = 'status-pending';
-                    if (row.ai_status === 'success') sClass = 'status-success';
-                    if (row.ai_status === 'failed') sClass = 'status-failed';
-                    html += `<td><span class="status-badge ${sClass}">${row.ai_status.toUpperCase()}</span></td>`;
-
-                    // 4. AI Meta Column
-                    html += `<td><small>${row.ai_meta ? row.ai_meta.substring(0, 30) + '...' : ''}</small></td>`;
 
                     html += '</tr>';
                 });
@@ -996,7 +1022,7 @@
 
         // Initialize App when DOM is ready
         document.addEventListener('DOMContentLoaded', () => {
-            const app = new UIManager();
+            window.app = new UIManager();
         });
 
         // Toggle Config Panel
