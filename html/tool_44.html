@@ -668,7 +668,7 @@
 
         function consumptionAtSpeed(v, p) {
             // kWh per 100 km
-            return p.refConsumption * Math.pow(v / p.refSpeed, p.exponent);
+            return Math.max(p.refConsumption * Math.pow(v / p.refSpeed, p.exponent), 15);
         }
 
         function calcTotalTime(speed, p) {
