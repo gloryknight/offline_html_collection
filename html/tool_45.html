@@ -340,6 +340,11 @@
                             <label>Rate Limit (ms delay)</label>
                             <input type="number" id="cfg-delay" value="500">
                         </div>
+                        <div class="form-group">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="checkbox" id="cfg-sound" style="width: auto;"> Play sound when finished
+                            </label>
+                        </div>
                     </div>
                 </div>
 
@@ -383,6 +388,7 @@
                     <div class="progress-container">
                         <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
                             <span id="progress-text">Ready</span>
+                            <span id="eta-text" style="color: #64748b; font-size: 0.85rem;"></span>
                             <span id="percent-text">0%</span>
                         </div>
                         <div class="progress-bar-bg">
@@ -433,7 +439,8 @@
                     reasoningEffort: 'medium',
                     temperature: 0.7,
                     maxTokens: 4024,
-                    delay: 500
+                    delay: 500,
+                    soundEnabled: true
                 };
                 this.load();
             }
@@ -630,6 +637,7 @@
                     temp: document.getElementById('cfg-temp'),
                     maxTokens: document.getElementById('cfg-max-tokens'),
                     delay: document.getElementById('cfg-delay'),
+                    sound: document.getElementById('cfg-sound'),
                     template: document.getElementById('template-input')
                 };
 
@@ -642,6 +650,7 @@
                     previewTable: document.getElementById('preview-table'),
                     templatePreview: document.getElementById('template-preview'),
                     progressText: document.getElementById('progress-text'),
+                    etaText: document.getElementById('eta-text'),
                     percentText: document.getElementById('percent-text'),
                     progressBar: document.getElementById('progress-bar'),
                     btnProcess: document.getElementById('btn-process'),
@@ -660,7 +669,7 @@
 
             bindEvents() {
                 // ... (Keep your existing bindEvents code for config, drag/drop, etc.) ...
-                const configKeyMap = { url: 'url', key: 'apiKey', model: 'model', reasoningEffort: 'reasoningEffort', maxTokens: 'maxTokens', delay: 'delay' };
+                const configKeyMap = { url: 'url', key: 'apiKey', model: 'model', reasoningEffort: 'reasoningEffort', maxTokens: 'maxTokens', delay: 'delay', sound: 'soundEnabled' };
                 // Config Inputs
                 Object.keys(this.inputs).forEach(key => {
                     if (key === 'temp' || key === 'template') return; // Handle separately / not persisted in config
@@ -783,6 +792,7 @@
                 this.displays.tempVal.textContent = String(config.temperature ?? 0.7);
                 this.inputs.maxTokens.value = config.maxTokens ?? 1024;
                 this.inputs.delay.value = config.delay ?? 500;
+                this.inputs.sound.checked = config.soundEnabled ?? true;
             }
 
             handleFileUpload(file) {
@@ -836,6 +846,7 @@
 
                 this.isProcessing = true;
                 this.stopRequested = false;
+                this.startTime = Date.now();
 
                 const rawData = this.csvHandler.getFullData();
                 const total = rawData.length;
@@ -853,7 +864,7 @@
                 this.displays.btnProcess.disabled = true;
                 this.displays.btnStop.style.display = 'inline-block';
                 this.displays.resultsSection.style.display = 'block';
-                
+
                 // Reset progress
                 this.updateProgress(0, total);
                 this.renderResultsTable();
@@ -898,7 +909,7 @@
                     // Update UI table incrementally
                     this.updateProgress(i + 1, total);
                     this.renderResultsTable();
-                    
+
                     // Rate Limiting
                     if (!this.stopRequested) await new Promise(r => setTimeout(r, this.configManager.get('delay')));
                 }
@@ -909,6 +920,34 @@
                 this.displays.btnStop.style.display = 'none';
                 this.displays.btnExport.disabled = false;
                 this.displays.progressText.textContent = this.stopRequested ? "Stopped" : "Complete";
+                this.displays.etaText.textContent = '';
+
+                if (!this.stopRequested && this.configManager.get('soundEnabled')) {
+                    this.playNotificationSound();
+                }
+            }
+
+            playNotificationSound() {
+                try {
+                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(880, audioContext.currentTime); // A5
+                    oscillator.frequency.exponentialRampToValueAtTime(440, audioContext.currentTime + 0.5); // A4
+
+                    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+
+                    oscillator.start();
+                    oscillator.stop(audioContext.currentTime + 0.5);
+                } catch (e) {
+                    console.error("Could not play sound:", e);
+                }
             }
 
             stopProcessing() { this.stopRequested = true; }
@@ -918,6 +957,24 @@
                 this.displays.progressBar.style.width = `${pct}%`;
                 this.displays.percentText.textContent = `${pct}%`;
                 this.displays.progressText.textContent = `Processed ${current}/${total}`;
+
+                if (current > 0 && current < total) {
+                    const elapsed = Date.now() - this.startTime;
+                    const avgTime = elapsed / current;
+                    const remaining = total - current;
+                    const etaMs = avgTime * remaining;
+
+                    const etaSec = Math.ceil(etaMs / 1000);
+                    if (etaSec < 60) {
+                        this.displays.etaText.textContent = `ETA: ${etaSec}s`;
+                    } else {
+                        const mins = Math.floor(etaSec / 60);
+                        const secs = etaSec % 60;
+                        this.displays.etaText.textContent = `ETA: ${mins}m ${secs}s`;
+                    }
+                } else {
+                    this.displays.etaText.textContent = '';
+                }
             }
 
             updateRowStatus(index, status) {
