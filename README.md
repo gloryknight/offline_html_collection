@@ -49,3 +49,4 @@ A collection of offline first web tools.
 46. [CSV HTML Inspector](https://gloryknight.github.io/offline_html_collection/html/tool_46.html) - Preview CSV data in an HTML format.
 47. [CSV File Extractor](https://gloryknight.github.io/offline_html_collection/html/tool_47.html) - Convert CSV rows into individual files inside a ZIP archive instantly.
 48. [Tower defense game](https://gloryknight.github.io/offline_html_collection/html/tool_48.html) - Modern and fancy-looking tower defense game in single HTML.
+49. [Screen recorder](https://gloryknight.github.io/offline_html_collection/html/tool_49.html) - Screen recorder webm/mp4.
