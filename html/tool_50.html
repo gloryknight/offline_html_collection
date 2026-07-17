@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PKI Key Generator</title>
+    <meta name="description" content="Generate RSA and ECDSA key pairs, SSH keys, and self-signed certificates.">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/forge/1.4.0/forge.min.js"
+        integrity="sha512-Yr18hdpNvLyZalPTOgo0oc+be9YYEX3zuawRh5tijH4VY/DgGHR/Ka/QlBMnbDewfGp3gDuKShoKT2YEHcK+Hg=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <style>
+        /* ── Reset & Variables ─────────────────────────────── */
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg: #f4f6f9;
+            --surface: #ffffff;
+            --surface-alt: #f8fafc;
+            --border: #e2e8f0;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --primary-glow: rgba(59, 130, 246, .25);
+            --success: #10b981;
+            --danger: #ef4444;
+            --mono: 'JetBrains Mono', monospace;
+            --sans: 'Inter', system-ui, sans-serif;
+            --radius: 10px;
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, .05);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, .08);
+            --shadow-lg: 0 12px 32px rgba(0, 0, 0, .1);
+            --transition: .2s ease;
+        }
+
+        [data-theme="dark"] {
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --surface-alt: #273449;
+            --border: #334155;
+            --text: #e2e8f0;
+            --text-muted: #94a3b8;
+            --primary: #60a5fa;
+            --primary-hover: #3b82f6;
+            --primary-glow: rgba(96, 165, 250, .3);
+        }
+
+        /* ── Base ──────────────────────────────────────────── */
+        html {
+            font-size: 16px;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--sans);
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+            transition: background var(--transition), color var(--transition);
+        }
+
+        /* ── Layout ────────────────────────────────────────── */
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 2rem 1.25rem 4rem;
+        }
+
+        /* ── Header ────────────────────────────────────────── */
+        header {
+            text-align: center;
+            padding: 2.5rem 0 1.5rem;
+        }
+
+        header h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            letter-spacing: -.02em;
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: .95rem;
+            margin-top: .25rem;
+        }
+
+        /* ── Theme Toggle ──────────────────────────────────── */
+        .theme-toggle {
+            position: fixed;
+            top: 1rem;
+            right: 1.25rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 50%;
+            width: 42px;
+            height: 42px;
+            display: grid;
+            place-items: center;
+            cursor: pointer;
+            font-size: 1.2rem;
+            box-shadow: var(--shadow-sm);
+            transition: transform var(--transition), box-shadow var(--transition);
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: var(--shadow-md);
+        }
+
+        /* ── Cards ─────────────────────────────────────────── */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            margin-bottom: 1.25rem;
+            box-shadow: var(--shadow-sm);
+            transition: background var(--transition), border-color var(--transition);
+        }
+
+        .card-title {
+            font-size: .8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+        }
+
+        /* ── Algorithm Selector ────────────────────────────── */
+        .algo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: .75rem;
+        }
+
+        .algo-option {
+            position: relative;
+            border: 2px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1rem 1.25rem;
+            cursor: pointer;
+            transition: border-color var(--transition), box-shadow var(--transition);
+        }
+
+        .algo-option:hover {
+            border-color: var(--primary);
+        }
+
+        .algo-option.selected {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-glow);
+        }
+
+        .algo-option input {
+            display: none;
+        }
+
+        .algo-label {
+            font-weight: 600;
+            font-size: .95rem;
+        }
+
+        .algo-desc {
+            font-size: .8rem;
+            color: var(--text-muted);
+            margin-top: .15rem;
+        }
+
+        /* ── Key Size / Curve Selector ─────────────────────── */
+        .selector-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .selector-row label {
+            font-weight: 500;
+            font-size: .9rem;
+            white-space: nowrap;
+        }
+
+        select {
+            appearance: none;
+            font-family: var(--sans);
+            font-size: .9rem;
+            padding: .5rem 2.25rem .5rem .75rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--surface-alt) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2364748b' fill='none' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat right .65rem center;
+            color: var(--text);
+            cursor: pointer;
+            transition: border-color var(--transition), box-shadow var(--transition);
+        }
+
+        select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-glow);
+        }
+
+        /* ── Buttons ───────────────────────────────────────── */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: .5rem;
+            font-family: var(--sans);
+            font-weight: 600;
+            font-size: .95rem;
+            padding: .7rem 1.6rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background var(--transition), transform .1s ease, box-shadow var(--transition);
+        }
+
+        .btn:active {
+            transform: scale(.97);
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: #fff;
+            box-shadow: 0 2px 8px var(--primary-glow);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+            box-shadow: 0 4px 16px var(--primary-glow);
+        }
+
+        .btn-primary:disabled {
+            opacity: .5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .generate-row {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+        }
+
+        /* ── Spinner ───────────────────────────────────────── */
+        .spinner {
+            display: none;
+            width: 18px;
+            height: 18px;
+            border: 2.5px solid rgba(255, 255, 255, .3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin .6s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* ── Textareas & Inputs ────────────────────────────── */
+        textarea,
+        input[type="text"] {
+            font-family: var(--mono);
+            font-size: .8rem;
+            width: 100%;
+            padding: .75rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--surface-alt);
+            color: var(--text);
+            resize: vertical;
+            transition: border-color var(--transition), box-shadow var(--transition);
+        }
+
+        textarea:focus,
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-glow);
+        }
+
+        textarea {
+            min-height: 80px;
+        }
+
+        /* ── SHA-256 Badge ─────────────────────────────────── */
+        .sha-badge {
+            display: inline-block;
+            font-family: var(--mono);
+            font-size: .75rem;
+            color: var(--text-muted);
+            background: var(--surface-alt);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: .35rem .75rem;
+            margin-bottom: 1rem;
+            word-break: break-all;
+        }
+
+        /* ── Cert Form ─────────────────────────────────────── */
+        .cert-form {
+            display: grid;
+            gap: .75rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: .85rem;
+            font-weight: 500;
+            margin-bottom: .25rem;
+        }
+
+        .form-group input {
+            width: 100%;
+        }
+
+        /* ── Copy Button ───────────────────────────────────── */
+        .copy-btn {
+            float: right;
+            margin-top: -2.5rem;
+            margin-right: .25rem;
+            background: var(--surface-alt);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: .75rem;
+            padding: .2rem .6rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: var(--sans);
+            transition: background var(--transition), color var(--transition);
+        }
+
+        .copy-btn:hover {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+        }
+
+        /* ── Footer ────────────────────────────────────────── */
+        footer {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: .8rem;
+            margin-top: 2rem;
+        }
+
+        /* ── Responsive ────────────────────────────────────── */
+        @media (max-width: 600px) {
+            .container {
+                padding: 1rem .75rem 3rem;
+            }
+
+            header h1 {
+                font-size: 1.35rem;
+            }
+
+            .card {
+                padding: 1rem;
+            }
+        }
+
+        /* ── Utility ───────────────────────────────────────── */
+        .mt-1 {
+            margin-top: .5rem;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" id="themeToggle" title="Toggle theme">🌙</button>
+
+    <div class="container">
+
+        <!-- Header -->
+        <header>
+            <h1>🔑 PKI Key Generator</h1>
+            <p>RSA &amp; Ed25519 key-pair generation, SSH keys &amp; self-signed certificates</p>
+        </header>
+
+        <!-- Algorithm Selection -->
+        <div class="card">
+            <div class="card-title">Algorithm &amp; Parameters</div>
+
+            <div class="algo-grid" id="algoGrid">
+                <!-- RSA -->
+                <label class="algo-option selected" data-algo="rsa">
+                    <input type="radio" name="algorithm" value="rsa" checked>
+                    <div class="algo-label">RSA</div>
+                    <div class="algo-desc">Universal compatibility</div>
+                </label>
+                <!-- ED25519 -->
+                <label class="algo-option" data-algo="ed25519">
+                    <input type="radio" name="algorithm" value="ed25519">
+                    <div class="algo-label">Ed25519</div>
+                    <div class="algo-desc">Fast, compact, modern signature scheme</div>
+                </label>
+            </div>
+
+            <!-- RSA key-size selector -->
+            <div class="selector-row" id="rsaSizeRow">
+                <label for="keySize">Key size:</label>
+                <select id="keySize">
+                    <option value="2048" selected>2048 bit</option>
+                    <option value="3072">3072 bit</option>
+                    <option value="4096">4096 bit</option>
+                </select>
+            </div>
+
+            <!-- ECDSA curve selector (hidden by default) -->
+            <div class="selector-row" id="ecdsaCurveRow" style="display:none;">
+                <label for="curve">Curve:</label>
+                <select id="curve" disabled>
+                    <option value="P-256">P-256 (secp256r1)</option>
+                    <option value="P-384">P-384 (secp384r1)</option>
+                    <option value="P-521">P-521 (secp521r1)</option>
+                </select>
+            </div>
+
+            <p class="mt-1" style="font-size:.8rem;color:var(--text-muted);" id="algoInfo">
+                RSA-2048 provides ~112 bits of security &mdash; sufficient for most use cases.
+            </p>
+        </div>
+
+        <!-- Generate Button -->
+        <div class="generate-row">
+            <button class="btn btn-primary" id="Apply">
+                <span class="spinner" id="spinner"></span>
+                Generate new key pair
+            </button>
+        </div>
+
+        <!-- Private Key -->
+        <div class="card">
+            <div class="card-title">Private Key</div>
+            <span class="sha-badge" id="sha256"></span>
+            <button class="copy-btn" onclick="copyToClipboard('privateKeyRSA')">Copy</button>
+            <textarea rows="4" id="privateKeyRSA">-----BEGIN RSA PRIVATE KEY-----</textarea>
+        </div>
+
+        <!-- Public Key (PEM) -->
+        <div class="card">
+            <div class="card-title">Public Key (PEM / X.509 SubjectPublicKeyInfo)</div>
+            <button class="copy-btn" onclick="copyToClipboard('publicKeyRSA')">Copy</button>
+            <textarea rows="3" id="publicKeyRSA">-----BEGIN PUBLIC KEY-----</textarea>
+        </div>
+
+        <!-- Public Key (SSH) -->
+        <div class="card">
+            <div class="card-title">Public Key (SSH / OpenSSH)</div>
+            <button class="copy-btn" onclick="copyToClipboard('publicKeySSH')">Copy</button>
+            <textarea rows="3" id="publicKeySSH"></textarea>
+        </div>
+
+        <!-- PuTTY PPK -->
+        <div class="card">
+            <div class="card-title">PuTTY PPK Format</div>
+            <button class="copy-btn" onclick="copyToClipboard('publicKeyPutty')">Copy</button>
+            <textarea rows="3" id="publicKeyPutty"></textarea>
+        </div>
+
+        <!-- Certificate -->
+        <div class="card">
+            <div class="card-title">Self-Signed Root Certificate</div>
+
+            <div class="cert-form" style="margin-bottom:1rem;">
+                <div class="form-group">
+                    <label for="commonName">Common Name (CN)</label>
+                    <input id="commonName" value="localhost" type="text" autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label for="organizationName">Organization (O)</label>
+                    <input id="organizationName" value="Org" type="text" autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label for="altNames">Subject Alternative Names (comma-separated)</label>
+                    <input id="altNames" value="*.com,*.de" type="text" autocomplete="off">
+                </div>
+            </div>
+
+            <button class="copy-btn" onclick="copyToClipboard('cert')">Copy</button>
+            <textarea rows="4" id="cert"></textarea>
+        </div>
+
+        <!-- Footer -->
+        <footer>All keys are generated client-side in your browser.</footer>
+
+    </div><!-- /container -->
+
+    <script>
+        /* ── Helpers ─────────────────────────────────────────── */
+        function $(sel) { return document.querySelector(sel); }
+
+        function copyToClipboard(id) {
+            const el = $(`#${id}`);
+            navigator.clipboard.writeText(el.value).then(() => {
+                const btn = el.parentElement.querySelector('.copy-btn');
+                const orig = btn.textContent;
+                btn.textContent = '✓ Copied';
+                setTimeout(() => btn.textContent = orig, 1200);
+            });
+        }
+
+        /* ── Theme Toggle ────────────────────────────────────── */
+        const themeToggle = $('#themeToggle');
+        if (localStorage.getItem('theme') === 'dark' ||
+            (!localStorage.getItem('theme') && matchMedia('(prefers-color-scheme:dark)').matches)) {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            themeToggle.textContent = '☀️';
+        }
+        themeToggle.addEventListener('click', () => {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            document.documentElement.setAttribute('data-theme', isDark ? '' : 'dark');
+            themeToggle.textContent = isDark ? '🌙' : '☀️';
+            localStorage.setItem('theme', isDark ? '' : 'dark');
+        });
+
+        /* ── Algorithm Selection UI ──────────────────────────── */
+        const algoGrid = $('#algoGrid');
+        const rsaSizeRow = $('#rsaSizeRow');
+        const ecdsaCurveRow = $('#ecdsaCurveRow');
+        const keySizeSel = $('#keySize');
+        const curveSel = $('#curve');
+        const algoInfo = $('#algoInfo');
+
+        const rsaSecurityBits = { 2048: '112', 3072: '128', 4096: '152' };
+
+        const infoMap = {
+            rsa: (bits) => `RSA-${bits} provides ~${rsaSecurityBits[bits]} bits of security — ${bits === '2048' ? 'sufficient for most use cases.' : 'recommended for high-security applications.'}`,
+            'ed25519': 'Ed25519 provides ~128 bits of security. Fast, compact signatures, no randomness required.',
+        };
+
+        algoGrid.addEventListener('click', (e) => {
+            const option = e.target.closest('.algo-option');
+            if (!option) return;
+
+            algoGrid.querySelectorAll('.algo-option').forEach(o => o.classList.remove('selected'));
+            option.classList.add('selected');
+            option.querySelector('input').checked = true;
+
+            const algo = option.dataset.algo;
+            rsaSizeRow.style.display = (algo === 'rsa') ? '' : 'none';
+            ecdsaCurveRow.style.display = (algo.startsWith('ecdsa')) ? '' : 'none';
+            curveSel.disabled = false;
+
+            if (algo === 'rsa') {
+                algoInfo.textContent = infoMap.rsa(keySizeSel.value);
+            } else {
+                algoInfo.textContent = infoMap[algo];
+            }
+        });
+
+        keySizeSel.addEventListener('change', () => {
+            const algo = $('input[name="algorithm"]:checked').value;
+            if (algo === 'rsa') algoInfo.textContent = infoMap.rsa(keySizeSel.value);
+        });
+
+        /* ── State ───────────────────────────────────────────── */
+        let privateKey, publicKey;
+
+        /* ── Generate Key Pair (async) ──────────────────────── */
+        function clickGenerateKeyPair() {
+            const btn = $('#Apply');
+            const spinner = $('#spinner');
+            btn.disabled = true;
+            spinner.style.display = 'inline-block';
+
+            // Use setTimeout to let the UI update before blocking on keygen
+            setTimeout(generateKeyPair, 50);
+        }
+
+        function getSelectedAlgo() {
+            return $('input[name="algorithm"]:checked').value;
+        }
+
+        function generateKeyPair() {
+            try {
+                const algo = getSelectedAlgo();
+
+                if (algo === 'rsa') {
+                    const bits = parseInt(keySizeSel.value, 10);
+                    const keypair = forge.pki.rsa.generateKeyPair({ bits, e: 0x10001 });
+                    privateKey = keypair.privateKey;
+                    publicKey = keypair.publicKey;
+                } else if (algo === 'ed25519') {
+                    const keypair = forge.pki.ed25519.generateKeyPair();
+                    privateKey = keypair.privateKey;
+                    publicKey = keypair.publicKey;
+                } else {
+                    const curveName = algo.replace('ecdsa-', ''); // P-256, P-384, P-521
+                    const keypair = forge.pki.ec.generateKeyPair({ curve: curveName });
+                    privateKey = keypair.privateKey;
+                    publicKey = keypair.publicKey;
+                }
+
+                // Write generated key to textarea for display
+                const pemOut = (algo === 'ed25519')
+                    ? ed25519PrivateKeyToPem(privateKey)
+                    : forge.pki.privateKeyToPem(privateKey);
+                $('#privateKeyRSA').value = pemOut;
+                // Pass key objects directly to avoid Forge re-parsing issues with EC keys
+                ProcessKeys(privateKey, publicKey);
+            } catch (e) {
+                console.error('Key generation failed:', e);
+                alert('Key generation failed: ' + e.message);
+            }
+
+            $('#Apply').disabled = false;
+            $('#spinner').style.display = 'none';
+        }
+
+
+        /* ── Ed25519 PEM Helpers ────────────────────────────── */
+        function ed25519PublicKeyToPem(pubKey) {
+            // Ed25519 public key SPKI: SEQUENCE { SEQUENCE { OID 1.3.101.112, NULL }, BIT STRING { 0x00, 32-byte key } }
+            const spkiDer = [
+                0x30, 0x2a, // SEQUENCE, length 42
+                0x30, 0x07, // SEQUENCE, length 7 (AlgorithmIdentifier)
+                0x06, 0x03, // OID, length 3
+                0x2b, 0x65, 0x70, // 1.3.101.112
+                0x05, 0x00, // NULL
+                0x03, 0x23, // BIT STRING, length 35
+                0x00, // 0 unused bits
+            ];
+            const pubKeyBytes = pubKey instanceof Uint8Array ? pubKey : new Uint8Array(pubKey);
+            spkiDer.push(pubKeyBytes.length);
+            spkiDer.push(...pubKeyBytes);
+
+            const pemB64 = forge.util.encode64(String.fromCharCode(...spkiDer));
+            return '-----BEGIN PUBLIC KEY-----\n' + pemB64 + '\n-----END PUBLIC KEY-----\n';
+        }
+
+        function ed25519PrivateKeyToPem(privKey) {
+            // Ed25519 private key PKCS#8: SEQUENCE { INTEGER 0, SEQUENCE { OID, NULL }, OCTET STRING { OCTET STRING { 32-byte seed } } }
+            const privKeyBytes = privKey instanceof Uint8Array ? privKey : new Uint8Array(privKey);
+            const pkcs8Der = [
+                0x30, 0x30, // SEQUENCE, length 48
+                0x02, 0x01, 0x00, // INTEGER 0 (version)
+                0x30, 0x07, // SEQUENCE, length 7 (AlgorithmIdentifier)
+                0x06, 0x03, // OID, length 3
+                0x2b, 0x65, 0x70, // 1.3.101.112
+                0x05, 0x00, // NULL
+                0x04, 0x22, // OCTET STRING, length 34
+                0x04, 0x20, // OCTET STRING, length 32
+            ];
+            pkcs8Der.push(...privKeyBytes);
+
+            const pemB64 = forge.util.encode64(String.fromCharCode(...pkcs8Der));
+            return '-----BEGIN PRIVATE KEY-----\n' + pemB64 + '\n-----END PRIVATE KEY-----\n';
+        }
+
+
+        /* ── Process / Display Keys ─────────────────────────── */
+        function ProcessKeys(privKey, pubKey) {
+            let publicKeyRSA, publicKeySSH, publicKeyPutty, certPem, sha256;
+
+            try {
+                // If called from generateKeyPair with key objects, use them directly
+                if (privKey && pubKey) {
+                    privateKey = privKey;
+                    publicKey = pubKey;
+                } else {
+                    // Called from textarea input event — parse from PEM
+                    let pem = $('#privateKeyRSA').value.trim();
+                    // Strip UTF-8 BOM if present (trim() does not remove BOM)
+                    if (pem.charCodeAt(0) === 0xFEFF) pem = pem.slice(1);
+                    if (!pem.startsWith('-----BEGIN')) throw new Error('Not a valid PEM key');
+
+                    if (pem.includes('BEGIN PRIVATE KEY') || pem.includes('BEGIN PUBLIC KEY')) {
+                        // Try Ed25519 (PKCS#8 or SPKI)
+                        try {
+                            const raw = forge.util.decode64(pem.replace(/-----BEGIN [^-]+-----\n?/, '').replace(/\n?-----END [^-]+-----/, ''));
+                            const bytes = new Uint8Array(raw.length);
+                            for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+
+                            if (pem.includes('BEGIN PRIVATE KEY')) {
+                                // PKCS#8: SEQUENCE(2) + INTEGER(3) + SEQUENCE(2) + OID(5) + NULL(2) + OCTET(2) + OCTET(2) = 18 bytes header
+                                privateKey = bytes.slice(18);
+                                publicKey = bytes.slice(18); // Ed25519 public key = same as private key seed
+                            } else {
+                                // SPKI: skip SEQUENCE(2), algorithm(9), BIT STRING(2), unused bits(1) = 14 bytes header
+                                publicKey = bytes.slice(14);
+                                privateKey = publicKey;
+                            }
+                        } catch (e) {
+                            throw new Error('Failed to parse Ed25519 key: ' + e.message);
+                        }
+                    } else {
+                        privateKey = forge.pki.privateKeyFromPem(pem);
+                        publicKey = privateKey.publicKey;
+                    }
+
+                    if (!publicKey) throw new Error('Failed to extract public key from private key');
+                }
+
+                // Detect key type: RSA keys have 'n' (modulus), EC keys have 'curve', Ed25519 keys are Buffers
+                const isRSA = publicKey.n !== undefined;
+                const isEd25519 = publicKey instanceof Uint8Array || publicKey instanceof ArrayBuffer;
+
+                if (isRSA) {
+                    publicKeyRSA = forge.pki.publicKeyToPem(publicKey);
+                } else if (isEd25519) {
+                    // Ed25519 keys are raw buffers — construct SPKI PEM manually
+                    publicKeyRSA = ed25519PublicKeyToPem(publicKey);
+                } else {
+                    // For EC keys, use the private key PEM wrapper with public key info
+                    const ecInfo = forge.asn1.toDer(forge.pki.publicKeyToAsn1(publicKey)).getBytes();
+                    const ecDer = forge.util.createBuffer(ecInfo);
+                    publicKeyRSA = '-----BEGIN PUBLIC KEY-----\n' +
+                        forge.util.encode64(ecDer.getBytes()) +
+                        '-----END PUBLIC KEY-----\n';
+                }
+
+                // SSH & fingerprint
+                if (isEd25519) {
+                    const pubStr = forge.util.binary.raw.encode(publicKey);
+                    publicKeySSH = 'ssh-ed25519 ' + forge.util.encode64(pubStr).replace(/\r?\n/g, '');
+                    // SHA-256 fingerprint of raw 32-byte public key
+                    const md = forge.md.sha256.create();
+                    md.update(pubStr);
+                    const fpBytes = forge.util.createBuffer(md.digest().getBytes());
+                    const b64 = forge.util.encode64(fpBytes.getBytes()).replace(/\r?\n/g, '');
+                    sha256 = 'SHA256:' + b64.slice(0, 43) +
+                        '  (' + forge.util.bytesToHex(publicKey, ':').slice(0, -1) + ')';
+                    publicKeyPutty = 'PuTTY PPK format not supported for Ed25519 in this Forge version';
+                } else {
+                    publicKeySSH = forge.ssh.publicKeyToOpenSSH(publicKey);
+
+                    try {
+                        publicKeyPutty = forge.ssh.privateKeyToPutty(privateKey);
+                    } catch (ppkErr) {
+                        publicKeyPutty = 'PuTTY PPK format not supported for ECDSA in this Forge version.';
+                    }
+
+                    // Fingerprint (works for both)
+                    const md = forge.md.sha256.create();
+                    const fpBytes = forge.ssh.getPublicKeyFingerprint(publicKey, { md });
+                    const b64 = forge.util.encode64(fpBytes.getBytes()).replace(/\r?\n/g, '');
+                    sha256 = 'SHA256:' + b64.slice(0, 43) +
+                        '  (' + forge.util.bytesToHex(fpBytes.getBytes(), ':').slice(0, -1) + ')';
+                }
+
+                certPem = generateCertificate();
+            } catch (e) {
+                privateKey = null; publicKey = null;
+                publicKeyRSA = 'Error: invalid private key';
+                publicKeySSH = 'Error: invalid private key';
+                publicKeyPutty = 'Error: invalid private key or unsupported format';
+                certPem = 'Error: invalid private key';
+                sha256 = '';
+                console.warn('Processing error:', e);
+            }
+
+            $('#publicKeyRSA').value = publicKeyRSA;
+            $('#publicKeySSH').value = publicKeySSH;
+            $('#publicKeyPutty').value = publicKeyPutty;
+            $('#cert').value = certPem;
+            $('#sha256').textContent = sha256;
+        }
+
+
+        /* ── Certificate Generation ─────────────────────────── */
+        function generateCertificate() {
+            if (publicKey instanceof Uint8Array || publicKey instanceof ArrayBuffer) {
+                return 'Error: Ed25519 keys are not supported for certificate generation';
+            }
+            const d = new Date();
+            const cert = forge.pki.createCertificate();
+
+            cert.publicKey = publicKey;
+            cert.serialNumber = '01';
+            cert.validity.notBefore = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+            cert.validity.notAfter = new Date(d.getFullYear() + 30, d.getMonth(), d.getDate());
+
+            const attrs = [
+                { name: 'commonName', value: $('#commonName').value },
+                { name: 'countryName', value: 'DE' },
+                { shortName: 'ST', value: 'BW' },
+                { name: 'localityName', value: 'Stuttgart' },
+                { name: 'organizationName', value: $('#organizationName').value },
+            ];
+
+            const altNames = [];
+            for (const san of $('#altNames').value.replace(/\s/g, '').split(',')) {
+                if (san.trim()) altNames.push({ type: 2, value: san.trim() }); // DNS
+            }
+
+            cert.setSubject(attrs);
+            cert.setIssuer(attrs);
+
+            cert.setExtensions([
+                { name: 'basicConstraints', cA: true },
+                {
+                    name: 'keyUsage', keyCertSign: true, digitalSignature: true, nonRepudiation: true,
+                    keyEncipherment: true, dataEncipherment: true
+                },
+                {
+                    name: 'extKeyUsage', serverAuth: true, clientAuth: true, codeSigning: true,
+                    emailProtection: true, timeStamping: true
+                },
+                {
+                    name: 'nsCertType', client: true, server: true, email: true, objsign: true,
+                    sslCA: true, emailCA: true, objCA: true
+                },
+                { name: 'subjectAltName', altNames },
+                { name: 'subjectKeyIdentifier' },
+            ]);
+
+            // Self-sign (use SHA-256 for RSA, appropriate hash for ECDSA)
+            const md = forge.md.sha256.create();
+            cert.sign(privateKey, md);
+
+            return forge.pki.certificateToPem(cert);
+        }
+
+        /* ── Event Listeners ─────────────────────────────────── */
+        $('#Apply').addEventListener('click', clickGenerateKeyPair);
+        document.querySelector('#privateKeyRSA').addEventListener("input", ProcessKeys);
+
+        function inputCertFields() {
+            try {
+                $('#cert').value = generateCertificate();
+            } catch (e) {
+                $('#cert').value = 'Error generating certificate';
+                console.warn(e);
+            }
+        }
+
+        $('#commonName').addEventListener('input', inputCertFields);
+        $('#organizationName').addEventListener('input', inputCertFields);
+        $('#altNames').addEventListener('input', inputCertFields);
+
+        /* ── CSR Helper (console) ────────────────────────────── */
+        window.generateCSR = function (hostName) {
+            if (!publicKey || !privateKey) { alert('Generate a key pair first.'); return; }
+            const csr = forge.pki.createCertificationRequest();
+            csr.publicKey = publicKey;
+            csr.setSubject([
+                { name: 'commonName', value: hostName },
+                { name: 'countryName', value: 'DE' },
+                { name: 'localityName', value: 'Walldorf' },
+                { name: 'organizationName', value: 'SAP' },
+                { shortName: 'OU', value: 'SGS' },
+            ]);
+            csr.sign(privateKey);
+            console.log(forge.pki.certificationRequestToPem(csr));
+        };
+    </script>
+
+</body>
+
+</html>

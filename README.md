@@ -50,3 +50,4 @@ A collection of offline first web tools.
 47. [CSV File Extractor](https://gloryknight.github.io/offline_html_collection/html/tool_47.html) - Convert CSV rows into individual files inside a ZIP archive instantly.
 48. [Tower defense game](https://gloryknight.github.io/offline_html_collection/html/tool_48.html) - Modern and fancy-looking tower defense game in single HTML.
 49. [Screen recorder](https://gloryknight.github.io/offline_html_collection/html/tool_49.html) - Screen recorder webm/mp4.
+50. [RSA key-pair generator](https://gloryknight.github.io/offline_html_collection/html/tool_50.html) - RSA and Ed25519 key-pair generator.
