@@ -1,0 +1,1481 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>image_one — Image Editor</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --bg: #0d0f14;
+            --bg-2: #11141b;
+            --panel: #161b25;
+            --panel-2: #1c2230;
+            --border: #2a3142;
+            --border-2: #3a4358;
+            --text: #e8eaed;
+            --muted: #8a93a6;
+            --accent: #ff7a45;
+            --accent-2: #ffb347;
+            --accent-soft: rgba(255, 122, 69, .12);
+            --danger: #ef4444;
+            --ok: #22c55e;
+            --radius: 10px;
+            --shadow: 0 8px 24px rgba(0, 0, 0, .4);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            margin: 0;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: 'Manrope', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(800px 600px at 15% -10%, rgba(255, 122, 69, .10), transparent 60%),
+                radial-gradient(700px 500px at 105% 110%, rgba(255, 179, 71, .06), transparent 60%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        kbd {
+            background: var(--bg-2);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 1px 6px;
+            font-family: 'Space Grotesk', monospace;
+            font-size: 11px;
+        }
+
+        /* Header */
+        header {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 16px;
+            background: rgba(22, 27, 37, .8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .brand {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 19px;
+            letter-spacing: -.5px;
+            display: flex;
+            align-items: center;
+            gap: 9px;
+        }
+
+        .brand .dot {
+            width: 11px;
+            height: 11px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            box-shadow: 0 0 14px var(--accent);
+            animation: pulse 2.4s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1)
+            }
+
+            50% {
+                transform: scale(1.18)
+            }
+        }
+
+        .brand span {
+            color: var(--accent);
+        }
+
+        .header-actions {
+            margin-left: auto;
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 8px 12px;
+            background: var(--panel-2);
+            border: 1px solid var(--border);
+            color: var(--text);
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all .15s;
+        }
+
+        .btn:hover {
+            background: #232a3a;
+            border-color: var(--border-2);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .btn:disabled {
+            opacity: .35;
+            cursor: not-allowed;
+        }
+
+        .btn.primary {
+            background: linear-gradient(135deg, var(--accent), #ff5e1f);
+            border-color: transparent;
+            color: #fff;
+        }
+
+        .btn.primary:hover {
+            box-shadow: 0 4px 14px rgba(255, 122, 69, .45);
+        }
+
+        .btn.icon {
+            padding: 8px 10px;
+        }
+
+        .divider {
+            width: 1px;
+            height: 24px;
+            background: var(--border);
+            margin: 0 4px;
+        }
+
+        /* Main layout */
+        main {
+            flex: 1;
+            min-height: 0;
+            display: grid;
+            grid-template-columns: 64px 1fr 300px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Rail */
+        .rail {
+            background: var(--panel);
+            border-right: 1px solid var(--border);
+            padding: 12px 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .tool {
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--muted);
+            cursor: pointer;
+            position: relative;
+            transition: all .15s;
+        }
+
+        .tool:hover {
+            background: var(--panel-2);
+            color: var(--text);
+        }
+
+        .tool.active {
+            background: linear-gradient(135deg, var(--accent-soft), rgba(255, 179, 71, .05));
+            border-color: rgba(255, 122, 69, .4);
+            color: var(--accent);
+        }
+
+        .tool.active::before {
+            content: '';
+            position: absolute;
+            left: -8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 3px;
+            height: 24px;
+            background: var(--accent);
+            border-radius: 2px;
+            box-shadow: 0 0 8px var(--accent);
+        }
+
+        .tool i {
+            font-size: 16px;
+        }
+
+        .tool .label {
+            position: absolute;
+            left: 100%;
+            margin-left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--panel-2);
+            border: 1px solid var(--border);
+            padding: 5px 9px;
+            border-radius: 6px;
+            font-size: 12px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .15s;
+            z-index: 100;
+        }
+
+        .tool:hover .label {
+            opacity: 1;
+        }
+
+        /* Canvas area */
+        .canvas-area {
+            position: relative;
+            overflow: hidden;
+            background-image:
+                linear-gradient(45deg, #0a0c10 25%, transparent 25%),
+                linear-gradient(-45deg, #0a0c10 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #0a0c10 75%),
+                linear-gradient(-45deg, transparent 75%, #0a0c10 75%);
+            background-size: 22px 22px;
+            background-position: 0 0, 0 11px, 11px -11px, -11px 0;
+            background-color: #07080b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .canvas-wrap {
+            position: relative;
+            display: inline-block;
+            max-width: 100%;
+            max-height: 100%;
+            box-shadow: var(--shadow);
+            touch-action: none;
+        }
+
+        #canvas {
+            display: block;
+            max-width: 100%;
+            max-height: calc(100vh - 130px);
+            background: #fff;
+        }
+
+        #overlay {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+        }
+
+        #overlay.paint-cursor {
+            cursor: cell;
+        }
+
+        .canvas-wrap.painting #overlay {
+            cursor: none;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: var(--muted);
+            padding: 40px;
+            max-width: 480px;
+        }
+
+        .empty-state .icon-big {
+            font-size: 64px;
+            margin-bottom: 18px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            filter: drop-shadow(0 4px 20px rgba(255, 122, 69, .4));
+        }
+
+        .empty-state h2 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            color: var(--text);
+            margin: 0 0 10px;
+            font-size: 28px;
+            letter-spacing: -.5px;
+        }
+
+        .empty-state p {
+            margin: 6px 0;
+            font-size: 14px;
+        }
+
+        .empty-state .hint {
+            font-size: 12px;
+            opacity: .7;
+            margin-top: 18px;
+        }
+
+        .empty-state .sample-btn {
+            margin-top: 22px;
+        }
+
+        .selection-info {
+            position: absolute;
+            bottom: 14px;
+            left: 14px;
+            background: rgba(0, 0, 0, .72);
+            backdrop-filter: blur(8px);
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            color: var(--text);
+            font-family: 'Space Grotesk', monospace;
+            pointer-events: none;
+            letter-spacing: .3px;
+        }
+
+        /* Panel */
+        .panel {
+            background: var(--panel);
+            border-left: 1px solid var(--border);
+            padding: 18px 16px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 22px;
+        }
+
+        .panel::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .panel::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+
+        .panel-section h3 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1.6px;
+            color: var(--muted);
+            margin: 0 0 12px;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .panel-section h3 i {
+            color: var(--accent);
+        }
+
+        .field {
+            margin-bottom: 12px;
+        }
+
+        .field label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+
+        .field label .value {
+            color: var(--text);
+            font-weight: 600;
+            font-family: 'Space Grotesk', monospace;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            box-shadow: 0 0 0 4px rgba(255, 122, 69, .18);
+            transition: box-shadow .15s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            box-shadow: 0 0 0 6px rgba(255, 122, 69, .25);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border: none;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+        }
+
+        input[type="number"],
+        input[type="text"],
+        select {
+            width: 100%;
+            padding: 8px 10px;
+            background: var(--bg-2);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 13px;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .row>* {
+            flex: 1;
+        }
+
+        .color-input {
+            width: 38px;
+            height: 38px;
+            padding: 0;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: transparent;
+            cursor: pointer;
+            flex: 0 0 auto;
+        }
+
+        .color-input::-webkit-color-swatch-wrapper {
+            padding: 2px;
+        }
+
+        .color-input::-webkit-color-swatch {
+            border: none;
+            border-radius: 6px;
+        }
+
+        .toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            font-size: 12px;
+            color: var(--muted);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .toggle input {
+            accent-color: var(--accent);
+            width: 14px;
+            height: 14px;
+        }
+
+        .swatches {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+        .swatch {
+            aspect-ratio: 1;
+            border-radius: 6px;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: transform .12s;
+        }
+
+        .swatch:hover {
+            transform: scale(1.1);
+        }
+
+        .swatch.active {
+            border-color: var(--text);
+            box-shadow: 0 0 0 2px var(--bg-2);
+        }
+
+        .callout {
+            font-size: 12px;
+            padding: 9px 10px;
+            border-radius: 7px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            line-height: 1.4;
+            margin-bottom: 12px;
+        }
+
+        .callout.accent {
+            color: var(--accent);
+            background: var(--accent-soft);
+            border: 1px solid rgba(255, 122, 69, .25);
+        }
+
+        .callout.muted {
+            color: var(--muted);
+            background: var(--bg-2);
+            border: 1px solid var(--border);
+        }
+
+        .callout i {
+            flex-shrink: 0;
+        }
+
+        .dim-display {
+            font-size: 12px;
+            color: var(--text);
+            background: var(--bg-2);
+            padding: 8px 10px;
+            border-radius: 6px;
+            margin-top: 8px;
+            font-family: 'Space Grotesk', monospace;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Toast */
+        .toast-container {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column-reverse;
+            gap: 8px;
+            pointer-events: none;
+        }
+
+        .toast {
+            background: var(--panel-2);
+            border: 1px solid var(--border);
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-size: 13px;
+            box-shadow: var(--shadow);
+            animation: slideUp .25s ease;
+            pointer-events: auto;
+        }
+
+        .toast.success {
+            border-color: var(--ok);
+        }
+
+        .toast.error {
+            border-color: var(--danger);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Mobile */
+        @media (max-width: 820px) {
+            main {
+                grid-template-columns: 1fr;
+                grid-template-rows: 1fr auto auto;
+            }
+
+            .rail {
+                flex-direction: row;
+                border-right: none;
+                border-top: 1px solid var(--border);
+                padding: 8px 10px;
+                overflow-x: auto;
+                order: 3;
+                gap: 4px;
+            }
+
+            .rail::-webkit-scrollbar {
+                display: none;
+            }
+
+            .tool {
+                flex-shrink: 0;
+            }
+
+            .tool .label {
+                display: none;
+            }
+
+            .tool.active::before {
+                display: none;
+            }
+
+            .panel {
+                border-left: none;
+                border-top: 1px solid var(--border);
+                max-height: 38vh;
+                order: 2;
+                padding: 14px;
+            }
+
+            #canvas {
+                max-height: calc(100vh - 320px);
+            }
+
+            .header-actions .btn-text {
+                display: none;
+            }
+
+            header {
+                padding: 8px 12px;
+            }
+
+            .brand {
+                font-size: 16px;
+            }
+
+            .canvas-area {
+                padding: 14px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="brand">
+            <div class="dot"></div>
+            image<span>one</span>
+        </div>
+        <div class="header-actions">
+            <button class="btn" id="btn-load"><i class="fa-solid fa-folder-open"></i><span
+                    class="btn-text">Open</span></button>
+            <button class="btn" id="btn-paste"><i class="fa-solid fa-paste"></i><span
+                    class="btn-text">Paste</span></button>
+            <div class="divider"></div>
+            <button class="btn icon" id="btn-undo" title="Undo (Ctrl+Z)"><i
+                    class="fa-solid fa-rotate-left"></i></button>
+            <button class="btn icon" id="btn-redo" title="Redo (Ctrl+Y)"><i
+                    class="fa-solid fa-rotate-right"></i></button>
+            <div class="divider"></div>
+            <button class="btn primary" id="btn-export"><i class="fa-solid fa-download"></i><span
+                    class="btn-text">Export</span></button>
+        </div>
+        <input type="file" id="file-input" accept="image/*" style="display:none">
+    </header>
+
+    <main>
+        <div class="rail">
+            <button class="tool active" data-tool="select"><i class="fa-solid fa-vector-square"></i><span
+                    class="label">Select Region</span></button>
+            <button class="tool" data-tool="crop"><i class="fa-solid fa-crop-simple"></i><span
+                    class="label">Crop</span></button>
+            <button class="tool" data-tool="adjust"><i class="fa-solid fa-sliders"></i><span class="label">Brightness /
+                    Contrast</span></button>
+            <button class="tool" data-tool="paint"><i class="fa-solid fa-paintbrush"></i><span
+                    class="label">Paint</span></button>
+            <button class="tool" data-tool="rotate"><i class="fa-solid fa-arrows-rotate"></i><span
+                    class="label">Rotate</span></button>
+            <button class="tool" data-tool="resize"><i class="fa-solid fa-expand"></i><span
+                    class="label">Resize</span></button>
+        </div>
+
+        <div class="canvas-area" id="canvas-area">
+            <div class="empty-state" id="empty-state">
+                <div class="icon-big"><i class="fa-regular fa-image"></i></div>
+                <h2>Start editing</h2>
+                <p>Open an image from your device, paste from clipboard, or try a sample.</p>
+                <p class="hint"><kbd>Ctrl+V</kbd> paste · drag &amp; drop also works</p>
+                <div class="sample-btn"><button class="btn" id="btn-sample"><i class="fa-solid fa-sparkles"></i> Load
+                        Sample Image</button></div>
+            </div>
+            <div class="canvas-wrap" id="canvas-wrap" style="display:none">
+                <canvas id="canvas"></canvas>
+                <canvas id="overlay"></canvas>
+            </div>
+            <div class="selection-info" id="selection-info" style="display:none"></div>
+        </div>
+
+        <aside class="panel" id="panel"></aside>
+    </main>
+
+    <div class="toast-container" id="toasts"></div>
+
+    <script>
+        // ============ Element refs ============
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        const overlay = document.getElementById('overlay');
+        const octx = overlay.getContext('2d');
+        const canvasWrap = document.getElementById('canvas-wrap');
+        const canvasArea = document.getElementById('canvas-area');
+        const emptyState = document.getElementById('empty-state');
+        const panel = document.getElementById('panel');
+        const selectionInfo = document.getElementById('selection-info');
+        const fileInput = document.getElementById('file-input');
+
+        // ============ State ============
+        const state = {
+            hasImage: false,
+            tool: 'select',
+            selection: null,        // {x, y, w, h} in canvas pixels
+            history: [],            // ImageData snapshots
+            redoStack: [],
+            // Paint
+            brushSize: 16,
+            brushColor: '#ff7a45',
+            // Adjust
+            adjustBaseline: null,   // ImageData captured before live preview
+            brightness: 0,
+            contrast: 0,
+            // Rotate
+            rotateAngle: 0,
+            // Resize
+            resizeW: 0,
+            resizeH: 0,
+            resizeAspect: true,
+            // Export
+            exportFormat: 'jpeg',
+            exportQuality: 92,
+            // Interaction
+            isInteracting: false,
+            startPoint: null,
+            lastPoint: null,
+        };
+
+        // ============ Image loading ============
+        function loadImageFromSrc(src, crossOrigin) {
+            const img = new Image();
+            if (crossOrigin) img.crossOrigin = 'anonymous';
+            img.onload = () => {
+                canvas.width = img.naturalWidth;
+                canvas.height = img.naturalHeight;
+                overlay.width = img.naturalWidth;
+                overlay.height = img.naturalHeight;
+                ctx.drawImage(img, 0, 0);
+                state.hasImage = true;
+                state.history = [];
+                state.redoStack = [];
+                state.selection = null;
+                state.adjustBaseline = null;
+                state.brightness = 0;
+                state.contrast = 0;
+                state.rotateAngle = 0;
+                canvasWrap.style.display = 'inline-block';
+                emptyState.style.display = 'none';
+                updateUndoRedo();
+                renderPanel();
+                drawOverlay();
+                toast('Image loaded', 'success');
+            };
+            img.onerror = () => toast('Failed to load image', 'error');
+            img.src = src;
+        }
+        function loadImageFromBlob(blob) {
+            const url = URL.createObjectURL(blob);
+            loadImageFromSrc(url, false);
+            setTimeout(() => URL.revokeObjectURL(url), 10000);
+        }
+
+        fileInput.addEventListener('change', e => {
+            const f = e.target.files[0];
+            if (f) loadImageFromBlob(f);
+            e.target.value = '';
+        });
+        document.getElementById('btn-load').addEventListener('click', () => fileInput.click());
+        document.getElementById('btn-paste').addEventListener('click', async () => {
+            try {
+                const items = await navigator.clipboard.read();
+                for (const it of items) {
+                    for (const type of it.types) {
+                        if (type.startsWith('image/')) {
+                            const blob = await it.getType(type);
+                            loadImageFromBlob(blob);
+                            return;
+                        }
+                    }
+                }
+                toast('No image in clipboard', 'error');
+            } catch (e) {
+                toast('Clipboard access denied — use Ctrl+V instead', 'error');
+            }
+        });
+        document.getElementById('btn-sample').addEventListener('click', () => {
+            loadImageFromSrc('https://picsum.photos/seed/imageone42/1280/860.jpg', true);
+        });
+        document.addEventListener('paste', e => {
+            for (const item of e.clipboardData.items) {
+                if (item.type.startsWith('image/')) {
+                    loadImageFromBlob(item.getAsFile());
+                    return;
+                }
+            }
+        });
+        canvasArea.addEventListener('dragover', e => { e.preventDefault(); });
+        canvasArea.addEventListener('drop', e => {
+            e.preventDefault();
+            const f = e.dataTransfer.files[0];
+            if (f && f.type.startsWith('image/')) loadImageFromBlob(f);
+        });
+
+        // ============ History ============
+        function snapshot() { return ctx.getImageData(0, 0, canvas.width, canvas.height); }
+        function pushHistory() {
+            state.history.push(snapshot());
+            if (state.history.length > 40) state.history.shift();
+            state.redoStack = [];
+            updateUndoRedo();
+        }
+        function undo() {
+            if (!state.history.length) return;
+            state.redoStack.push(snapshot());
+            const d = state.history.pop();
+            canvas.width = d.width; canvas.height = d.height;
+            overlay.width = d.width; overlay.height = d.height;
+            ctx.putImageData(d, 0, 0);
+            state.selection = null;
+            state.adjustBaseline = null;
+            state.brightness = 0; state.contrast = 0;
+            drawOverlay(); renderPanel(); updateUndoRedo();
+        }
+        function redo() {
+            if (!state.redoStack.length) return;
+            state.history.push(snapshot());
+            const d = state.redoStack.pop();
+            canvas.width = d.width; canvas.height = d.height;
+            overlay.width = d.width; overlay.height = d.height;
+            ctx.putImageData(d, 0, 0);
+            state.selection = null;
+            state.adjustBaseline = null;
+            state.brightness = 0; state.contrast = 0;
+            drawOverlay(); renderPanel(); updateUndoRedo();
+        }
+        function updateUndoRedo() {
+            document.getElementById('btn-undo').disabled = !state.history.length;
+            document.getElementById('btn-redo').disabled = !state.redoStack.length;
+        }
+        document.getElementById('btn-undo').addEventListener('click', undo);
+        document.getElementById('btn-redo').addEventListener('click', redo);
+
+        // ============ Coordinate conversion ============
+        function screenToCanvas(clientX, clientY) {
+            const rect = canvas.getBoundingClientRect();
+            const x = (clientX - rect.left) * (canvas.width / rect.width);
+            const y = (clientY - rect.top) * (canvas.height / rect.height);
+            return { x, y };
+        }
+        function getPoint(e) {
+            const t = e.touches ? e.touches[0] : e;
+            return screenToCanvas(t.clientX, t.clientY);
+        }
+
+        // ============ Tool switching ============
+        document.querySelectorAll('.tool').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (!state.hasImage) { toast('Load an image first', 'error'); return; }
+                document.querySelectorAll('.tool').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const prev = state.tool;
+                state.tool = btn.dataset.tool;
+                // Leaving adjust without committing -> restore baseline
+                if (prev === 'adjust' && state.tool !== 'adjust') {
+                    if (state.adjustBaseline) {
+                        ctx.putImageData(state.adjustBaseline, 0, 0);
+                        state.adjustBaseline = null;
+                    }
+                    state.brightness = 0; state.contrast = 0;
+                }
+                // Entering adjust -> capture baseline
+                if (state.tool === 'adjust' && prev !== 'adjust') {
+                    state.adjustBaseline = snapshot();
+                    state.brightness = 0; state.contrast = 0;
+                }
+                // Entering resize -> sync to current dims
+                if (state.tool === 'resize') {
+                    state.resizeW = canvas.width;
+                    state.resizeH = canvas.height;
+                }
+                // Reset rotate angle
+                if (state.tool !== 'rotate') state.rotateAngle = 0;
+                // Cursor
+                overlay.classList.toggle('paint-cursor', state.tool === 'paint');
+                drawOverlay();
+                renderPanel();
+            });
+        });
+
+        // ============ Pointer interaction ============
+        function pointerDown(e) {
+            if (!state.hasImage) return;
+            e.preventDefault();
+            const p = getPoint(e);
+            state.isInteracting = true;
+            state.startPoint = p;
+            state.lastPoint = p;
+
+            if (state.tool === 'paint') {
+                pushHistory();
+                paintDot(p.x, p.y);
+            } else if (state.tool === 'select' || state.tool === 'crop' || state.tool === 'adjust') {
+                // start a new selection drag
+                state.selection = { x: p.x, y: p.y, w: 0, h: 0 };
+                // For adjust: if no baseline yet, capture it
+                if (state.tool === 'adjust' && !state.adjustBaseline) {
+                    state.adjustBaseline = snapshot();
+                }
+                drawOverlay();
+            }
+        }
+        function pointerMove(e) {
+            if (!state.hasImage) return;
+            if (!state.isInteracting) return;
+            const p = getPoint(e);
+
+            if (state.tool === 'select' || state.tool === 'crop' || state.tool === 'adjust') {
+                const x = Math.min(state.startPoint.x, p.x);
+                const y = Math.min(state.startPoint.y, p.y);
+                const w = Math.abs(p.x - state.startPoint.x);
+                const h = Math.abs(p.y - state.startPoint.y);
+                state.selection = { x, y, w, h };
+                drawOverlay();
+            } else if (state.tool === 'paint') {
+                paintLine(state.lastPoint, p);
+                state.lastPoint = p;
+            }
+        }
+        function pointerUp() {
+            if (!state.isInteracting) return;
+            state.isInteracting = false;
+            if (state.tool === 'select' || state.tool === 'crop' || state.tool === 'adjust') {
+                if (state.selection && (state.selection.w < 3 || state.selection.h < 3)) {
+                    state.selection = null;
+                }
+                drawOverlay();
+                renderPanel();
+            }
+        }
+
+        canvasWrap.addEventListener('mousedown', pointerDown);
+        window.addEventListener('mousemove', pointerMove);
+        window.addEventListener('mouseup', pointerUp);
+        canvasWrap.addEventListener('touchstart', pointerDown, { passive: false });
+        window.addEventListener('touchmove', e => {
+            if (state.isInteracting) { e.preventDefault(); pointerMove(e); }
+        }, { passive: false });
+        window.addEventListener('touchend', pointerUp);
+
+        // ============ Overlay rendering ============
+        function drawOverlay() {
+            octx.clearRect(0, 0, overlay.width, overlay.height);
+            const showSel = state.selection && (state.tool === 'select' || state.tool === 'crop' || state.tool === 'adjust')
+                && state.selection.w >= 1 && state.selection.h >= 1;
+            if (showSel) {
+                const s = state.selection;
+                // Dim outside region
+                octx.fillStyle = 'rgba(0,0,0,0.45)';
+                octx.fillRect(0, 0, overlay.width, overlay.height);
+                octx.clearRect(s.x, s.y, s.w, s.h);
+                // Border
+                const lineW = Math.max(1, canvas.width / 600);
+                octx.strokeStyle = '#ff7a45';
+                octx.lineWidth = lineW;
+                octx.setLineDash([10, 6]);
+                octx.strokeRect(s.x, s.y, s.w, s.h);
+                octx.setLineDash([]);
+                // Corner handles
+                const hs = Math.max(7, canvas.width / 180);
+                octx.fillStyle = '#ff7a45';
+                [[s.x, s.y], [s.x + s.w, s.y], [s.x, s.y + s.h], [s.x + s.w, s.y + s.h]].forEach(([x, y]) => {
+                    octx.fillRect(x - hs / 2, y - hs / 2, hs, hs);
+                });
+                // Rule of thirds
+                octx.strokeStyle = 'rgba(255,255,255,0.22)';
+                octx.lineWidth = 1;
+                for (let i = 1; i < 3; i++) {
+                    octx.beginPath();
+                    octx.moveTo(s.x + s.w * i / 3, s.y); octx.lineTo(s.x + s.w * i / 3, s.y + s.h);
+                    octx.moveTo(s.x, s.y + s.h * i / 3); octx.lineTo(s.x + s.w, s.y + s.h * i / 3);
+                    octx.stroke();
+                }
+            }
+            // Update info
+            if (showSel) {
+                selectionInfo.style.display = 'block';
+                selectionInfo.textContent = `${Math.round(state.selection.w)} × ${Math.round(state.selection.h)}  @  ${Math.round(state.selection.x)}, ${Math.round(state.selection.y)}`;
+            } else {
+                selectionInfo.style.display = 'none';
+            }
+        }
+
+        // ============ Paint ============
+        function paintDot(x, y) {
+            ctx.fillStyle = state.brushColor;
+            ctx.beginPath();
+            ctx.arc(x, y, state.brushSize / 2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        function paintLine(a, b) {
+            ctx.strokeStyle = state.brushColor;
+            ctx.lineWidth = state.brushSize;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.beginPath();
+            ctx.moveTo(a.x, a.y);
+            ctx.lineTo(b.x, b.y);
+            ctx.stroke();
+        }
+
+        // ============ Brightness / Contrast ============
+        function clamp(v) { return v < 0 ? 0 : v > 255 ? 255 : v; }
+
+        function applyBrightnessContrast(brightness, contrast, region) {
+            // brightness, contrast in [-100, 100]
+            const b = brightness * 2.55;
+            const c = contrast * 2.55;
+            const factor = (259 * (c + 255)) / (255 * (259 - c));
+
+            let rx, ry, rw, rh;
+            if (region && region.w > 0 && region.h > 0) {
+                rx = Math.max(0, Math.floor(region.x));
+                ry = Math.max(0, Math.floor(region.y));
+                rw = Math.min(canvas.width - rx, Math.floor(region.w));
+                rh = Math.min(canvas.height - ry, Math.floor(region.h));
+            } else {
+                rx = 0; ry = 0; rw = canvas.width; rh = canvas.height;
+            }
+            if (rw <= 0 || rh <= 0) return;
+
+            const imageData = ctx.getImageData(rx, ry, rw, rh);
+            const data = imageData.data;
+            for (let i = 0; i < data.length; i += 4) {
+                data[i] = clamp(factor * (data[i] - 128) + 128 + b);
+                data[i + 1] = clamp(factor * (data[i + 1] - 128) + 128 + b);
+                data[i + 2] = clamp(factor * (data[i + 2] - 128) + 128 + b);
+            }
+            ctx.putImageData(imageData, rx, ry);
+        }
+
+        // ============ Rotate (smooth) ============
+        function rotateImage(angle) {
+            if (!angle) return;
+            const rad = angle * Math.PI / 180;
+            const w = canvas.width, h = canvas.height;
+            const cos = Math.abs(Math.cos(rad));
+            const sin = Math.abs(Math.sin(rad));
+            const newW = Math.max(1, Math.ceil(w * cos + h * sin));
+            const newH = Math.max(1, Math.ceil(w * sin + h * cos));
+
+            const temp = document.createElement('canvas');
+            temp.width = w; temp.height = h;
+            temp.getContext('2d').drawImage(canvas, 0, 0);
+
+            pushHistory();
+            canvas.width = newW; canvas.height = newH;
+            overlay.width = newW; overlay.height = newH;
+            ctx.clearRect(0, 0, newW, newH);
+            ctx.translate(newW / 2, newH / 2);
+            ctx.rotate(rad);
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(temp, -w / 2, -h / 2);
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            state.selection = null;
+            state.adjustBaseline = null;
+            drawOverlay();
+            renderPanel();
+            toast(`Rotated ${angle}°`, 'success');
+        }
+
+        // ============ Resize ============
+        function resizeImage(newW, newH) {
+            newW = Math.max(1, Math.round(newW));
+            newH = Math.max(1, Math.round(newH));
+            if (newW === canvas.width && newH === canvas.height) return;
+            const temp = document.createElement('canvas');
+            temp.width = canvas.width; temp.height = canvas.height;
+            temp.getContext('2d').drawImage(canvas, 0, 0);
+
+            pushHistory();
+            canvas.width = newW; canvas.height = newH;
+            overlay.width = newW; overlay.height = newH;
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(temp, 0, 0, newW, newH);
+            state.selection = null;
+            state.adjustBaseline = null;
+            drawOverlay();
+            renderPanel();
+            toast(`Resized to ${newW} × ${newH}`, 'success');
+        }
+
+        // ============ Crop ============
+        function cropImage() {
+            if (!state.selection || state.selection.w < 2 || state.selection.h < 2) {
+                toast('Drag a region on the canvas first', 'error');
+                return;
+            }
+            const s = state.selection;
+            const x = Math.max(0, Math.floor(s.x));
+            const y = Math.max(0, Math.floor(s.y));
+            const w = Math.min(canvas.width - x, Math.floor(s.w));
+            const h = Math.min(canvas.height - y, Math.floor(s.h));
+
+            const temp = document.createElement('canvas');
+            temp.width = w; temp.height = h;
+            temp.getContext('2d').drawImage(canvas, x, y, w, h, 0, 0, w, h);
+
+            pushHistory();
+            canvas.width = w; canvas.height = h;
+            overlay.width = w; overlay.height = h;
+            ctx.drawImage(temp, 0, 0);
+            state.selection = null;
+            state.adjustBaseline = null;
+            drawOverlay();
+            renderPanel();
+            toast('Cropped', 'success');
+        }
+
+        // ============ Export ============
+        function exportImage() {
+            const format = state.exportFormat;
+            const quality = state.exportQuality / 100;
+            const mime = format === 'png' ? 'image/png' : 'image/jpeg';
+            const ext = format === 'png' ? 'png' : 'jpg';
+
+            let out = canvas;
+            if (format === 'jpeg') {
+                // Flatten transparency onto white
+                out = document.createElement('canvas');
+                out.width = canvas.width; out.height = canvas.height;
+                const o = out.getContext('2d');
+                o.fillStyle = '#ffffff';
+                o.fillRect(0, 0, out.width, out.height);
+                o.drawImage(canvas, 0, 0);
+            }
+            out.toBlob(blob => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `image_one_${Date.now()}.${ext}`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+                toast(`Exported as ${ext.toUpperCase()}`, 'success');
+            }, mime, quality);
+        }
+
+        // ============ Panel rendering ============
+        function renderPanel() {
+            if (!state.hasImage) {
+                panel.innerHTML = `
+      <div class="panel-section">
+        <h3><i class="fa-solid fa-circle-info"></i> Quick Start</h3>
+        <p style="font-size:13px;color:var(--muted);line-height:1.6;margin:0">
+          Load an image to access brightness &amp; contrast (with region targeting), crop, smooth rotate, paint, resize, and export with quality control.
+        </p>
+      </div>
+      <div class="panel-section">
+        <h3><i class="fa-solid fa-keyboard"></i> Shortcuts</h3>
+        <div style="font-size:12px;color:var(--muted);line-height:2">
+          <div><kbd>Ctrl+Z</kbd> &nbsp; Undo</div>
+          <div><kbd>Ctrl+Y</kbd> &nbsp; Redo</div>
+          <div><kbd>Ctrl+V</kbd> &nbsp; Paste image</div>
+        </div>
+      </div>`;
+                return;
+            }
+
+            let html = `
+    <div class="panel-section">
+      <h3><i class="fa-solid fa-image"></i> Image</h3>
+      <div class="dim-display">
+        <span>Dimensions</span>
+        <span>${canvas.width} × ${canvas.height}</span>
+      </div>
+    </div>`;
+
+            if (state.tool === 'select') {
+                html += `
+      <div class="panel-section">
+        <h3><i class="fa-solid fa-vector-square"></i> Select Region</h3>
+        <div class="callout accent"><i class="fa-solid fa-bullseye"></i> Drag on canvas to mark a region. Then switch to <b>Brightness / Contrast</b> to adjust only that area.</div>
+        ${state.selection ? `
+          <div class="dim-display"><span>Selection</span><span>${Math.round(state.selection.w)} × ${Math.round(state.selection.h)}</span></div>
+          <button class="btn" style="width:100%;margin-top:8px" onclick="clearSelection()"><i class="fa-solid fa-xmark"></i> Clear Selection</button>
+        ` : '<p style="font-size:12px;color:var(--muted);opacity:.7">No region selected yet.</p>'}
+      </div>`;
+            }
+
+            if (state.tool === 'crop') {
+                html += `
+      <div class="panel-section">
+        <h3><i class="fa-solid fa-crop-simple"></i> Crop</h3>
+        <p style="font-size:13px;color:var(--muted);line-height:1.5;margin:0 0 10px">Drag on the canvas to define the area to keep.</p>
+        ${state.selection ? `
+          <div class="dim-display"><span>Will crop to</span><span>${Math.round(state.selection.w)} × ${Math.round(state.selection.h)}</span></div>
+          <button class="btn primary" style="width:100%;margin-top:8px" onclick="cropImage()"><i class="fa-solid fa-check"></i> Apply Crop</button>
+          <button class="btn" style="width:100%;margin-top:6px" onclick="clearSelection()">Cancel</button>
+        ` : '<p style="font-size:12px;color:var(--muted);opacity:.7">Drag on canvas to select crop area.</p>'}
+      </div>`;
+            }
+
+            if (state.tool === 'adjust') {
+                const hasSel = state.selection && state.selection.w > 1 && state.selection.h > 1;
+                html += `
+      <div class="panel-section">
+        <h3><i class="fa-solid fa-sliders"></i> Brightness / Contrast</h3>
+        ${hasSel
+                        ? `<div class="callout accent"><i class="fa-solid fa-bullseye"></i> Adjusting <b>selected region only</b>. Outside pixels stay untouched.</div>`
+                        : `<div class="callout muted"><i class="fa-solid fa-globe"></i> Adjusting the whole image. Use the <b>Select</b> tool first to target an area.</div>`}
+        <div class="field">
+          <label>Brightness <span class="value" id="bright-val">${state.brightness > 0 ? '+' : ''}${state.brightness}</span></label>
+          <input type="range" min="-100" max="100" value="${state.brightness}" oninput="onAdjustInput('brightness', +this.value)">
+        </div>
+        <div class="field">
+          <label>Contrast <span class="value" id="contrast-val">${state.contrast > 0 ? '+' : ''}${state.contrast}</span></label>
+          <input type="range" min="-100" max="100" value="${state.contrast}" oninput="onAdjustInput('contrast', +this.value)">
+        </div>
+        <button class="btn primary" style="width:100%" onclick="commitAdjust()"><i class="fa-solid fa-check"></i> Apply Adjustment</button>
+        <button class="btn" style="width:100%;margin-top:6px" onclick="resetAdjust()"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+      </div>`;
+            }
+
+            if (state.tool === 'paint') {
+                html += `
+      <div class="panel-section">
+        <h3><i class="fa-solid fa-paintbrush"></i> Paint</h3>
+        <div class="field">
+          <label>Brush Size <span class="value" id="brush-size-val">${state.brushSize}px</span></label>
+          <input type="range" min="1" max="120" value="${state.brushSize}" oninput="state.brushSize=+this.value;document.getElementById('brush-size-val').textContent=this.value+'px'">
+        </div>
+        <div class="field">
+          <label>Color</label>
+          <div class="row">
+            <input type="color" class="color-input" value="${state.brushColor}" id="brush-color" oninput="setBrushColor(this.value)">
+            <input type="text" value="${state.brushColor}" id="brush-color-text" oninput="setBrushColor(this.value)">
+          </div>
+        </div>
+        <div class="swatches" id="swatches"></div>
+      </div>`;
+            }
+
+            if (state.tool === 'rotate') {
+                html += `
+      <div class="panel-section">
+        <h3><i class="fa-solid fa-arrows-rotate"></i> Smooth Rotate</h3>
+        <div class="field">
+          <label>Custom Angle <span class="value" id="rotate-val">${state.rotateAngle}°</span></label>
+          <input type="range" min="-180" max="180" value="${state.rotateAngle}" oninput="state.rotateAngle=+this.value;document.getElementById('rotate-val').textContent=this.value+'°'">
+        </div>
+        <div class="row" style="margin-bottom:10px">
+          <button class="btn" onclick="rotateImage(-90)"><i class="fa-solid fa-rotate-left"></i> 90°</button>
+          <button class="btn" onclick="rotateImage(90)"><i class="fa-solid fa-rotate-right"></i> 90°</button>
+          <button class="btn" onclick="rotateImage(180)"><i class="fa-solid fa-arrows-up-down"></i> 180°</button>
+        </div>
+        <button class="btn primary" style="width:100%" onclick="applyCustomRotate()"><i class="fa-solid fa-check"></i> Apply ${state.rotateAngle !== 0 ? state.rotateAngle + '°' : 'Rotation'}</button>
+      </div>`;
+            }
+
+            if (state.tool === 'resize') {
+                html += `
+      <div class="panel-section">
+        <h3><i class="fa-solid fa-expand"></i> Resize</h3>
+        <div class="field">
+          <label>Width <span class="value">${canvas.width}px →</span></label>
+          <input type="number" id="resize-w" value="${state.resizeW}" min="1" oninput="onResizeInput('w', +this.value)">
+        </div>
+        <div class="field">
+          <label>Height <span class="value">${canvas.height}px →</span></label>
+          <input type="number" id="resize-h" value="${state.resizeH}" min="1" oninput="onResizeInput('h', +this.value)">
+        </div>
+        <label class="toggle" style="margin-bottom:6px"><input type="checkbox" ${state.resizeAspect ? 'checked' : ''} onchange="state.resizeAspect=this.checked"> Lock aspect ratio</label>
+        <button class="btn primary" style="width:100%;margin-top:8px" onclick="resizeImage(state.resizeW, state.resizeH)"><i class="fa-solid fa-check"></i> Apply Resize</button>
+      </div>`;
+            }
+
+            // Export section (always shown when image loaded)
+            html += `
+    <div class="panel-section">
+      <h3><i class="fa-solid fa-download"></i> Export</h3>
+      <div class="field">
+        <label>Format</label>
+        <select id="export-format" onchange="state.exportFormat=this.value;renderPanel()">
+          <option value="jpeg" ${state.exportFormat === 'jpeg' ? 'selected' : ''}>JPEG</option>
+          <option value="png" ${state.exportFormat === 'png' ? 'selected' : ''}>PNG (lossless)</option>
+        </select>
+      </div>
+      ${state.exportFormat === 'jpeg' ? `
+        <div class="field">
+          <label>Quality <span class="value" id="quality-val">${state.exportQuality}%</span></label>
+          <input type="range" min="10" max="100" value="${state.exportQuality}" oninput="state.exportQuality=+this.value;document.getElementById('quality-val').textContent=this.value+'%'">
+        </div>` : ''}
+      <button class="btn primary" style="width:100%" onclick="exportImage()"><i class="fa-solid fa-download"></i> Download Image</button>
+    </div>`;
+
+            panel.innerHTML = html;
+            if (state.tool === 'paint') renderSwatches();
+        }
+
+        // ============ Exposed handlers ============
+        window.setBrushColor = function (c) {
+            state.brushColor = c;
+            const col = document.getElementById('brush-color');
+            const txt = document.getElementById('brush-color-text');
+            if (col) col.value = c;
+            if (txt) txt.value = c;
+            renderSwatches();
+        };
+        window.renderSwatches = function () {
+            const sw = document.getElementById('swatches');
+            if (!sw) return;
+            const colors = ['#ff7a45', '#ffffff', '#000000', '#ef4444', '#22c55e', '#3b82f6',
+                '#eab308', '#a855f7', '#ec4899', '#06b6d4', '#84cc16', '#f97316'];
+            sw.innerHTML = colors.map(c =>
+                `<div class="swatch ${c.toLowerCase() === state.brushColor.toLowerCase() ? 'active' : ''}" style="background:${c}" onclick="setBrushColor('${c}')" title="${c}"></div>`
+            ).join('');
+        };
+        window.clearSelection = function () {
+            state.selection = null;
+            drawOverlay();
+            renderPanel();
+        };
+        window.cropImage = cropImage;
+        window.rotateImage = rotateImage;
+        window.resizeImage = resizeImage;
+        window.exportImage = exportImage;
+        window.applyCustomRotate = function () {
+            if (state.rotateAngle === 0) { toast('Move the slider to set an angle', 'error'); return; }
+            rotateImage(state.rotateAngle);
+            state.rotateAngle = 0;
+        };
+        window.onResizeInput = function (dim, value) {
+            if (!value || value < 1) return;
+            if (dim === 'w') state.resizeW = value;
+            else state.resizeH = value;
+            if (state.resizeAspect) {
+                const ratio = canvas.width / canvas.height;
+                if (dim === 'w') {
+                    state.resizeH = Math.round(value / ratio);
+                    const h = document.getElementById('resize-h');
+                    if (h) h.value = state.resizeH;
+                } else {
+                    state.resizeW = Math.round(value * ratio);
+                    const w = document.getElementById('resize-w');
+                    if (w) w.value = state.resizeW;
+                }
+            }
+        };
+        window.onAdjustInput = function (key, value) {
+            state[key] = value;
+            const el = document.getElementById(key === 'brightness' ? 'bright-val' : 'contrast-val');
+            if (el) el.textContent = (value > 0 ? '+' : '') + value;
+            // Live preview: restore baseline, then apply
+            if (state.adjustBaseline) {
+                ctx.putImageData(state.adjustBaseline, 0, 0);
+            } else {
+                state.adjustBaseline = snapshot();
+            }
+            applyBrightnessContrast(state.brightness, state.contrast, state.selection);
+        };
+        window.commitAdjust = function () {
+            if (state.adjustBaseline) {
+                // The current canvas state is the result; just push to history
+                pushHistory();
+                state.adjustBaseline = null;
+            }
+            state.brightness = 0;
+            state.contrast = 0;
+            renderPanel();
+            toast('Adjustment applied', 'success');
+        };
+        window.resetAdjust = function () {
+            if (state.adjustBaseline) {
+                ctx.putImageData(state.adjustBaseline, 0, 0);
+                state.adjustBaseline = null;
+            }
+            state.brightness = 0;
+            state.contrast = 0;
+            renderPanel();
+        };
+
+        // ============ Toast ============
+        function toast(msg, type = '') {
+            const t = document.createElement('div');
+            t.className = 'toast ' + type;
+            t.textContent = msg;
+            document.getElementById('toasts').appendChild(t);
+            setTimeout(() => {
+                t.style.opacity = '0';
+                t.style.transition = 'opacity .2s';
+                setTimeout(() => t.remove(), 220);
+            }, 2200);
+        }
+
+        // ============ Keyboard ============
+        window.addEventListener('keydown', e => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+            if (e.ctrlKey || e.metaKey) {
+                if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+                else if (e.key === 'y' || (e.key === 'z' && e.shiftKey)) { e.preventDefault(); redo(); }
+            }
+        });
+
+        // ============ Init ============
+        renderPanel();
+        updateUndoRedo();
+    </script>
+</body>
+
+</html>
