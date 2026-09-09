@@ -52,3 +52,5 @@ A collection of offline first web tools.
 49. [Screen recorder](https://gloryknight.github.io/offline_html_collection/html/tool_49.html) - Screen recorder webm/mp4.
 50. [RSA key-pair generator](https://gloryknight.github.io/offline_html_collection/html/tool_50.html) - RSA and Ed25519 key-pair generator.
 51. [Image Editor](https://gloryknight.github.io/offline_html_collection/html/tool_51.html) - In browser offline image editor. Copy - paste included.
+52. [Image perspective correction](https://gloryknight.github.io/offline_html_collection/html/tool_52.html) - In browser offline image perspective corrector.
+

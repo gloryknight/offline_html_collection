@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Perspective Correction Editor</title>
+<style>
+  :root{
+    --bg:#1b1e24; --panel:#232730; --panel2:#2b303b; --line:#3a4150;
+    --text:#e8ecf3; --muted:#9aa4b2; --accent:#5b8cff; --accent2:#3ddc97;
+    --danger:#ff6b6b; --warn:#ffb454;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+  header{
+    padding:10px 16px; background:var(--panel); border-bottom:1px solid var(--line);
+    display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+  }
+  header h1{font-size:15px; margin:0; font-weight:600; letter-spacing:.2px}
+  header .sub{color:var(--muted); font-size:12px}
+  .spacer{flex:1}
+  main{flex:1; display:flex; min-height:0}
+  #leftPanel{
+    width:320px; min-width:260px; background:var(--panel); border-right:1px solid var(--line);
+    overflow-y:auto; padding:14px; display:flex; flex-direction:column; gap:16px;
+  }
+  #rightPanel{flex:1; display:flex; flex-direction:column; min-width:0}
+  .section{background:var(--panel2); border:1px solid var(--line); border-radius:8px; padding:12px}
+  .section h2{font-size:12px; text-transform:uppercase; letter-spacing:.6px; margin:0 0 10px; color:var(--muted); font-weight:600}
+  .row{display:flex; align-items:center; gap:8px; margin-bottom:10px}
+  .row:last-child{margin-bottom:0}
+  label{font-size:13px; flex:1}
+  .hint{font-size:11px; color:var(--muted); line-height:1.4}
+  input[type=range]{flex:2; accent-color:var(--accent)}
+  input[type=number], select{
+    background:#171a20; color:var(--text); border:1px solid var(--line);
+    border-radius:5px; padding:4px 6px; font-size:12px; width:70px;
+  }
+  select{width:auto}
+  .btn{
+    background:var(--accent); color:#fff; border:none; border-radius:6px;
+    padding:8px 12px; font-size:13px; cursor:pointer; font-weight:500; transition:.15s;
+  }
+  .btn:hover{filter:brightness(1.1)}
+  .btn:disabled{opacity:.4; cursor:not-allowed}
+  .btn.secondary{background:#3a4150}
+  .btn.success{background:var(--accent2); color:#06281c}
+  .btn.danger{background:var(--danger)}
+  .btn.small{padding:5px 9px; font-size:12px}
+  .btnrow{display:flex; gap:8px; flex-wrap:wrap}
+  #canvasWrap{flex:1; position:relative; background:#0f1116; overflow:hidden; display:flex; align-items:center; justify-content:center}
+  #overlay{position:absolute; inset:0; cursor:crosshair; touch-action:none}
+  #statusbar{background:var(--panel); border-top:1px solid var(--line); padding:6px 14px; font-size:12px; color:var(--muted); display:flex; gap:18px}
+  .drop{border:2px dashed var(--line); border-radius:8px; padding:14px; text-align:center; color:var(--muted); font-size:13px}
+  .drop.over{border-color:var(--accent); color:var(--text)}
+  .corner-tag{position:absolute; font-size:10px; color:#fff; background:rgba(0,0,0,.5); padding:1px 4px; border-radius:3px; pointer-events:none}
+  .checkbox-row{display:flex; align-items:center; gap:8px}
+  .checkbox-row input{accent-color:var(--accent)}
+  hr{border:none; border-top:1px solid var(--line); margin:4px 0}
+</style>
+</head>
+<body>
+<header>
+  <h1>Perspective Correction Editor</h1>
+  <span class="sub">Select the 4 corners of your photo &rarr; restore its original (front-facing) view</span>
+  <div class="spacer"></div>
+  <button id="btnHelp" class="btn secondary small">How to use</button>
+</header>
+
+<main>
+  <div id="leftPanel">
+    <div class="section">
+      <h2>1. Load image</h2>
+      <div id="drop" class="drop">Drop an image here<br>or click to browse</div>
+      <input id="file" type="file" accept="image/*" hidden />
+    </div>
+
+    <div class="section">
+      <h2>2. Mark the 4 corners</h2>
+      <p class="hint">Click each corner of the photo in the image, going around it (top-left &rarr; top-right &rarr; bottom-right &rarr; bottom-left). Drag a handle to fine-tune.</p>
+      <div class="row">
+        <label>Corners placed</label>
+        <span id="cornerCount" style="font-size:13px">0 / 4</span>
+      </div>
+      <div class="btnrow">
+        <button id="btnResetCorners" class="btn secondary small">Reset corners</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>3. Output settings</h2>
+      <div class="row">
+        <label>Output width (px)</label>
+        <input id="outW" type="number" min="1" step="1" />
+      </div>
+      <div class="row">
+        <label>Output height (px)</label>
+        <input id="outH" type="number" min="1" step="1" />
+      </div>
+      <div class="row">
+        <label>Preset</label>
+        <select id="preset">
+          <option value="auto">Auto (keep aspect)</option>
+          <option value="1:1">Square 1:1</option>
+          <option value="4:3">Landscape 4:3</option>
+          <option value="3:2">Landscape 3:2</option>
+          <option value="16:9">Wide 16:9</option>
+          <option value="3:4">Portrait 3:4</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>4. Result</h2>
+      <div class="btnrow" style="margin-bottom:10px">
+        <button id="btnApply" class="btn success" disabled>Apply correction</button>
+        <button id="btnDownload" class="btn" disabled>Download PNG</button>
+      </div>
+      <p id="resultInfo" class="hint">No result yet.</p>
+    </div>
+
+    <div class="section" id="helpBox" style="display:none">
+      <h2>How to use</h2>
+      <ol class="hint" style="padding-left:16px; margin:0">
+        <li>Load a photo of your document/photo that was taken at an angle.</li>
+        <li>Click the 4 corners of the part you want to keep, going around the shape.</li>
+        <li>Drag any corner handle to adjust. Use Reset if needed.</li>
+        <li>Pick an output size/preset (or keep Auto).</li>
+        <li>Press "Apply correction" to warp the image back to a flat, front-facing view.</li>
+        <li>Download the corrected PNG.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div id="rightPanel">
+    <div id="canvasWrap">
+      <canvas id="overlay"></canvas>
+    </div>
+    <div id="statusbar">
+      <span id="stImg">No image loaded</span>
+      <span id="stMouse"></span>
+      <span class="spacer" style="flex:1"></span>
+      <span id="stPerf"></span>
+    </div>
+  </div>
+</main>
+
+<script>
+/* ============================================================
+   Perspective Correction Editor — single file, no dependencies.
+   Computes a homography from 4 source corners to a rectangle and
+   applies it per-pixel with bilinear sampling.
+   ============================================================ */
+
+const overlay = document.getElementById('overlay');
+const ctx = overlay.getContext('2d');
+const wrap  = document.getElementById('canvasWrap');
+
+// ---- state ----
+let srcImg   = null;      // HTMLImageElement / ImageBitmap
+let srcW = 0, srcH = 0;   // native image size
+let srcCanvas = null;     // offscreen canvas with the source pixels
+let scale  = 1, offX = 0, offY = 0; // view transform (fit-to-screen)
+
+// corners in SOURCE image pixel coordinates
+const corners = [ {x:0,y:0}, {x:0,y:0}, {x:0,y:0}, {x:0,y:0} ];
+const cornerNames = ['Top-left','Top-right','Bottom-right','Bottom-left'];
+let placedCount = 0;      // how many corners have been clicked (in order)
+let dragging = -1;        // index of corner being dragged, or -1
+
+// result
+let resultCanvas = null;
+
+/* ---------- helpers ---------- */
+function $(id){ return document.getElementById(id); }
+
+function setDisabled(el, d){ el.disabled = d; }
+
+/* ---------- image loading ---------- */
+function loadFile(file){
+  if(!file || !file.type.startsWith('image/')) return;
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    URL.revokeObjectURL(url);
+    srcImg = img;
+    srcW = img.naturalWidth || img.width;
+    srcH = img.naturalHeight || img.height;
+    // draw to an offscreen canvas so we can read pixels reliably
+    srcCanvas = document.createElement('canvas');
+    srcCanvas.width = srcW; srcCanvas.height = srcH;
+    srcCanvas.getContext('2d').drawImage(img, 0, 0);
+    // reset corners to a sensible default (inset rectangle)
+    const mx = srcW*0.1, my = srcH*0.1;
+    corners[0] = {x:mx, y:my};
+    corners[1] = {x:srcW-mx, y:my};
+    corners[2] = {x:srcW-mx, y:srcH-my};
+    corners[3] = {x:mx, y:srcH-my};
+    placedCount = 0;
+    resultCanvas = null;
+    setDisabled($('btnApply'), true);
+    setDisabled($('btnDownload'), true);
+    $('resultInfo').textContent = 'No result yet.';
+    // set default output size to the source size (capped)
+    $('outW').value = srcW; $('outH').value = srcH;
+    $('stImg').textContent = `Image: ${srcW}×${srcH}px`;
+    fitView();
+    render();
+  };
+  img.onerror = () => { URL.revokeObjectURL(url); alert('Could not load that image.'); };
+  img.src = url;
+}
+
+$('file').addEventListener('change', e => { if(e.target.files[0]) loadFile(e.target.files[0]); });
+
+// drag & drop
+const drop = $('drop');
+drop.addEventListener('click', () => $('file').click());
+['dragover','dragenter'].forEach(ev => drop.addEventListener(ev, e=>{e.preventDefault(); drop.classList.add('over');}));
+['dragleave','drop'].forEach(ev => drop.addEventListener(ev, e=>{e.preventDefault(); drop.classList.remove('over');}));
+drop.addEventListener('drop', e => { if(e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); });
+// also allow dropping anywhere on the canvas area
+wrap.addEventListener('dragover', e=>e.preventDefault());
+wrap.addEventListener('drop', e=>{ e.preventDefault(); if(e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); });
+
+/* ---------- view fitting ---------- */
+function fitView(){
+  if(!srcImg) return;
+  const w = wrap.clientWidth, h = wrap.clientHeight;
+  scale = Math.min(w/srcW, h/srcH) * 0.95;
+  if(scale <= 0) scale = 1;
+  offX = (w - srcW*scale)/2;
+  offY = (h - srcH*scale)/2;
+  overlay.width = w; overlay.height = h;
+}
+
+function screenToSrc(px, py){
+  return { x:(px-offX)/scale, y:(py-offY)/scale };
+}
+function srcToScreen(x, y){
+  return { x:x*scale+offX, y:y*scale+offY };
+}
+
+/* ---------- pointer interaction ---------- */
+function pointerPos(e){
+  const r = overlay.getBoundingClientRect();
+  return { x:e.clientX-r.left, y:e.clientY-r.top };
+}
+
+overlay.addEventListener('pointerdown', e => {
+  if(!srcImg) return;
+  const p = pointerPos(e);
+  // check if we hit an existing handle -> start dragging it
+  const idx = hitHandle(p);
+  if(idx >= 0){ dragging = idx; overlay.setPointerCapture(e.pointerId); return; }
+  // otherwise place the next corner in order
+  if(placedCount < 4){
+    const s = screenToSrc(p.x, p.y);
+    corners[placedCount] = {x:s.x, y:s.y};
+    placedCount++;
+    updateCornerCount();
+    if(placedCount === 4){ setDisabled($('btnApply'), false); }
+    render();
+  }
+});
+
+overlay.addEventListener('pointermove', e => {
+  if(!srcImg) return;
+  const p = pointerPos(e);
+  const s = screenToSrc(p.x, p.y);
+  $('stMouse').textContent = `src: ${Math.round(s.x)}, ${Math.round(s.y)}`;
+  if(dragging >= 0){
+    corners[dragging] = {x:s.x, y:s.y};
+    render();
+  } else {
+    // hover cursor feedback
+    overlay.style.cursor = hitHandle(p) >= 0 ? 'grab' : 'crosshair';
+  }
+});
+
+overlay.addEventListener('pointerup', e => {
+  if(dragging >= 0){ dragging = -1; overlay.style.cursor='crosshair'; render(); }
+});
+overlay.addEventListener('pointerleave', () => { $('stMouse').textContent=''; });
+
+function hitHandle(p){
+  const r = 12/scale; // radius in source units (constant on screen)
+  for(let i=0;i<4;i++){
+    const sp = srcToScreen(corners[i].x, corners[i].y);
+    if(Math.hypot(sp.x-p.x, sp.y-p.y) <= 12) return i;
+  }
+  return -1;
+}
+
+function updateCornerCount(){
+  $('cornerCount').textContent = `${placedCount} / 4`;
+}
+
+$('btnResetCorners').addEventListener('click', () => {
+  if(!srcImg) return;
+  const mx = srcW*0.1, my = srcH*0.1;
+  corners[0] = {x:mx, y:my};
+  corners[1] = {x:srcW-mx, y:my};
+  corners[2] = {x:srcW-mx, y:srcH-my};
+  corners[3] = {x:mx, y:srcH-my};
+  placedCount = 0; updateCornerCount();
+  setDisabled($('btnApply'), true);
+  render();
+});
+
+/* ---------- output size presets ---------- */
+function applyPreset(){
+  const v = $('preset').value;
+  if(!srcImg) return;
+  let w, h;
+  switch(v){
+    case '1:1':   w=srcW; h=srcW; break;
+    case '4:3':   w=Math.round(srcH*4/3); h=srcH; break;
+    case '3:2':   w=Math.round(srcH*3/2); h=srcH; break;
+    case '16:9':  w=Math.round(srcH*16/9); h=srcH; break;
+    case '3:4':   w=Math.round(srcH*3/4); h=srcH; break;
+    default:      w=srcW; h=srcH; // auto keep aspect of source
+  }
+  $('outW').value = w; $('outH').value = h;
+}
+$('preset').addEventListener('change', applyPreset);
+
+/* ---------- rendering the overlay ---------- */
+function render(){
+  ctx.clearRect(0,0,overlay.width,overlay.height);
+  if(!srcImg) return;
+  // draw the source image
+  ctx.drawImage(srcImg, offX, offY, srcW*scale, srcH*scale);
+  // draw the quadrilateral formed by the placed corners
+  const n = placedCount;
+  if(n >= 2){
+    ctx.beginPath();
+    for(let i=0;i<n;i++){
+      const sp = srcToScreen(corners[i].x, corners[i].y);
+      if(i===0) ctx.moveTo(sp.x, sp.y); else ctx.lineTo(sp.x, sp.y);
+    }
+    if(n===4) ctx.closePath();
+    ctx.strokeStyle = 'rgba(91,140,255,.9)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    if(n===4){
+      ctx.fillStyle = 'rgba(91,140,255,.12)';
+      ctx.fill();
+    }
+  }
+  // draw handles for placed corners
+  for(let i=0;i<n;i++){
+    const sp = srcToScreen(corners[i].x, corners[i].y);
+    ctx.beginPath();
+    ctx.arc(sp.x, sp.y, 8, 0, Math.PI*2);
+    ctx.fillStyle = '#5b8cff';
+    ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
+    // label
+    ctx.fillStyle = '#fff';
+    ctx.font = '10px sans-serif';
+    ctx.fillText(i+1, sp.x+10, sp.y-8);
+  }
+}
+
+/* ---------- homography math ---------- */
+// Solve the 8-parameter homography mapping src -> dst.
+// Returns a matrix [h0..h7] such that:
+//   x' = (h0*x + h1*y + h2) / (h6*x + h7*y + 1)
+//   y' = (h3*x + h4*y + h5) / (h6*x + h7*y + 1)
+function computeHomography(src, dst){
+  // src/dst: arrays of {x,y}, length 4
+  const A = [];
+  const b = [];
+  for(let i=0;i<4;i++){
+    const x=src[i].x, y=src[i].y, u=dst[i].x, v=dst[i].y;
+    // x' equations: h0*x + h1*y + h2 - u*(h6*x + h7*y + 1) = 0
+    A.push([x, y, 1, 0, 0, 0, -u*x, -u*y]); b.push(u);
+    A.push([0, 0, 0, x, y, 1, -v*x, -v*y]); b.push(v);
+  }
+  // Gaussian elimination with partial pivoting (8x8)
+  const n = A.length; // 8
+  const M = A.map((row,i)=> row.concat(b[i]));
+  for(let col=0; col<n; col++){
+    // pivot
+    let piv = col;
+    for(let r=col+1;r<n;r++) if(Math.abs(M[r][col]) > Math.abs(M[piv][col])) piv = r;
+    [M[col], M[piv]] = [M[piv], M[col]];
+    const pv = M[col][col];
+    if(Math.abs(pv) < 1e-12){ return null; } // degenerate
+    for(let r=0;r<n;r++){
+      if(r===col) continue;
+      const f = M[r][col]/pv;
+      for(let c=col;c<=n;c++) M[r][c] -= f*M[col][c];
+    }
+  }
+  const h = new Array(n);
+  for(let r=0;r<n;r++) h[r] = M[r][n]/M[r][r];
+  return h; // [h0..h7]
+}
+
+/* ---------- apply correction ---------- */
+function applyCorrection(){
+  if(placedCount < 4) return;
+  const outW = Math.max(1, parseInt($('outW').value)||srcW);
+  const outH = Math.max(1, parseInt($('outH').value)||srcH);
+
+  // destination rectangle corners
+  const dst = [
+    {x:0, y:0},
+    {x:outW, y:0},
+    {x:outW, y:outH},
+    {x:0, y:outH}
+  ];
+
+  // We need the INVERSE mapping: for each output pixel (u,v), find source (x,y).
+  // So compute homography from dst -> src.
+  const h = computeHomography(dst, corners); // maps dst->src in the x',y' form
+  if(!h){ alert('Corners are degenerate (e.g. collinear). Please adjust them.'); return; }
+
+  const t0 = performance.now();
+  const out = document.createElement('canvas');
+  out.width = outW; out.height = outH;
+  const octx = out.getContext('2d');
+  const imgData = octx.createImageData(outW, outH);
+  const data = imgData.data;
+
+  // source pixel buffer
+  const sctx = srcCanvas.getContext('2d');
+  const srcData = sctx.getImageData(0,0,srcW,srcH).data;
+
+  const [h0,h1,h2,h3,h4,h5,h6,h7] = h;
+  const sw = srcW, sh = srcH;
+
+  for(let v=0; v<outH; v++){
+    for(let u=0; u<outW; u++){
+      // map output (u,v) -> source (x,y)
+      const denom = h6*u + h7*v + 1;
+      let x, y;
+      if(Math.abs(denom) < 1e-9){ x = -1; y = -1; }
+      else {
+        x = (h0*u + h1*v + h2)/denom;
+        y = (h3*u + h4*v + h5)/denom;
+      }
+      const di = (v*outW + u)*4;
+      if(x < 0 || y < 0 || x >= sw-1 || y >= sh-1){
+        // outside source -> transparent
+        data[di]=0; data[di+1]=0; data[di+2]=0; data[di+3]=0;
+        continue;
+      }
+      // bilinear sample
+      const x0 = Math.floor(x), y0 = Math.floor(y);
+      const fx = x - x0, fy = y - y0;
+      const x1 = Math.min(x0+1, sw-1), y1 = Math.min(y0+1, sh-1);
+      const i00 = (y0*sw + x0)*4;
+      const i10 = (y0*sw + x1)*4;
+      const i01 = (y1*sw + x0)*4;
+      const i11 = (y1*sw + x1)*4;
+      const w00=(1-fx)*(1-fy), w10=fx*(1-fy), w01=(1-fx)*fy, w11=fx*fy;
+      for(let c=0;c<4;c++){
+        data[di+c] = srcData[i00+c]*w00 + srcData[i10+c]*w10 + srcData[i01+c]*w01 + srcData[i11+c]*w11;
+      }
+    }
+  }
+
+  octx.putImageData(imgData, 0, 0);
+  resultCanvas = out;
+
+  const ms = (performance.now()-t0).toFixed(0);
+  $('stPerf').textContent = `Computed in ${ms} ms`;
+  $('resultInfo').textContent = `Corrected: ${outW}×${outH}px`;
+  setDisabled($('btnDownload'), false);
+  renderResult();
+}
+
+$('btnApply').addEventListener('click', applyCorrection);
+
+/* ---------- show result (overlay a small preview + allow compare) ---------- */
+function renderResult(){
+  // Replace the main canvas content with the result for preview, but keep corners off.
+  if(!resultCanvas) return;
+  const w = wrap.clientWidth, h = wrap.clientHeight;
+  overlay.width = w; overlay.height = h;
+  const s = Math.min(w/resultCanvas.width, h/resultCanvas.height)*0.95;
+  const dw = resultCanvas.width*s, dh = resultCanvas.height*s;
+  ctx.clearRect(0,0,w,h);
+  // checkerboard background to show transparency
+  drawChecker(ctx, w, h);
+  ctx.drawImage(resultCanvas, (w-dw)/2, (h-dh)/2, dw, dh);
+  ctx.fillStyle='#fff'; ctx.font='13px sans-serif';
+  ctx.fillText('Corrected result (click "Apply correction" again to recompute after moving corners)', 12, h-12);
+}
+
+function drawChecker(ctx,w,h){
+  const s=16; ctx.save();
+  for(let y=0;y<h;y+=s)for(let x=0;x<w;x+=s){
+    ctx.fillStyle = ((x/s+y/s)%2)?'#1a1d24':'#20242e';
+    ctx.fillRect(x,y,s,s);
+  }
+  ctx.restore();
+}
+
+/* ---------- download ---------- */
+$('btnDownload').addEventListener('click', () => {
+  if(!resultCanvas) return;
+  const a = document.createElement('a');
+  a.download = 'corrected.png';
+  a.href = resultCanvas.toDataURL('image/png');
+  a.click();
+});
+
+/* ---------- help ---------- */
+$('btnHelp').addEventListener('click', () => {
+  const b = $('helpBox');
+  b.style.display = b.style.display==='none' ? 'block':'none';
+});
+
+/* ---------- resize handling ---------- */
+let rzT;
+window.addEventListener('resize', () => {
+  clearTimeout(rzT);
+  rzT = setTimeout(()=>{ if(resultCanvas){ renderResult(); } else { fitView(); render(); } }, 120);
+});
+
+// initial fit once layout is ready
+requestAnimationFrame(()=>{ fitView(); render(); });
+</script>
+</body>
+</html>
