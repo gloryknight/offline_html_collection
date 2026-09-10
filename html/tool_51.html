@@ -703,6 +703,8 @@
                     class="btn-text">Open</span></button>
             <button class="btn" id="btn-paste"><i class="fa-solid fa-paste"></i><span
                     class="btn-text">Paste</span></button>
+            <button class="btn" id="btn-copy"><i class="fa-solid fa-clone"></i><span
+                    class="btn-text">Copy</span></button>
             <div class="divider"></div>
             <button class="btn icon" id="btn-undo" title="Undo (Ctrl+Z)"><i
                     class="fa-solid fa-rotate-left"></i></button>
@@ -729,6 +731,8 @@
                     class="label">Rotate</span></button>
             <button class="tool" data-tool="resize"><i class="fa-solid fa-expand"></i><span
                     class="label">Resize</span></button>
+            <button class="tool" data-tool="perspective"><i class="fa-solid fa-object-group"></i><span
+                    class="label">Perspective</span></button>
         </div>
 
         <div class="canvas-area" id="canvas-area">
@@ -788,6 +792,13 @@
             // Export
             exportFormat: 'jpeg',
             exportQuality: 92,
+            // Perspective correction
+            perspCorners: [],       // 4 corners in canvas pixel coords (TL,TR,BR,BL)
+            perspPlaced: 0,         // how many corners have been clicked (in order)
+            perspDragging: -1,      // index of corner being dragged, or -1
+            perspOutW: 0,
+            perspOutH: 0,
+            perspPreset: 'auto',
             // Interaction
             isInteracting: false,
             startPoint: null,
@@ -812,6 +823,7 @@
                 state.brightness = 0;
                 state.contrast = 0;
                 state.rotateAngle = 0;
+                perspInit();
                 canvasWrap.style.display = 'inline-block';
                 emptyState.style.display = 'none';
                 updateUndoRedo();
@@ -834,6 +846,7 @@
             e.target.value = '';
         });
         document.getElementById('btn-load').addEventListener('click', () => fileInput.click());
+        document.getElementById('btn-copy').addEventListener('click', copyImage);
         document.getElementById('btn-paste').addEventListener('click', async () => {
             try {
                 const items = await navigator.clipboard.read();
@@ -946,6 +959,10 @@
                     state.resizeW = canvas.width;
                     state.resizeH = canvas.height;
                 }
+                // Entering perspective -> initialize corners for current image size
+                if (state.tool === 'perspective' && prev !== 'perspective') {
+                    perspInit();
+                }
                 // Reset rotate angle
                 if (state.tool !== 'rotate') state.rotateAngle = 0;
                 // Cursor
@@ -975,6 +992,16 @@
                     state.adjustBaseline = snapshot();
                 }
                 drawOverlay();
+            } else if (state.tool === 'perspective') {
+                const idx = perspHitHandle(p);
+                if (idx >= 0) {
+                    state.perspDragging = idx;
+                } else if (state.perspPlaced < 4) {
+                    state.perspCorners[state.perspPlaced] = { x: p.x, y: p.y };
+                    state.perspPlaced++;
+                    if (state.perspPlaced === 4) renderPanel();
+                }
+                drawOverlay();
             }
         }
         function pointerMove(e) {
@@ -992,11 +1019,18 @@
             } else if (state.tool === 'paint') {
                 paintLine(state.lastPoint, p);
                 state.lastPoint = p;
+            } else if (state.tool === 'perspective' && state.perspDragging >= 0) {
+                state.perspCorners[state.perspDragging] = { x: p.x, y: p.y };
+                drawOverlay();
             }
         }
         function pointerUp() {
             if (!state.isInteracting) return;
             state.isInteracting = false;
+            if (state.tool === 'perspective' && state.perspDragging >= 0) {
+                state.perspDragging = -1;
+                drawOverlay();
+            }
             if (state.tool === 'select' || state.tool === 'crop' || state.tool === 'adjust') {
                 if (state.selection && (state.selection.w < 3 || state.selection.h < 3)) {
                     state.selection = null;
@@ -1047,6 +1081,37 @@
                     octx.moveTo(s.x + s.w * i / 3, s.y); octx.lineTo(s.x + s.w * i / 3, s.y + s.h);
                     octx.moveTo(s.x, s.y + s.h * i / 3); octx.lineTo(s.x + s.w, s.y + s.h * i / 3);
                     octx.stroke();
+                }
+            }
+            // Perspective: draw the quadrilateral + corner handles
+            if (state.tool === 'perspective') {
+                const n = state.perspPlaced;
+                if (n >= 2) {
+                    octx.beginPath();
+                    for (let i = 0; i < n; i++) {
+                        const c = state.perspCorners[i];
+                        if (i === 0) octx.moveTo(c.x, c.y); else octx.lineTo(c.x, c.y);
+                    }
+                    if (n === 4) octx.closePath();
+                    octx.strokeStyle = 'rgba(91,140,255,.9)';
+                    octx.lineWidth = Math.max(1.5, canvas.width / 700);
+                    octx.stroke();
+                    if (n === 4) {
+                        octx.fillStyle = 'rgba(91,140,255,.12)';
+                        octx.fill();
+                    }
+                }
+                const hs = Math.max(7, canvas.width / 180);
+                for (let i = 0; i < n; i++) {
+                    const c = state.perspCorners[i];
+                    octx.beginPath();
+                    octx.arc(c.x, c.y, hs / 2, 0, Math.PI * 2);
+                    octx.fillStyle = '#5b8cff';
+                    octx.fill();
+                    octx.lineWidth = 2; octx.strokeStyle = '#fff'; octx.stroke();
+                    octx.fillStyle = '#fff';
+                    octx.font = `${Math.max(10, canvas.width / 90)}px sans-serif`;
+                    octx.fillText(i + 1, c.x + hs / 2 + 4, c.y - hs / 2 - 4);
                 }
             }
             // Update info
@@ -1186,6 +1251,170 @@
             toast('Cropped', 'success');
         }
 
+        // ============ Perspective correction ============
+        const PERSP_NAMES = ['Top-left', 'Top-right', 'Bottom-right', 'Bottom-left'];
+
+        function perspDefaultCorners() {
+            const mx = canvas.width * 0.1, my = canvas.height * 0.1;
+            return [
+                { x: mx, y: my },
+                { x: canvas.width - mx, y: my },
+                { x: canvas.width - mx, y: canvas.height - my },
+                { x: mx, y: canvas.height - my }
+            ];
+        }
+
+        function perspInit() {
+            state.perspCorners = perspDefaultCorners();
+            state.perspPlaced = 0;
+            state.perspDragging = -1;
+            state.perspOutW = canvas.width;
+            state.perspOutH = canvas.height;
+            state.perspPreset = 'auto';
+        }
+
+        function perspReset() {
+            state.perspCorners = perspDefaultCorners();
+            state.perspPlaced = 0;
+            state.perspDragging = -1;
+            drawOverlay();
+            renderPanel();
+        }
+
+        // Distance in screen pixels from a canvas-space point to the nearest placed corner.
+        function perspHitHandle(p) {
+            const rect = canvas.getBoundingClientRect();
+            const scale = canvas.width / rect.width;   // canvas px per screen px
+            const radius = 14 / scale;                 // ~14px on screen, in canvas units
+            for (let i = 0; i < state.perspPlaced; i++) {
+                const c = state.perspCorners[i];
+                if (Math.hypot(c.x - p.x, c.y - p.y) <= radius) return i;
+            }
+            return -1;
+        }
+
+        function perspApplyPreset(v) {
+            state.perspPreset = v;
+            const sw = canvas.width, sh = canvas.height;
+            let w, h;
+            switch (v) {
+                case '1:1': w = sw; h = sw; break;
+                case '4:3': w = Math.round(sh * 4 / 3); h = sh; break;
+                case '3:2': w = Math.round(sh * 3 / 2); h = sh; break;
+                case '16:9': w = Math.round(sh * 16 / 9); h = sh; break;
+                case '3:4': w = Math.round(sh * 3 / 4); h = sh; break;
+                default: w = sw; h = sh; // auto: keep source aspect
+            }
+            state.perspOutW = w;
+            state.perspOutH = h;
+            renderPanel();
+        }
+
+        // Solve the 8-parameter homography mapping src -> dst.
+        // Returns [h0..h7] such that:
+        //   x' = (h0*x + h1*y + h2) / (h6*x + h7*y + 1)
+        //   y' = (h3*x + h4*y + h5) / (h6*x + h7*y + 1)
+        function computeHomography(src, dst) {
+            const A = [], b = [];
+            for (let i = 0; i < 4; i++) {
+                const x = src[i].x, y = src[i].y, u = dst[i].x, v = dst[i].y;
+                A.push([x, y, 1, 0, 0, 0, -u * x, -u * y]); b.push(u);
+                A.push([0, 0, 0, x, y, 1, -v * x, -v * y]); b.push(v);
+            }
+            const n = A.length; // 8
+            const M = A.map((row, i) => row.concat(b[i]));
+            for (let col = 0; col < n; col++) {
+                let piv = col;
+                for (let r = col + 1; r < n; r++) if (Math.abs(M[r][col]) > Math.abs(M[piv][col])) piv = r;
+                [M[col], M[piv]] = [M[piv], M[col]];
+                const pv = M[col][col];
+                if (Math.abs(pv) < 1e-12) return null; // degenerate
+                for (let r = 0; r < n; r++) {
+                    if (r === col) continue;
+                    const f = M[r][col] / pv;
+                    for (let c = col; c <= n; c++) M[r][c] -= f * M[col][c];
+                }
+            }
+            const h = new Array(n);
+            for (let r = 0; r < n; r++) h[r] = M[r][n] / M[r][r];
+            return h;
+        }
+
+        function perspApply() {
+            if (state.perspPlaced < 4) { toast('Place all 4 corners first', 'error'); return; }
+            const outW = Math.max(1, state.perspOutW || canvas.width);
+            const outH = Math.max(1, state.perspOutH || canvas.height);
+
+            // Destination rectangle corners
+            const dst = [
+                { x: 0, y: 0 },
+                { x: outW, y: 0 },
+                { x: outW, y: outH },
+                { x: 0, y: outH }
+            ];
+
+            // Inverse mapping: for each output pixel (u,v), find source (x,y) -> dst->src
+            const h = computeHomography(dst, state.perspCorners);
+            if (!h) { toast('Corners are degenerate (e.g. collinear). Adjust them.', 'error'); return; }
+
+            const t0 = performance.now();
+            const out = document.createElement('canvas');
+            out.width = outW; out.height = outH;
+            const octx = out.getContext('2d');
+            const imgData = octx.createImageData(outW, outH);
+            const data = imgData.data;
+
+            const srcData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+            const [h0, h1, h2, h3, h4, h5, h6, h7] = h;
+            const sw = canvas.width, sh = canvas.height;
+
+            for (let v = 0; v < outH; v++) {
+                for (let u = 0; u < outW; u++) {
+                    const denom = h6 * u + h7 * v + 1;
+                    let x, y;
+                    if (Math.abs(denom) < 1e-9) { x = -1; y = -1; }
+                    else {
+                        x = (h0 * u + h1 * v + h2) / denom;
+                        y = (h3 * u + h4 * v + h5) / denom;
+                    }
+                    const di = (v * outW + u) * 4;
+                    if (x < 0 || y < 0 || x >= sw - 1 || y >= sh - 1) {
+                        data[di] = 0; data[di + 1] = 0; data[di + 2] = 0; data[di + 3] = 0;
+                        continue;
+                    }
+                    // bilinear sample
+                    const x0 = Math.floor(x), y0 = Math.floor(y);
+                    const fx = x - x0, fy = y - y0;
+                    const x1 = Math.min(x0 + 1, sw - 1), y1 = Math.min(y0 + 1, sh - 1);
+                    const i00 = (y0 * sw + x0) * 4;
+                    const i10 = (y0 * sw + x1) * 4;
+                    const i01 = (y1 * sw + x0) * 4;
+                    const i11 = (y1 * sw + x1) * 4;
+                    const w00 = (1 - fx) * (1 - fy), w10 = fx * (1 - fy);
+                    const w01 = (1 - fx) * fy, w11 = fx * fy;
+                    for (let c = 0; c < 4; c++) {
+                        data[di + c] = srcData[i00 + c] * w00 + srcData[i10 + c] * w10
+                            + srcData[i01 + c] * w01 + srcData[i11 + c] * w11;
+                    }
+                }
+            }
+
+            octx.putImageData(imgData, 0, 0);
+            const ms = (performance.now() - t0).toFixed(0);
+
+            pushHistory();
+            canvas.width = outW; canvas.height = outH;
+            overlay.width = outW; overlay.height = outH;
+            ctx.imageSmoothingEnabled = true;
+            ctx.drawImage(out, 0, 0);
+            state.selection = null;
+            state.adjustBaseline = null;
+            perspInit(); // reset corners to defaults for the new size
+            drawOverlay();
+            renderPanel();
+            toast(`Perspective corrected to ${outW} × ${outH}px in ${ms} ms`, 'success');
+        }
+
         // ============ Export ============
         function exportImage() {
             const format = state.exportFormat;
@@ -1214,6 +1443,32 @@
                 setTimeout(() => URL.revokeObjectURL(url), 1000);
                 toast(`Exported as ${ext.toUpperCase()}`, 'success');
             }, mime, quality);
+        }
+
+        // ============ Copy to clipboard ============
+        function copyImage() {
+            if (!state.hasImage) { toast('Load an image first', 'error'); return; }
+            if (!navigator.clipboard || !window.ClipboardItem) {
+                toast('Clipboard image copy not supported in this browser', 'error');
+                return;
+            }
+            // Composite the real image onto a temp canvas (flattening transparency onto white)
+            const out = document.createElement('canvas');
+            out.width = canvas.width; out.height = canvas.height;
+            const octx = out.getContext('2d');
+            octx.fillStyle = '#ffffff';
+            octx.fillRect(0, 0, out.width, out.height);
+            octx.drawImage(canvas, 0, 0);
+
+            out.toBlob(blob => {
+                if (!blob) { toast('Could not read image data', 'error'); return; }
+                navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
+                    .then(() => toast('Image copied to clipboard', 'success'))
+                    .catch(err => {
+                        console.error(err);
+                        toast('Copy failed — try the Export button', 'error');
+                    });
+            }, 'image/png');
         }
 
         // ============ Panel rendering ============
@@ -1345,6 +1600,38 @@
       </div>`;
             }
 
+            if (state.tool === 'perspective') {
+                const placed = state.perspPlaced;
+                html += `
+      <div class="panel-section">
+        <h3><i class="fa-solid fa-object-group"></i> Perspective Correction</h3>
+        <div class="callout ${placed === 4 ? 'accent' : 'muted'}"><i class="fa-solid fa-hand-pointer"></i>
+          Click the 4 corners of the photo in order: <b>top-left → top-right → bottom-right → bottom-left</b>. Drag a handle to fine-tune.</div>
+        <div class="dim-display"><span>Corners placed</span><span>${placed} / 4</span></div>
+        <button class="btn" style="width:100%;margin-top:8px" onclick="perspReset()"><i class="fa-solid fa-rotate-left"></i> Reset corners</button>
+        <div class="field" style="margin-top:14px">
+          <label>Output size</label>
+          <div class="row">
+            <input type="number" id="persp-w" value="${state.perspOutW}" min="1" oninput="onPerspSize('w', +this.value)">
+            <span style="color:var(--muted);flex:0 0 auto">×</span>
+            <input type="number" id="persp-h" value="${state.perspOutH}" min="1" oninput="onPerspSize('h', +this.value)">
+          </div>
+        </div>
+        <div class="field">
+          <label>Aspect ratio</label>
+          <select id="persp-preset" onchange="perspApplyPreset(this.value)">
+            <option value="auto" ${state.perspPreset === 'auto' ? 'selected' : ''}>Auto (source)</option>
+            <option value="1:1" ${state.perspPreset === '1:1' ? 'selected' : ''}>Square 1:1</option>
+            <option value="4:3" ${state.perspPreset === '4:3' ? 'selected' : ''}>4:3</option>
+            <option value="3:2" ${state.perspPreset === '3:2' ? 'selected' : ''}>3:2</option>
+            <option value="16:9" ${state.perspPreset === '16:9' ? 'selected' : ''}>16:9</option>
+            <option value="3:4" ${state.perspPreset === '3:4' ? 'selected' : ''}>3:4</option>
+          </select>
+        </div>
+        <button class="btn primary" style="width:100%" onclick="perspApply()"><i class="fa-solid fa-check"></i> Apply correction</button>
+      </div>`;
+            }
+
             // Export section (always shown when image loaded)
             html += `
     <div class="panel-section">
@@ -1395,6 +1682,16 @@
         window.rotateImage = rotateImage;
         window.resizeImage = resizeImage;
         window.exportImage = exportImage;
+        // Perspective handlers
+        window.perspReset = perspReset;
+        window.perspApply = perspApply;
+        window.perspApplyPreset = perspApplyPreset;
+        window.onPerspSize = function (dim, value) {
+            if (!value || value < 1) return;
+            if (dim === 'w') state.perspOutW = value; else state.perspOutH = value;
+            const el = document.getElementById(dim === 'w' ? 'persp-w' : 'persp-h');
+            if (el) el.value = value;
+        };
         window.applyCustomRotate = function () {
             if (state.rotateAngle === 0) { toast('Move the slider to set an angle', 'error'); return; }
             rotateImage(state.rotateAngle);
@@ -1469,6 +1766,7 @@
             if (e.ctrlKey || e.metaKey) {
                 if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
                 else if (e.key === 'y' || (e.key === 'z' && e.shiftKey)) { e.preventDefault(); redo(); }
+                else if (e.key === 'c') { e.preventDefault(); copyImage(); }
             }
         });
 
