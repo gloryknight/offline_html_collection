@@ -792,6 +792,7 @@
             // Export
             exportFormat: 'jpeg',
             exportQuality: 92,
+            preserveMeta: false,
             // Perspective correction
             perspCorners: [],       // 4 corners in canvas pixel coords (TL,TR,BR,BL)
             perspPlaced: 0,         // how many corners have been clicked (in order)
@@ -803,6 +804,9 @@
             isInteracting: false,
             startPoint: null,
             lastPoint: null,
+            // Original metadata (EXIF) preservation
+            originalFile: null,     // File object of the loaded image (if any)
+            exifBytes: null,        // raw EXIF segment bytes to re-embed on export
         };
 
         // ============ Image loading ============
@@ -834,8 +838,50 @@
             img.onerror = () => toast('Failed to load image', 'error');
             img.src = src;
         }
+        // ============ EXIF / metadata extraction ============
+        // Returns the raw bytes of the first APP1 (EXIF) segment, or null.
+        async function extractExifBytes(fileOrBlob) {
+            try {
+                const buf = new Uint8Array(await fileOrBlob.arrayBuffer());
+                // JPEG: SOI 0xFFD8, then scan for APP1 (0xFFE1)
+                if (buf.length < 4 || buf[0] !== 0xFF || buf[1] !== 0xD8) return null;
+                let i = 2;
+                while (i + 4 <= buf.length) {
+                    if (buf[i] !== 0xFF) break;
+                    const marker = buf[i + 1];
+                    // Standalone markers (no payload)
+                    if ((marker >= 0xD0 && marker <= 0xD7) || marker === 0x01 || marker === 0xFF) { i += 2; continue; }
+                    // EOI
+                    if (marker === 0xD9) break;
+                    const len = (buf[i + 2] << 8) | buf[i + 3]; // includes the 2 length bytes
+                    if (len < 2) break;
+                    if (marker === 0xE1) { // APP1 = EXIF
+                        return Uint8Array.from(buf.slice(i, i + 2 + len)); // zero-offset copy
+                    }
+                    // Advance past this segment
+                    i += 2 + len;
+                }
+                return null;
+            } catch (e) { return null; }
+        }
+
+        // Re-embed an EXIF APP1 segment into a JPEG Blob, returning a new Blob.
+        function embedExifInJpeg(jpegBlob, exifBytes) {
+            return jpegBlob.arrayBuffer().then(ab => {
+                const arr = Uint8Array.from(new Uint8Array(ab)); // zero-offset copy of JPEG bytes
+                if (arr.length < 2 || arr[0] !== 0xFF || arr[1] !== 0xD8) return new Blob([arr], { type: 'image/jpeg' });
+                const out = new Uint8Array(2 + exifBytes.length + arr.length - 2);
+                out[0] = 0xFF; out[1] = 0xD8;                 // SOI
+                out.set(exifBytes, 2);                          // APP1 EXIF segment (already includes length + "Exif\0\0")
+                out.set(arr.subarray(2), 2 + exifBytes.length); // rest of original JPEG (after SOI)
+                return new Blob([out], { type: 'image/jpeg' });
+            });
+        }
+
         function loadImageFromBlob(blob) {
             const url = URL.createObjectURL(blob);
+            state.originalFile = blob;
+            extractExifBytes(blob).then(bytes => { state.exifBytes = bytes; });
             loadImageFromSrc(url, false);
             setTimeout(() => URL.revokeObjectURL(url), 10000);
         }
@@ -1432,7 +1478,7 @@
                 o.fillRect(0, 0, out.width, out.height);
                 o.drawImage(canvas, 0, 0);
             }
-            out.toBlob(blob => {
+            const doDownload = (blob) => {
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
@@ -1442,7 +1488,17 @@
                 a.remove();
                 setTimeout(() => URL.revokeObjectURL(url), 1000);
                 toast(`Exported as ${ext.toUpperCase()}`, 'success');
-            }, mime, quality);
+            };
+
+            // Preserve original EXIF / metadata (JPEG only — PNG export has no EXIF to embed)
+            if (state.preserveMeta && state.exifBytes && format === 'jpeg') {
+                out.toBlob(async (blob) => {
+                    try { doDownload(await embedExifInJpeg(blob, state.exifBytes)); }
+                    catch (e) { doDownload(blob); }
+                }, mime, quality);
+            } else {
+                out.toBlob(doDownload, mime, quality);
+            }
         }
 
         // ============ Copy to clipboard ============
@@ -1648,6 +1704,7 @@
           <label>Quality <span class="value" id="quality-val">${state.exportQuality}%</span></label>
           <input type="range" min="10" max="100" value="${state.exportQuality}" oninput="state.exportQuality=+this.value;document.getElementById('quality-val').textContent=this.value+'%'">
         </div>` : ''}
+      <label class="toggle" style="margin:10px 0 6px"><input type="checkbox" ${state.preserveMeta ? 'checked' : ''} onchange="state.preserveMeta=this.checked"> Preserve original EXIF &amp; metadata</label>
       <button class="btn primary" style="width:100%" onclick="exportImage()"><i class="fa-solid fa-download"></i> Download Image</button>
     </div>`;
 
