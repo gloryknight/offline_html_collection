@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" class="h-full">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,9 +8,12 @@
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts: Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap"
+        rel="stylesheet">
     <!-- GitHub Markdown Styles -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown.min.css">
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown.min.css">
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <!-- Markdown Parser -->
@@ -21,15 +25,36 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
 
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        .code-font { font-family: 'Fira Code', monospace; }
-        
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .code-font {
+            font-family: 'Fira Code', monospace;
+        }
+
         /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
-        .dark ::-webkit-scrollbar-thumb { background: #334155; }
-        ::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #e2e8f0;
+            border-radius: 10px;
+        }
+
+        .dark ::-webkit-scrollbar-thumb {
+            background: #334155;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #cbd5e1;
+        }
 
         /* Editor Styling */
         #editor {
@@ -39,12 +64,20 @@
         }
 
         /* Smooth Transitions */
-        .transition-all { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .transition-all {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
 
         /* Split Pane Layout Adjustment */
         @media (max-width: 768px) {
-            .split-container { flex-direction: column; }
-            .pane { width: 100% !important; height: 50vh !important; }
+            .split-container {
+                flex-direction: column;
+            }
+
+            .pane {
+                width: 100% !important;
+                height: 50vh !important;
+            }
         }
 
         /* Markdown Preview Customization */
@@ -66,10 +99,12 @@
         }
     </script>
 </head>
+
 <body class="h-full bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300">
 
     <!-- Top Navigation -->
-    <nav class="h-14 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md flex items-center justify-between px-4 sticky top-0 z-50">
+    <nav
+        class="h-14 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md flex items-center justify-between px-4 sticky top-0 z-50">
         <div class="flex items-center gap-2">
             <div class="bg-brand p-1.5 rounded-lg text-white">
                 <i data-lucide="file-text" class="w-5 h-5"></i>
@@ -80,21 +115,28 @@
         <div class="flex items-center gap-2 sm:gap-4">
             <!-- Actions -->
             <div class="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
-                <button onclick="downloadMarkdown()" class="p-1.5 hover:bg-white dark:hover:bg-slate-700 rounded-md transition-all text-slate-600 dark:text-slate-400" title="Download .md">
+                <button onclick="downloadMarkdown()"
+                    class="p-1.5 hover:bg-white dark:hover:bg-slate-700 rounded-md transition-all text-slate-600 dark:text-slate-400"
+                    title="Download .md">
                     <i data-lucide="download" class="w-4 h-4"></i>
                 </button>
-                <button onclick="copyHTML()" class="p-1.5 hover:bg-white dark:hover:bg-slate-700 rounded-md transition-all text-slate-600 dark:text-slate-400" title="Copy HTML">
+                <button onclick="copyHTML()"
+                    class="p-1.5 hover:bg-white dark:hover:bg-slate-700 rounded-md transition-all text-slate-600 dark:text-slate-400"
+                    title="Copy HTML">
                     <i data-lucide="copy" class="w-4 h-4"></i>
                 </button>
                 <div class="w-[1px] h-4 bg-slate-300 dark:bg-slate-600 mx-1"></div>
-                <label class="p-1.5 hover:bg-white dark:hover:bg-slate-700 rounded-md transition-all text-slate-600 dark:text-slate-400 cursor-pointer" title="Open File">
+                <label
+                    class="p-1.5 hover:bg-white dark:hover:bg-slate-700 rounded-md transition-all text-slate-600 dark:text-slate-400 cursor-pointer"
+                    title="Open File">
                     <i data-lucide="folder-open" class="w-4 h-4"></i>
                     <input type="file" id="fileInput" class="hidden" accept=".md,.txt">
                 </label>
             </div>
 
             <!-- Theme Toggle -->
-            <button onclick="toggleTheme()" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-all text-slate-600 dark:text-slate-400">
+            <button onclick="toggleTheme()"
+                class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-all text-slate-600 dark:text-slate-400">
                 <i id="themeIcon" data-lucide="moon" class="w-5 h-5"></i>
             </button>
         </div>
@@ -102,27 +144,28 @@
 
     <!-- Main Workspace -->
     <main class="flex flex-col md:flex-row h-[calc(100vh-3.5rem)] overflow-hidden split-container">
-        
+
         <!-- Editor Pane -->
-        <section class="pane relative w-full md:w-1/2 h-full border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col">
-            <div class="flex items-center justify-between px-4 py-2 text-[10px] uppercase tracking-widest font-bold text-slate-400 bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
+        <section
+            class="pane relative w-full md:w-1/2 h-full border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col">
+            <div
+                class="flex items-center justify-between px-4 py-2 text-[10px] uppercase tracking-widest font-bold text-slate-400 bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
                 <span>Editor</span>
                 <span id="wordCount">0 Words</span>
             </div>
-            <textarea 
-                id="editor" 
+            <textarea id="editor"
                 class="flex-1 w-full p-6 code-font text-sm sm:text-base bg-transparent transition-all focus:ring-0"
-                placeholder="# Start writing your masterpiece..."
-                spellcheck="false"
-            ></textarea>
+                placeholder="# Start writing your masterpiece..." spellcheck="true"></textarea>
         </section>
 
         <!-- Preview Pane -->
         <section class="pane w-full md:w-1/2 h-full overflow-y-auto bg-white dark:bg-slate-950 relative">
-            <div class="flex items-center justify-between px-4 py-2 text-[10px] uppercase tracking-widest font-bold text-slate-400 bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-10">
+            <div
+                class="flex items-center justify-between px-4 py-2 text-[10px] uppercase tracking-widest font-bold text-slate-400 bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-10">
                 <span>Live Preview</span>
                 <div class="flex gap-2">
-                    <span id="syncStatus" class="text-green-500 flex items-center gap-1"><i data-lucide="check-circle" class="w-3 h-3"></i> Synced</span>
+                    <span id="syncStatus" class="text-green-500 flex items-center gap-1"><i data-lucide="check-circle"
+                            class="w-3 h-3"></i> Synced</span>
                 </div>
             </div>
             <div id="preview" class="markdown-body max-w-none min-h-full">
@@ -133,7 +176,8 @@
     </main>
 
     <!-- Toast Notification -->
-    <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 px-6 py-3 rounded-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-2xl opacity-0 pointer-events-none transition-all duration-300 flex items-center gap-2 z-[100]">
+    <div id="toast"
+        class="fixed bottom-8 left-1/2 -translate-x-1/2 px-6 py-3 rounded-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-2xl opacity-0 pointer-events-none transition-all duration-300 flex items-center gap-2 z-[100]">
         <i data-lucide="check" class="w-4 h-4"></i>
         <span id="toastMessage">Copied to clipboard!</span>
     </div>
@@ -151,7 +195,7 @@
 
         // Configure Marked with Syntax Highlighting
         marked.setOptions({
-            highlight: function(code, lang) {
+            highlight: function (code, lang) {
                 if (lang && hljs.getLanguage(lang)) {
                     return hljs.highlight(code, { language: lang }).value;
                 }
@@ -168,7 +212,7 @@
             const rawHtml = marked.parse(content);
             const cleanHtml = DOMPurify.sanitize(rawHtml);
             preview.innerHTML = cleanHtml;
-            
+
             // Update Word Count
             const words = content.trim() ? content.trim().split(/\s+/).length : 0;
             wordCountDisplay.innerText = `${words} Words`;
@@ -268,4 +312,5 @@ Try editing this text on the left!`;
 
     </script>
 </body>
+
 </html>
