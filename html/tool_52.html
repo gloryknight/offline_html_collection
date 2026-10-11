@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CSV Inspector</title>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sql.js@1.13.0/dist/sql-wasm.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.9/dist/chart.umd.min.js"></script>
+    <style>
+        :root {
+            --bg: #0d1117;
+            --panel: #161b22;
+            --panel-2: #1c2129;
+            --border: #30363d;
+            --fg: #c9d1d9;
+            --muted: #8b949e;
+            --accent: #2f81f7;
+            --accent-2: #388bfd;
+            --in: #3fb950;
+            --err: #f85149;
+            --warn: #d29922;
+            --radius: 8px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            height: 100%;
+        }
+
+        body {
+            margin: 0;
+            overflow-x: hidden;
+            font-family: -apple-system, BlinkMacFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--fg);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        header {
+            padding: 12px 16px;
+            background: var(--panel);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        header h1 {
+            font-size: 16px;
+            margin: 0;
+            font-weight: 600;
+            letter-spacing: .2px;
+        }
+
+        header h1 .dot {
+            color: var(--accent);
+        }
+
+        #status {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        #status.ok {
+            color: var(--in);
+        }
+
+        #status.err {
+            color: var(--err);
+        }
+
+        .spacer {
+            flex: 1;
+        }
+
+        main {
+            flex: 1;
+            display: grid;
+            gap: 12px;
+            padding: 12px;
+            min-height: 0;
+            width: 100%;
+            max-width: 100vw;
+            min-width: 0;
+            grid-template-columns: 240px minmax(260px, .8fr) minmax(0, 1.4fr);
+            grid-template-rows: auto auto;
+        }
+
+        .panel {
+            min-width: 0;
+            max-width: 100%;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .panel-head {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: .6px;
+            color: var(--muted);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .panel-body {
+            padding: 12px;
+            overflow: auto;
+            flex: 1;
+            min-height: 0;
+        }
+
+        /* Sidebar */
+        #sidebar .panel-body {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .dropzone {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius);
+            padding: 18px 12px;
+            text-align: center;
+            color: var(--muted);
+            font-size: 13px;
+            cursor: pointer;
+            transition: border-color .15s, background .15s;
+        }
+
+        .dropzone.drag {
+            border-color: var(--accent);
+            background: rgba(47, 129, 247, .08);
+            color: var(--fg);
+        }
+
+        .dropzone input {
+            display: none;
+        }
+
+        table.tables {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        table.tables td {
+            padding: 6px 4px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        table.tables td.name {
+            font-weight: 500;
+            cursor: pointer;
+            color: var(--fg);
+        }
+
+        table.tables td.name:hover {
+            color: var(--accent-2);
+        }
+
+        table.tables td.count {
+            text-align: right;
+            color: var(--muted);
+            font-variant-numeric: tabular-nums;
+        }
+
+        table.tables tr.active td.name {
+            color: var(--accent-2);
+        }
+
+        /* Buttons */
+        button,
+        .btn {
+            background: var(--panel-2);
+            color: var(--fg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 7px 12px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: background .12s, border-color .12s;
+        }
+
+        button:hover {
+            background: #232a33;
+            border-color: #3d444d;
+        }
+
+        button.primary {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+        }
+
+        button.primary:hover {
+            background: var(--accent-2);
+        }
+
+        button:disabled {
+            opacity: .5;
+            cursor: not-allowed;
+        }
+
+        button.danger {
+            color: var(--err);
+        }
+
+        .row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .row.wrap {
+            flex-wrap: wrap;
+        }
+
+        /* Query panel */
+        #queryPanel textarea {
+            width: 100%;
+            min-height: 96px;
+            resize: vertical;
+            background: #0b0f14;
+            color: var(--fg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 10px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        #queryPanel textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        select,
+        input[type=text],
+        input[type=number] {
+            background: #0b0f14;
+            color: var(--fg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 7px 10px;
+            font-size: 13px;
+        }
+
+        select:focus,
+        input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        /* SQL log */
+        #sqlLogPanel .panel-body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        #sqlLog {
+            overflow: auto;
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .sqllog-row {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            min-width: 0;
+        }
+
+        .sqllog-sql {
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 12px;
+            text-align: left;
+            padding: 4px 8px;
+        }
+
+        .sqllog-row.err .sqllog-sql {
+            color: var(--err);
+        }
+
+        .sqllog-meta {
+            font-size: 11px;
+            color: var(--muted);
+            white-space: nowrap;
+        }
+
+        .sqllog-row.err .sqllog-meta {
+            color: var(--err);
+        }
+
+        /* Results */
+        #results {
+            min-height: 0;
+        }
+
+        #results .panel-body {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            height: 100%;
+        }
+
+        #exportCsvBtn {
+            margin-right: 4px;
+            padding: 5px 12px;
+            font-size: 12px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 6px;
+        }
+
+        .tabs button {
+            padding: 5px 12px;
+            font-size: 12px;
+        }
+
+        .tabs button.on {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+        }
+
+        #tableView {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .tablewrap {
+            overflow: auto;
+            flex: 1;
+            min-height: 0;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+        }
+
+        table.grid {
+            border-collapse: collapse;
+            width: 100%;
+            font-size: 13px;
+        }
+
+        table.grid th,
+        table.grid td {
+            padding: 7px 10px;
+            border-bottom: 1px solid var(--border);
+            text-align: left;
+            white-space: normal;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+        }
+
+        table.grid th {
+            position: sticky;
+            top: 0;
+            background: var(--panel-2);
+            color: var(--muted);
+            font-weight: 600;
+            z-index: 1;
+        }
+
+        table.grid tr:hover td {
+            background: rgba(255, 255, 255, .02);
+        }
+
+        table.grid td.num {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .meta {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .error {
+            color: var(--err);
+            font-family: ui-monospace, monospace;
+            white-space: pre-wrap;
+            padding: 10px;
+            background: rgba(248, 81, 73, .08);
+            border-radius: 6px;
+        }
+
+        .empty {
+            color: var(--muted);
+            font-size: 13px;
+            padding: 24px;
+            text-align: center;
+        }
+
+        #chartWrap {
+            display: none;
+            flex: 1;
+            min-height: 0;
+        }
+
+        #chartWrap.open {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chartbox {
+            position: relative;
+            flex: 1;
+            min-height: 280px;
+        }
+
+        /* Mobile */
+        @media (max-width: 760px) {
+            main {
+                grid-template-columns: 1fr;
+            }
+
+            #sidebar .panel-body {
+                max-height: none;
+            }
+
+            #results .panel-body {
+                height: auto;
+                min-height: 60vh;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>CSV<span class="dot">·</span>Inspector</h1>
+        <span id="status" data-testid="status">loading engine…</span>
+        <div class="spacer"></div>
+        <button id="clearBtn" class="danger" data-testid="clear">Clear all</button>
+    </header>
+
+    <main>
+        <section class="panel" id="sidebar">
+            <div class="panel-head">Tables</div>
+            <div class="panel-body">
+                <label class="dropzone" id="dropzone" data-testid="dropzone">
+                    Drop CSV files here or click to browse
+                    <input type="file" id="fileInput" accept=".csv,text/csv" multiple />
+                </label>
+                <div class="row wrap" style="align-items:center;gap:8px;">
+                    <label for="numFormat" style="font-size:12px;color:#8b949e;">Number format</label>
+                    <select id="numFormat" data-testid="numFormat">
+                        <option value="dot">1,234.56</option>
+                        <option value="comma">1.234,56</option>
+                    </select>
+                </div>
+                <div class="row wrap">
+                    <button id="sampleBtn" data-testid="sample">Load sample</button>
+                </div>
+                <table class="tables" id="tablesList" data-testid="tables"></table>
+            </div>
+        </section>
+
+        <section class="panel" id="queryPanel">
+            <div class="panel-head">SQL</div>
+            <div class="panel-body" style="display:flex;flex-direction:column;gap:10px;">
+                <textarea id="sqlInput" data-testid="sql" placeholder="SELECT * FROM orders LIMIT 10;"></textarea>
+                <div class="row wrap">
+                    <button id="runBtn" class="primary" data-testid="run">Run</button>
+                    <span class="meta">Ctrl/Cmd + Enter to run</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel" id="results">
+            <div class="panel-head">
+                Results
+                <div class="spacer"></div>
+                <button id="exportCsvBtn" data-testid="export-csv">Export CSV</button>
+                <div class="tabs" id="viewTabs">
+                    <button data-view="table" class="on" data-testid="tab-table">Table</button>
+                    <button data-view="chart" data-testid="tab-chart">Chart</button>
+                </div>
+            </div>
+            <div class="panel-body">
+                <div id="tableView" data-testid="tableview"></div>
+                <div id="chartWrap">
+                    <div class="row wrap" style="margin-bottom:10px;">
+                        <select id="chartType" data-testid="chart-type">
+                            <option value="bar">Bar</option>
+                            <option value="line">Line</option>
+                            <option value="pie">Pie</option>
+                        </select>
+                        <label style="font-size:12px;color:var(--muted);">X</label>
+                        <select id="xCol" data-testid="chart-x"></select>
+                        <label style="font-size:12px;color:var(--muted);">Y</label>
+                        <select id="yCol" data-testid="chart-y"></select>
+                    </div>
+                    <div class="chartbox"><canvas id="chart" data-testid="chart"></canvas></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel" id="sqlLogPanel">
+            <div class="panel-head">SQL Log</div>
+            <div class="panel-body">
+                <div id="sqlLog" data-testid="sqllog"></div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        /* CSV Inspector — application logic.
+         * Loads CSVs into in-memory SQLite tables via sql.js (wasm), runs SQL,
+         * and renders results as a table or Chart.js graph.
+         * A small public API is exposed on window.CSVInspector for testing. */
+        (function () {
+            'use strict';
+
+            // ---------- State ----------
+            const state = {
+                db: null,          // sql.js Database instance
+                engineReady: false,
+                tables: {},        // name -> row count (last known)
+                lastResult: null,  // { columns: [], rows: [] } or { error: string }
+                sqlLog: [],        // past statements: { sql, ok, rows, error, time }
+                chart: null,       // active Chart.js instance
+                view: 'table',     // 'table' | 'chart'
+                numberFormat: 'dot',  // 'dot' = 1,234.56 | 'comma' = 1.234,56
+            };
+
+            const $ = (sel) => document.querySelector(sel);
+
+            // ---------- Engine ----------
+            async function initEngine() {
+                const status = $('#status');
+                try {
+                    if (typeof initSqlJs !== 'function') throw new Error('sql.js failed to load');
+                    const base = 'https://cdn.jsdelivr.net/npm/sql.js@1.13.0/dist/';
+                    let locateFile;
+                    try {
+                        const resp = await fetch(base + 'sql-wasm.wasm');
+                        if (!resp.ok) throw new Error('wasm fetch failed: ' + resp.status);
+                        const blob = URL.createObjectURL(await resp.blob());
+                        locateFile = (f) => f.endsWith('.wasm') ? blob : base + f;
+                    } catch (_) {
+                        locateFile = (f) => base + f; // fallback: let sql.js stream it
+                    }
+                    const SQL = await initSqlJs({ locateFile });
+                    state.db = new SQL.Database();
+                    state.engineReady = true;
+                } catch (err) {
+                    if (status) { status.textContent = 'engine error: ' + err.message; status.className = 'err'; }
+                    throw err;
+                }
+                if (status) { status.textContent = 'ready'; status.className = 'ok'; }
+            }
+
+            // ---------- CSV import ----------
+            function sanitizeTableName(name) {
+                let t = name.replace(/\.csv$/i, '').replace(/[^A-Za-z0-9_]/g, '_');
+                if (!t || /^[0-9]/.test(t)) t = '_' + t;
+                return t;
+            }
+
+            // Parse CSV text into { columns, rows } using PapaParse.
+            function parseCSV(text) {
+                // With 'comma' format the decimal separator is a comma, so tell PapaParse —
+                // otherwise "1234,56" is split into two cells and SQLite stores the numbers
+                // as TEXT, which breaks numeric filtering (WHERE price > 10).
+                const opts = { header: true, skipEmptyLines: 'greedy', dynamicTyping: true };
+                if (state.numberFormat === 'comma') opts.decimalSeparator = ',';
+                const res = Papa.parse(text, opts);
+                if (res.errors.length && res.data.length === 0) {
+                    throw new Error('CSV parse error: ' + (res.errors[0].message || 'empty file'));
+                }
+                const columns = res.meta.fields || [];
+                const rows = res.data.map((r) => columns.map((c) => (r[c] == null ? '' : r[c])));
+                return { columns, rows };
+            }
+
+            // Create (or replace) a table from parsed data. Returns row count.
+            function importTable(name, { columns, rows }) {
+                const db = state.db;
+                if (!db) throw new Error('engine not ready');
+                const safe = sanitizeTableName(name);
+                db.run(`DROP TABLE IF EXISTS "${safe}"`);
+                const colDefs = columns.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(', ');
+                db.run(`CREATE TABLE "${safe}" (${colDefs})`);
+                if (rows.length) {
+                    const ph = columns.map(() => '?').join(', ');
+                    const stmt = db.prepare(`INSERT INTO "${safe}" VALUES (${ph})`);
+                    rows.forEach((r) => stmt.run(r));
+                    stmt.free();
+                }
+                return rows.length;
+            }
+
+            function importCSVFile(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                        try {
+                            const parsed = parseCSV(reader.result);
+                            const count = importTable(file.name, parsed);
+                            resolve({ table: sanitizeTableName(file.name), rows: count });
+                        } catch (e) { reject(e); }
+                    };
+                    reader.onerror = () => reject(new Error('failed to read file'));
+                    reader.readAsText(file);
+                });
+            }
+
+            async function importFiles(files) {
+                const results = [];
+                for (const f of files) {
+                    try { results.push(await importCSVFile(f)); }
+                    catch (e) { results.push({ table: f.name, error: e.message }); }
+                }
+                refreshTables();
+                return results;
+            }
+
+            // ---------- Table listing ----------
+            function listTables() {
+                if (!state.db) return [];
+                const res = state.db.exec(
+                    `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name`);
+                const out = [];
+                if (!res.length) return out; // no tables yet
+                for (const row of res[0].values) {
+                    const name = row[0];
+                    const c = state.db.exec(`SELECT COUNT(*) FROM "${name}"`)[0].values[0][0];
+                    out.push({ name, count: c });
+                }
+                return out;
+            }
+
+            function refreshTables() {
+                state.tables = Object.fromEntries(listTables().map((t) => [t.name, t.count]));
+                renderTableList();
+            }
+
+            function renderTableList() {
+                const el = $('#tablesList');
+                if (!el) return; // no UI present (e.g. unit-test context)
+                const tables = listTables();
+                if (!tables.length) { el.innerHTML = '<div class="empty">No tables yet.</div>'; return; }
+                el.innerHTML = '';
+                for (const t of tables) {
+                    const tr = document.createElement('tr');
+                    tr.dataset.table = t.name;
+                    const tdName = document.createElement('td');
+                    tdName.className = 'name';
+                    tdName.textContent = t.name;
+                    tdName.addEventListener('click', () => selectTable(t.name));
+                    const tdCount = document.createElement('td');
+                    tdCount.className = 'count';
+                    tdCount.textContent = t.count;
+                    tr.appendChild(tdName);
+                    tr.appendChild(tdCount);
+                    el.appendChild(tr);
+                }
+            }
+
+            function selectTable(name) {
+                if (!$('#sqlInput')) return;
+                const sql = `SELECT * FROM "${name}" LIMIT 100;`;
+                $('#sqlInput').value = sql;
+                document.querySelectorAll('#tablesList tr').forEach((tr) => {
+                    tr.classList.toggle('active', tr.dataset.table === name);
+                });
+                runSQL(sql); // execute immediately
+            }
+
+            // ---------- SQL execution ----------
+            function runSQL(sql) {
+                if (!state.db) return { error: 'engine not ready' };
+                const entry = { sql, ok: false, rows: 0, error: null, time: new Date() };
+                try {
+                    const results = state.db.exec(sql);
+                    if (!results.length) {
+                        state.lastResult = { columns: [], rows: [] };
+                    } else {
+                        const r = results[0];
+                        state.lastResult = { columns: r.columns, rows: r.values };
+                    }
+                    entry.ok = true;
+                    entry.rows = state.lastResult.rows.length;
+                } catch (e) {
+                    state.lastResult = { error: e.message };
+                    entry.error = e.message;
+                }
+                state.sqlLog.push(entry);
+                renderSQLLog();
+                renderResults();
+                return state.lastResult;
+            }
+
+            function renderSQLLog() {
+                const el = $('#sqlLog');
+                if (!el) return; // no UI present (e.g. unit-test context)
+                el.innerHTML = '';
+                for (const e of state.sqlLog) {
+                    const row = document.createElement('div');
+                    row.className = 'sqllog-row' + (e.ok ? '' : ' err');
+                    const btn = document.createElement('button');
+                    btn.className = 'sqllog-sql';
+                    btn.textContent = e.sql.replace(/\s+/g, ' ').trim();
+                    btn.title = 'Click to re-run';
+                    btn.addEventListener('click', () => { $('#sqlInput').value = e.sql; runSQL(e.sql); });
+                    const meta = document.createElement('span');
+                    meta.className = 'sqllog-meta';
+                    meta.textContent = e.time.toLocaleTimeString() + (e.ok ? ` · ${e.rows} row${e.rows === 1 ? '' : 's'}` : ' · ' + e.error);
+                    row.appendChild(btn);
+                    row.appendChild(meta);
+                    el.appendChild(row);
+                }
+                el.scrollTop = el.scrollHeight;
+            }
+
+            // ---------- Rendering ----------
+            function esc(s) {
+                return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+            }
+
+            function isNumeric(v) { return typeof v === 'number' || (typeof v === 'string' && v !== '' && !isNaN(Number(v))); }
+
+            // ---------- CSV export ----------
+            // Serialize a value into a safe CSV field (RFC 4180 quoting).
+            function csvField(v) {
+                if (v == null) return '';
+                const s = String(v);
+                if (/[",\r\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+                return s;
+            }
+
+            // Build a CSV string from { columns, rows }.
+            function toCSV(res) {
+                if (!res || !res.columns) return '';
+                const lines = [res.columns.map(csvField).join(',')];
+                (res.rows || []).forEach((row) => lines.push(row.map(csvField).join(',')));
+                return lines.join('\r\n');
+            }
+
+            // Download the current query results as a .csv file. Returns true on success.
+            function exportCSV() {
+                const res = state.lastResult;
+                if (!res || res.error || !res.rows.length) return false;
+                const csv = '\uFEFF' + toCSV(res); // BOM so Excel detects UTF-8
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'query-results.csv';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                setTimeout(() => URL.revokeObjectURL(url), 0);
+                return true;
+            }
+
+
+            function renderResults() {
+                const res = state.lastResult;
+                const tableEl = $('#tableView');
+                if (!tableEl) return; // no UI present (e.g. unit-test context)
+                if (!res) { tableEl.innerHTML = '<div class="empty">Run a query to see results.</div>'; return; }
+                if (res.error) { tableEl.innerHTML = `<div class="error">${esc(res.error)}</div>`; return; }
+                if (!res.rows.length) { tableEl.innerHTML = '<div class="empty">Query returned no rows.</div>'; return; }
+
+                let html = '<div class="tablewrap"><table class="grid"><thead><tr>';
+                res.columns.forEach((c) => { html += `<th>${esc(c)}</th>`; });
+                html += '</tr></thead><tbody>';
+                res.rows.forEach((row) => {
+                    html += '<tr>';
+                    row.forEach((v, i) => {
+                        const num = isNumeric(v);
+                        html += `<td class="${num ? 'num' : ''}">${v == null ? '' : esc(v)}</td>`;
+                    });
+                    html += '</tr>';
+                });
+                html += '</tbody></table></div>';
+                html += `<div class="meta">${res.rows.length} row${res.rows.length === 1 ? '' : 's'} · ${res.columns.length} column${res.columns.length === 1 ? '' : 's'}</div>`;
+                tableEl.innerHTML = html;
+
+                populateChartColumns();
+            }
+
+            function populateChartColumns() {
+                const res = state.lastResult;
+                const x = $('#xCol');
+                const y = $('#yCol');
+                if (!res || !res.columns || !x || !y) return;
+                [x, y].forEach((sel) => { sel.innerHTML = ''; });
+                res.columns.forEach((c, i) => {
+                    const optX = new Option(c, String(i));
+                    const optY = new Option(c, String(i));
+                    x.add(optX); y.add(optY);
+                });
+                // Sensible defaults: first column as X, first numeric column as Y.
+                x.value = '0';
+                const numIdx = res.columns.findIndex((_, i) => isNumeric(res.rows[0] ? res.rows[0][i] : null));
+                y.value = String(numIdx >= 0 ? numIdx : 0);
+            }
+
+            function renderChart() {
+                const res = state.lastResult;
+                const canvas = $('#chart');
+                if (!res || !res.columns || !res.rows.length || !canvas) return;
+                const typeSel = $('#chartType');
+                if (!typeSel || !$('#xCol') || !$('#yCol')) return;
+                const type = typeSel.value;
+                const xi = Number($('#xCol').value);
+                const yi = Number($('#yCol').value);
+                const labels = res.rows.map((r) => r[xi]);
+                const data = res.rows.map((r) => Number(r[yi]) || 0);
+
+                if (state.chart) state.chart.destroy();
+                const cfg = {
+                    type: type === 'pie' ? 'pie' : type,
+                    data: { labels, datasets: [{ label: res.columns[yi], data }] },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: type === 'pie' } },
+                    },
+                };
+                if (type !== 'pie') {
+                    cfg.options.scales = { x: { ticks: { color: '#8b949e' } }, y: { ticks: { color: '#8b949e' }, beginAtZero: true } };
+                } else {
+                    cfg.options.plugins.legend.labels.color = '#c9d1d9';
+                }
+                state.chart = new Chart($('#chart'), cfg);
+            }
+
+            function setView(view) {
+                state.view = view;
+                const tableEl = $('#tableView');
+                const chartWrap = $('#chartWrap');
+                if (!tableEl || !chartWrap) return;
+                tableEl.style.display = view === 'table' ? '' : 'none';
+                $('#chartWrap').classList.toggle('open', view === 'chart');
+                document.querySelectorAll('#viewTabs button').forEach((b) => {
+                    b.classList.toggle('on', b.dataset.view === view);
+                });
+                if (view === 'chart') renderChart();
+            }
+
+            // ---------- Sample data ----------
+            function loadSample() {
+                if (!state.db) return;
+                const orders = [
+                    ['id', 'region', 'product', 'qty', 'price'],
+                    [1, 'North', 'Widget', 3, 9.5],
+                    [2, 'South', 'Gadget', 1, 24.0],
+                    [3, 'North', 'Gadget', 5, 24.0],
+                    [4, 'East', 'Widget', 2, 9.5],
+                    [5, 'West', 'Gizmo', 4, 12.0],
+                    [6, 'North', 'Gizmo', 7, 12.0],
+                    [7, 'South', 'Widget', 3, 9.5],
+                ];
+                importTable('orders', { columns: orders[0], rows: orders.slice(1) });
+                refreshTables();
+                runSQL('SELECT region, SUM(qty * price) AS revenue FROM orders GROUP BY region ORDER BY revenue DESC;');
+            }
+
+            // ---------- Wiring ----------
+            function wire() {
+                const fileInput = $('#fileInput');
+                const dropzone = $('#dropzone');
+
+                fileInput.addEventListener('change', async () => {
+                    const files = Array.from(fileInput.files || []);
+                    if (files.length) await importFiles(files);
+                    fileInput.value = '';
+                });
+
+                ['dragenter', 'dragover'].forEach((ev) =>
+                    dropzone.addEventListener(ev, (e) => { e.preventDefault(); dropzone.classList.add('drag'); }));
+                ['dragleave', 'drop'].forEach((ev) =>
+                    dropzone.addEventListener(ev, (e) => { e.preventDefault(); dropzone.classList.remove('drag'); }));
+                dropzone.addEventListener('drop', async (e) => {
+                    const files = Array.from(e.dataTransfer.files || []);
+                    if (files.length) await importFiles(files);
+                });
+
+                const numFormat = $('#numFormat');
+                if (numFormat) {
+                    numFormat.addEventListener('change', () => setNumberFormat(numFormat.value));
+                }
+
+                $('#sampleBtn').addEventListener('click', loadSample);
+
+                const run = () => { if (state.engineReady) runSQL($('#sqlInput').value); };
+                $('#runBtn').addEventListener('click', run);
+                $('#sqlInput').addEventListener('keydown', (e) => {
+                    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') run();
+                });
+
+                $('#clearBtn').addEventListener('click', () => {
+                    if (!state.db) return;
+                    for (const t of listTables()) state.db.run(`DROP TABLE IF EXISTS "${t.name}"`);
+                    state.lastResult = null;
+                    state.sqlLog = [];
+                    refreshTables();
+                    renderSQLLog();
+                    renderResults();
+                });
+
+                document.querySelectorAll('#viewTabs button').forEach((b) =>
+                    b.addEventListener('click', () => setView(b.dataset.view)));
+
+                ['chartType', 'xCol', 'yCol'].forEach((id) =>
+                    $('#' + id).addEventListener('change', () => { if (state.view === 'chart') renderChart(); }));
+
+                const exportBtn = $('#exportCsvBtn');
+                if (exportBtn) exportBtn.addEventListener('click', () => exportCSV());
+            }
+
+            // ---------- Public API (for tests) ----------
+            window.CSVInspector = {
+                init: initEngine,
+                parseCSV,
+                importTable,
+                importFiles,
+                runSQL,
+                listTables,
+                refreshTables,
+                selectTable,
+                loadSample,
+                setNumberFormat: (fmt) => { state.numberFormat = fmt; return state.numberFormat; },
+                setView,
+                toCSV,
+                exportCSV,
+                renderChart,
+                renderSQLLog,
+                getState: () => state,
+            };
+
+            // ---------- Boot ----------
+            document.addEventListener('DOMContentLoaded', async () => {
+                if (document.body) wire();
+                await initEngine();
+                refreshTables();
+                renderResults();
+            });
+        })();
+    </script>
+</body>
+
+</html>
