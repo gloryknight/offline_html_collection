@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SQLite Editor</title>
+    <style>
+        :root {
+            --bg: #0f1420;
+            --panel: #161d2b;
+            --panel2: #1c2435;
+            --line: #2a3346;
+            --fg: #e6ebf5;
+            --dim: #8b97ad;
+            --accent: #4c9aff;
+            --err: #ff6b6b;
+            --ok: #3ddc84;
+            --null: #5a6678;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--fg);
+            font: 13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            background: var(--panel);
+            border-bottom: 1px solid var(--line);
+        }
+
+        header h1 {
+            font-size: 15px;
+            margin: 0;
+            font-weight: 600;
+            letter-spacing: .3px;
+        }
+
+        header .grow {
+            flex: 1;
+        }
+
+        input,
+        button,
+        select,
+        textarea {
+            font: inherit;
+            color: var(--fg);
+        }
+
+        input[type=text] {
+            background: var(--panel2);
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            padding: 6px 8px;
+        }
+
+        button {
+            background: var(--accent);
+            color: #04122b;
+            border: 0;
+            border-radius: 6px;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        button.ghost {
+            background: var(--panel2);
+            color: var(--fg);
+            border: 1px solid var(--line);
+        }
+
+        button:disabled {
+            opacity: .45;
+            cursor: not-allowed;
+        }
+
+        #mode {
+            display: none;
+            font-size: 12px;
+            padding: 2px 8px;
+            border-radius: 999px;
+            border: 1px solid var(--line);
+            background: var(--panel2);
+            color: var(--fg);
+            letter-spacing: .3px;
+        }
+
+        #dropzone {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, .55);
+            color: #fff;
+            font-size: 20px;
+            border: 3px dashed #fff;
+            z-index: 1000;
+            pointer-events: none;
+        }
+
+        .statusbar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            background: var(--panel);
+            border-bottom: 1px solid var(--line);
+            font-size: 12px;
+        }
+
+        .dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: var(--null);
+        }
+
+        .dot.ok {
+            background: var(--ok);
+        }
+
+        .dot.err {
+            background: var(--err);
+        }
+
+        .statusbar .grow {
+            flex: 1;
+        }
+
+        main {
+            display: grid;
+            grid-template-columns: 230px 1fr;
+            gap: 0;
+            height: calc(100% - 96px);
+        }
+
+        aside {
+            background: var(--panel);
+            border-right: 1px solid var(--line);
+            overflow: auto;
+        }
+
+        aside h2 {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: .6px;
+            color: var(--dim);
+            margin: 14px 12px 6px;
+        }
+
+        ul.tables {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        li.tbl {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 12px;
+            cursor: pointer;
+            border-left: 3px solid transparent;
+        }
+
+        li.tbl:hover {
+            background: var(--panel2);
+        }
+
+        li.tbl.active {
+            border-left-color: var(--accent);
+            background: var(--panel2);
+        }
+
+        li.tbl .type {
+            font-size: 10px;
+            color: var(--dim);
+        }
+
+        li.empty,
+        .empty {
+            color: var(--dim);
+            padding: 8px 12px;
+        }
+
+        .cols {
+            padding: 6px 14px 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+
+        .colchip {
+            background: var(--panel2);
+            border: 1px solid var(--line);
+            border-radius: 5px;
+            padding: 2px 7px;
+            font-size: 11px;
+        }
+
+        .colchip .pk {
+            color: var(--accent);
+            font-size: 10px;
+        }
+
+        section {
+            overflow: auto;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .sqlbox textarea {
+            width: 100%;
+            height: 74px;
+            resize: vertical;
+            background: #0b0f18;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            color: #cfe0ff;
+            font-family: ui-monospace, Menlo, Consolas, monospace;
+            padding: 8px;
+        }
+
+        .sqlrow {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .sqlrow .grow {
+            flex: 1;
+            color: var(--dim);
+            font-size: 12px;
+        }
+
+        .gridwrap {
+            overflow: auto;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--panel);
+        }
+
+        table.grid {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        table.grid th,
+        table.grid td {
+            border-bottom: 1px solid var(--line);
+            border-right: 1px solid var(--line);
+            padding: 5px 9px;
+            text-align: left;
+            white-space: nowrap;
+            max-width: 340px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        table.grid th {
+            position: sticky;
+            top: 0;
+            background: var(--panel2);
+            font-weight: 600;
+            z-index: 1;
+        }
+
+        table.grid td.cell {
+            cursor: text;
+        }
+
+        table.grid td.cell:focus {
+            outline: 2px solid var(--accent);
+            outline-offset: -2px;
+            background: #10203a;
+        }
+
+        table.grid td.null {
+            color: var(--null);
+            font-style: italic;
+        }
+
+        .nullbadge {
+            color: var(--null);
+            font-size: 11px;
+        }
+
+        table.grid tr:hover td {
+            background: #131b29;
+        }
+
+        .error {
+            background: rgba(255, 107, 107, .12);
+            border: 1px solid var(--err);
+            color: #ffb4b4;
+            padding: 8px 10px;
+            border-radius: 6px;
+            white-space: pre-wrap;
+        }
+
+        .hint {
+            color: var(--dim);
+            font-size: 12px;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>&#128451; SQLite Editor</h1>
+        <div class="grow"></div>
+        <input id="path" type="text" placeholder="/absolute/path/to/file.db  (or .csv)" style="width:360px" />
+        <button id="open">Open</button>
+        <input id="file" type="file" accept=".db,.sqlite,.sqlite3,.csv" style="display:none" />
+        <button id="choose" class="ghost">&#128193; Choose file</button>
+    </header>
+
+    <div class="statusbar">
+        <span id="dot" class="dot"></span>
+        <span id="status">Not connected. Enter a path and click Open.</span>
+        <span id="mode">read-only</span>
+        <div class="grow"></div>
+        <button id="reload" class="ghost" disabled>&#8635; Reload from disk</button>
+    </div>
+
+    <main>
+        <aside>
+            <h2>Tables &amp; Views</h2>
+            <ul id="tables" class="tables">
+                <li class="empty">No database open.</li>
+            </ul>
+            <h2 id="colsh" style="display:none">Columns</h2>
+            <div id="cols" class="cols"></div>
+        </aside>
+
+        <section>
+            <div class="sqlbox">
+                <textarea id="sql" spellcheck="false">SELECT * FROM sqlite_master LIMIT 10;</textarea>
+                <div class="sqlrow">
+                    <button id="run">&#9654; Run</button>
+                    <button id="export-csv" class="ghost" disabled>&#128190; Export CSV</button>
+                    <span id="tip" class="grow">Tip: click a cell in the grid to edit it inline; it writes back to
+                        disk.</span>
+                </div>
+            </div>
+            <div id="results"></div>
+        </section>
+    </main>
+
+    <div id="dropzone">Drop your .db or .csv file here</div>
+    <script>
+        //  src="app.js"
+        /* ============================================================================
+         * sqlite_editor/app.js — pure, browser-free logic for the SQLite editor.
+         *
+         * Everything in this file runs in BOTH:
+         *   - the browser (loaded as a classic script; it attaches to window.SE)
+         *   - Bun / Node (imported as ESM for unit tests; it sets module.exports)
+         *
+         * The DOM is kept OUT of here on purpose: this file only turns data into
+         * strings (HTML) and manipulates sql.js databases. The HTML file is a thin
+         * shell that calls into these functions and writes the returned strings into
+         * the page. That split is what makes the unit tests possible without a browser.
+         * ==========================================================================*/
+
+        /* ---------------------------------------------------------------------------
+         * Small HTML helpers
+         * -------------------------------------------------------------------------*/
+        const esc = (s) => String(s == null ? '' : s)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+
+        // Human cell text: NULL -> badge, everything else stringified.
+        const cellText = (v) => (v === null || v === undefined) ? 'NULL' : String(v);
+
+        // Parse a cell's edited text back into a JS value: '' -> null, numeric text ->
+        // number, anything else -> string. Mirrors how values were rendered to text.
+        function parseCell(text) {
+            const t = String(text).trim();
+            if (t === '') return null;
+            if (!Number.isNaN(Number(t))) return Number(t);
+            return t;
+        }
+
+        /* ---------------------------------------------------------------------------
+         * Database helpers (operate on an sql.js `db` instance)
+         * -------------------------------------------------------------------------*/
+
+        // List user tables + views (excludes internal sqlite_* objects).
+        function listTables(db) {
+            const res = db.exec(
+                "SELECT name, type FROM sqlite_master WHERE type IN ('table','view') " +
+                "AND name NOT LIKE 'sqlite_%' ORDER BY type DESC, name"
+            );
+            const out = [];
+            if (res.length) {
+                for (const row of res[0].values) out.push({ name: row[0], type: row[1] });
+            }
+            return out;
+        }
+
+        // Column metadata for a table/view (safe: name is validated by the caller).
+        function columns(db, table) {
+            const res = db.exec(`PRAGMA table_info(${quoteIdent(table)})`);
+            const out = [];
+            if (res.length) {
+                for (const row of res[0].values) {
+                    out.push({ cid: row[0], name: row[1], type: row[2] || '', notnull: !!row[3], pk: !!row[5] });
+                }
+            }
+            return out;
+        }
+
+        // Run a SELECT and return { columns, rows } (rows are arrays of raw values).
+        function query(db, sql) {
+            const res = db.exec(sql);
+            if (!res.length) return { columns: [], rows: [] };
+            const r = res[0];
+            return { columns: r.columns, rows: r.values };
+        }
+
+        // Run a statement that may modify data. Returns { changes, lastInsertRowid }.
+        // getRowsModified() reflects the most recently executed statement, so read it
+        // right after exec(). (For multi-statement input this reports the last one.)
+        function exec(db, sql) {
+            db.exec(sql);
+            return { changes: db.getRowsModified(), lastInsertRowid: 0 };
+        }
+
+        /* ---------------------------------------------------------------------------
+         * SQL literal / identifier quoting (used to build UPDATE statements safely)
+         * -------------------------------------------------------------------------*/
+
+        // Quote an identifier, rejecting anything that is not a plain name.
+        function quoteIdent(name) {
+            if (typeof name !== 'string' || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) {
+                throw new Error('Invalid identifier: ' + name);
+            }
+            return '"' + name + '"';
+        }
+
+        // Turn a JS value into a SQL literal. null -> NULL, number -> number,
+        // boolean -> 1/0, everything else -> single-quoted string with escaping.
+        function sqlLiteral(v) {
+            if (v === null || v === undefined) return 'NULL';
+            if (typeof v === 'number' && Number.isFinite(v)) return String(v);
+            if (v === true) return '1';
+            if (v === false) return '0';
+            const s = String(v).replace(/'/g, "''");
+            return "'" + s + "'";
+        }
+
+        // Build a single-column UPDATE for one row, given the table's primary key.
+        // pkCol: column name that uniquely identifies the row (from columns()).
+        function buildUpdate(table, pkCol, pkValue, colName, newValue) {
+            const qTable = quoteIdent(table);
+            const qPk = quoteIdent(pkCol);
+            const qCol = quoteIdent(colName);
+            return `UPDATE ${qTable} SET ${qCol} = ${sqlLiteral(newValue)} WHERE ${qPk} = ${sqlLiteral(pkValue)}`;
+        }
+
+        /* ---------------------------------------------------------------------------
+         * CSV import (pure: text in -> parsed data out; db in -> table out)
+         *
+         * A CSV file is detected by its `.csv` extension in the UI and turned into a
+         * table whose name is the file name without the extension. The delimiter is
+         * auto-detected as comma or semicolon. The table name and column names are
+         * sanitized to valid SQL identifiers so the rest of the editor (which quotes
+         * identifiers strictly via quoteIdent) keeps working on them.
+         * -------------------------------------------------------------------------*/
+
+        // Detect whether the CSV uses a comma or a semicolon delimiter. Scans the first
+        // line and counts delimiter occurrences outside double-quoted fields; ties and
+        // zero counts default to comma.
+        function detectDelimiter(text) {
+            const firstLine = String(text).split(/\r?\n/, 1)[0] || '';
+            let comma = 0, semi = 0, inQ = false;
+            for (let i = 0; i < firstLine.length; i++) {
+                const c = firstLine[i];
+                if (c === '"') inQ = !inQ;
+                else if (!inQ && c === ',') comma++;
+                else if (!inQ && c === ';') semi++;
+            }
+            return semi > comma ? ';' : ',';
+        }
+
+        // Low-level CSV record parser. Handles double-quoted fields (with "" escapes and
+        // embedded delimiters/newlines) and CRLF/LF/CR line endings. Returns an array of
+        // records, each an array of raw string fields.
+        function parseCsvRecords(text, delim) {
+            const s = String(text);
+            const records = [];
+            let field = '', record = [], inQ = false;
+            for (let i = 0; i < s.length; i++) {
+                const c = s[i];
+                if (inQ) {
+                    if (c === '"') {
+                        if (s[i + 1] === '"') { field += '"'; i++; } // escaped quote
+                        else inQ = false;
+                    } else field += c;
+                } else if (c === '"') {
+                    inQ = true;
+                } else if (c === delim) {
+                    record.push(field); field = '';
+                } else if (c === '\n' || c === '\r') {
+                    if (c === '\r' && s[i + 1] === '\n') i++; // treat CRLF as one break
+                    record.push(field); records.push(record); record = []; field = '';
+                } else {
+                    field += c;
+                }
+            }
+            if (field !== '' || record.length) { record.push(field); records.push(record); }
+            return records;
+        }
+
+        // Parse CSV text into { delimiter, columns, rows }. The first record is the
+        // header (empty cells become col1, col2, ...); the rest are rows with empty
+        // cells mapped to null, padded/truncated to the header width. Blank lines are
+        // ignored.
+        function parseCsv(text) {
+            const delimiter = detectDelimiter(text);
+            const records = parseCsvRecords(text, delimiter)
+                .filter(r => !(r.length === 1 && r[0] === ''));
+            if (!records.length) return { delimiter, columns: [], rows: [] };
+            const columns = records[0].map((h, i) => {
+                const t = String(h).trim();
+                return t || ('col' + (i + 1));
+            });
+            const width = columns.length;
+            const rows = records.slice(1).map(rec => {
+                const out = new Array(width);
+                for (let i = 0; i < width; i++) {
+                    const v = rec[i];
+                    out[i] = (v === undefined || v === '') ? null : v;
+                }
+                return out;
+            });
+            return { delimiter, columns, rows };
+        }
+
+        // Turn an arbitrary string into a valid, safe SQL identifier (used for table and
+        // column names derived from file names and CSV headers). Non-identifier
+        // characters become underscores; an empty result falls back to a positional name.
+        function sanitizeIdent(name, index) {
+            let s = String(name == null ? '' : name).trim()
+                .replace(/[^A-Za-z0-9_]/g, '_')
+                .replace(/_+/g, '_')
+                .replace(/^_+|_+$/g, '');
+            if (!s) s = 'col' + (index + 1);
+            if (/^[0-9]/.test(s)) s = '_' + s;
+            return s;
+        }
+
+        // Table name for a CSV: the file name without its extension, sanitized to a valid
+        // identifier. Accepts a full path (uses the last path segment).
+        function tableNameFromPath(path) {
+            let base = String(path).split(/[\\/]/).pop() || '';
+            const dot = base.lastIndexOf('.');
+            if (dot > 0) base = base.slice(0, dot);
+            return sanitizeIdent(base, 0);
+        }
+
+        // Given a base table name, return a name that is free in the database: the base
+        // name if unused, otherwise base_2, base_3, ... (so importing a file whose name
+        // collides with an existing table keeps both instead of overwriting it).
+        function uniqueTableName(db, baseName) {
+            const existing = new Set(listTables(db).map(t => t.name));
+            if (!existing.has(baseName)) return baseName;
+            let k = 2;
+            while (existing.has(baseName + '_' + k)) k++;
+            return baseName + '_' + k;
+        }
+
+        // Infer a SQLite column type from a column's values: INTEGER if every non-null
+        // value is an exact integer literal, REAL if every non-null value is a finite
+        // number, else TEXT. (CSV is untyped; this keeps numeric columns numeric while
+        // preserving values that would not round-trip, e.g. "007" -> TEXT.)
+        function inferColumnType(rows, index) {
+            let allInt = true, allReal = true, saw = false;
+            for (const row of rows) {
+                const v = row[index];
+                if (v === null || v === undefined) continue;
+                const t = String(v).trim();
+                if (t === '') continue;
+                saw = true;
+                const n = Number(t);
+                if (!Number.isFinite(n)) { allInt = false; allReal = false; continue; }
+                // A value only counts as numeric if it round-trips exactly; otherwise
+                // (e.g. "007", "1e3") it would be silently altered, so mark TEXT.
+                if (String(n) !== t) allReal = false;
+                if (!/^[+-]?\d+$/.test(t) || String(n) !== t) allInt = false;
+            }
+            if (!saw) return 'TEXT';
+            if (allInt) return 'INTEGER';
+            if (allReal) return 'REAL';
+            return 'TEXT';
+        }
+
+        // Create (replacing any existing table of the same name) and populate a table
+        // from parsed CSV data. Column names are sanitized and de-duplicated. Returns
+        // { table, columns, rowCount }.
+        function importCsvToDb(db, table, columns, rows) {
+            const qTable = quoteIdent(table);
+            const src = columns.length ? columns : ['value'];
+            const seen = new Set();
+            const cols = src.map((c, i) => {
+                let name = sanitizeIdent(c, i), base = name, k = 2;
+                while (seen.has(name)) { name = base + '_' + k; k++; }
+                seen.add(name);
+                return name;
+            });
+            const colDefs = cols.map((c, i) => `${quoteIdent(c)} ${inferColumnType(rows, i)}`).join(', ');
+            db.exec(`DROP TABLE IF EXISTS ${qTable}`);
+            db.exec(`CREATE TABLE ${qTable} (${colDefs})`);
+            const colList = cols.map(quoteIdent).join(', ');
+            const BATCH = 500;
+            for (let i = 0; i < rows.length; i += BATCH) {
+                const tuples = rows.slice(i, i + BATCH).map(r =>
+                    '(' + cols.map((_, ci) => sqlLiteral(r[ci])).join(',') + ')');
+                db.exec(`INSERT INTO ${qTable} (${colList}) VALUES ${tuples.join(',')}`);
+            }
+            return { table, columns: cols, rowCount: rows.length };
+        }
+
+
+        /* ---------------------------------------------------------------------------
+         * HTML rendering (pure: data in -> HTML string out)
+         * -------------------------------------------------------------------------*/
+
+        // Render a results grid as an <table>. `editable` toggles contenteditable cells
+        // and attaches data attributes so the shell can wire up change handlers.
+        function renderTable({ columns, rows }, opts = {}) {
+            const editable = !!opts.editable;
+            const pkIndex = (typeof opts.pkIndex === 'number') ? opts.pkIndex : -1;
+            if (!columns.length) return '<div class="empty">No results.</div>';
+
+            let html = '<table class="grid"><thead><tr>';
+            for (const c of columns) html += `<th>${esc(c)}</th>`;
+            html += '</tr></thead><tbody>';
+
+            rows.forEach((row, ri) => {
+                html += '<tr data-row="' + ri + '">';
+                row.forEach((v, ci) => {
+                    const isNull = v === null || v === undefined;
+                    let cls = 'cell';
+                    if (isNull) cls += ' null';
+                    // data-pk marks the primary-key column so the shell can tell which
+                    // row a cell belongs to (row identity comes from the PK, not order).
+                    const pkAttr = (editable && ci === pkIndex) ? ' data-pk="1"' : '';
+                    const attrs = editable
+                        ? ` contenteditable="true" data-row="${ri}" data-col="${ci}"${pkAttr}`
+                        : '';
+                    const text = isNull ? '<span class="nullbadge">NULL</span>' : esc(cellText(v));
+                    html += `<td class="${cls}"${attrs}>${text}</td>`;
+                });
+                html += '</tr>';
+            });
+
+            html += '</tbody></table>';
+            return html;
+        }
+
+        // Render the table list as <li> items.
+        function renderTableList(tables) {
+            if (!tables.length) return '<li class="empty">No tables.</li>';
+            return tables.map((t) =>
+                `<li data-name="${esc(t.name)}" class="tbl ${t.type}">${esc(t.name)}<span class="type">${t.type}</span></li>`
+            ).join('');
+        }
+
+        // Render column chips for a selected table.
+        function renderColumns(cols) {
+            if (!cols.length) return '';
+            return cols.map((c) =>
+                `<span class="colchip" title="${esc(c.type)}">${esc(c.name)}` +
+                (c.pk ? ' <b class="pk">PK</b>' : '') + '</span>'
+            ).join(' ');
+        }
+
+        // Render an error message as a small banner.
+        function renderError(msg) {
+            return `<div class="error">${esc(String(msg))}</div>`;
+        }
+
+        // ---- CSV export ------------------------------------------------------------
+        // Serialize a query result ({ columns, rows }) to RFC 4180 CSV. Fields that
+        // contain a comma, double-quote, or line break are quoted; embedded quotes are
+        // doubled. null/undefined become empty cells. Lines are CRLF-terminated.
+        function csvField(v) {
+            if (v === null || v === undefined) return '';
+            const s = String(v);
+            if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+            return s;
+        }
+
+        function toCsv({ columns, rows }) {
+            const lines = [columns.map(csvField).join(',')];
+            for (const row of rows) lines.push(row.map(csvField).join(','));
+            return lines.join('\r\n') + '\r\n';
+        }
+
+        /* ---------------------------------------------------------------------------
+         * Server request handler (runs in Bun). Pure: (req) -> Response.
+         *
+         * Endpoints:
+         *   GET  /file?path=...   -> { ok, path, size, data: <base64> }
+         *   POST /file            { path, data: <base64> } -> { ok, size }
+         *   GET  /                 -> the editor HTML (served by main(), not here)
+         * -------------------------------------------------------------------------*/
+        async function handleFileRequest(req, { readDb, writeDb }) {
+            const url = new URL(req.url);
+
+            if (url.pathname === '/file') {
+                // READ: ?path=...
+                if (req.method === 'GET') {
+                    const path = url.searchParams.get('path');
+                    if (!path) return jsonResponse({ ok: false, error: 'missing path' }, 400);
+                    try {
+                        const buf = await readDb(path);
+                        return jsonResponse({ ok: true, path, size: buf.length, data: buf.toString('base64') });
+                    } catch (e) {
+                        return jsonResponse({ ok: false, error: e.message }, 404);
+                    }
+                }
+                // WRITE: body { path, data }
+                if (req.method === 'POST') {
+                    let body;
+                    try { body = await req.json(); } catch (e) {
+                        return jsonResponse({ ok: false, error: 'bad json' }, 400);
+                    }
+                    const { path, data } = body || {};
+                    if (!path || !data) return jsonResponse({ ok: false, error: 'missing path/data' }, 400);
+                    try {
+                        const size = await writeDb(path, Buffer.from(data, 'base64'));
+                        return jsonResponse({ ok: true, size });
+                    } catch (e) {
+                        return jsonResponse({ ok: false, error: e.message }, 500);
+                    }
+                }
+            }
+
+            return jsonResponse({ ok: false, error: 'not found' }, 404);
+        }
+
+        function jsonResponse(obj, status = 200) {
+            return new Response(JSON.stringify(obj), {
+                status,
+                headers: { 'content-type': 'application/json' },
+            });
+        }
+
+        /* ---------------------------------------------------------------------------
+         * Exports: browser global + CommonJS/ESM for tests.
+         * -------------------------------------------------------------------------*/
+        const SE = {
+            esc, cellText, parseCell, listTables, columns, query, exec,
+            quoteIdent, sqlLiteral, buildUpdate,
+            detectDelimiter, parseCsv, tableNameFromPath, importCsvToDb, uniqueTableName, sanitizeIdent, inferColumnType,
+            renderTable, renderTableList, renderColumns, renderError,
+            toCsv,
+            handleFileRequest, jsonResponse,
+        };
+
+        // Browser: attach to window.
+        if (typeof window !== 'undefined') {
+            window.SE = SE;
+        }
+
+        // Node/Bun: named exports so tests can `import { query, ... } from './app.js'`.
+        // (Guarded: in the browser `module` is undefined, so this is a no-op.)
+        if (typeof module !== 'undefined') {
+            module.exports = { SE, esc, cellText, parseCell, listTables, columns, query, exec, quoteIdent, sqlLiteral, buildUpdate, detectDelimiter, parseCsv, tableNameFromPath, importCsvToDb, uniqueTableName, sanitizeIdent, inferColumnType, renderTable, renderTableList, renderColumns, renderError, toCsv, handleFileRequest, jsonResponse };
+        }
+    </script>
+    <script>
+        /* -----------------------------------------------------------------------
+         * UI controller. All data logic lives in window.SE (app.js); this file only
+         * wires DOM events to those pure functions and fetches the DB over /file.
+         * --------------------------------------------------------------------- */
+        const $ = (id) => document.getElementById(id);
+        const state = { db: null, path: '', table: null, columns: [], pkIndex: -1, readOnly: false, result: null };
+
+        function setStatus(msg, cls) {
+            $('status').textContent = msg;
+            const d = $('dot'); d.className = 'dot' + (cls ? ' ' + cls : '');
+        }
+
+        // ---- sql-wasm bootstrap (CDN ES module) ---------------------------------
+        const SQL_WASM_CDN = "https://unpkg.com/sql-wasm@1.1.4";
+        let SQLPromise = null;
+        async function initSql() {
+            if (!SQLPromise) {
+                const mod = await import(SQL_WASM_CDN + "/dist/esm/sql-wasm-browser.js");
+                SQLPromise = mod.default({ wasmUrl: SQL_WASM_CDN + "/dist/sqlite3.wasm" });
+            }
+            return await SQLPromise; // resolves to the sql.js-compatible API (SQL.Database, ...)
+        }
+
+        // ---- file I/O over /file ---------------------------------------------
+        async function loadFile(path) {
+            const r = await fetch('/file?path=' + encodeURIComponent(path));
+            const j = await r.json();
+            if (!j.ok) throw new Error(j.error || ('HTTP ' + r.status));
+            return Uint8Array.from(atob(j.data), c => c.charCodeAt(0)); // base64 -> bytes
+        }
+
+        // Encode a Uint8Array to base64 in chunks (avoids apply() arg limits).
+        function toBase64(bytes) {
+            let out = '';
+            const CHUNK = 0x8000;
+            for (let i = 0; i < bytes.length; i += CHUNK) {
+                out += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + CHUNK)));
+            }
+            return btoa(out);
+        }
+
+        async function saveFile(path, bytes) {
+            const r = await fetch('/file', {
+                method: 'POST', headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({ path, data: toBase64(bytes) })
+            });
+            const j = await r.json();
+            if (!j.ok) throw new Error(j.error || ('HTTP ' + r.status));
+        }
+
+        // Persist the in-memory db to the host file (real-time write).
+        // In read-only mode (no backend) this is a no-op: the in-memory db keeps
+        // any changes for the session, but nothing is ever written to disk.
+        async function persist() {
+            if (!state.db || !state.path) return;
+            if (state.readOnly) return;
+            const bytes = state.db.export(); // Uint8Array of the whole DB image
+            await saveFile(state.path, bytes);
+        }
+
+        // ---- open / reload ----------------------------------------------------
+        // A path ending in .csv is imported into a table named after the file; the
+        // resulting database is persisted to a sibling .db file on the next edit.
+        function isCsv(path) { return /\.csv$/i.test(path); }
+
+        // opts: { path?, bytes?, readOnly? } — bytes/readOnly are set for the
+        // backend-free "choose file" / drag-and-drop flow.
+        async function openDb(opts = {}) {
+            const path = opts.path || $('path').value.trim();
+            if (!path && !opts.bytes) { setStatus('Enter a file path first.', 'err'); return; }
+            try {
+                setStatus('Opening…');
+                state.result = null; syncExportButton();
+                const SQL = await initSql();
+                const bytes = opts.bytes || await loadFile(path);
+                state.readOnly = !!opts.readOnly;
+                $('mode').style.display = state.readOnly ? '' : 'none';
+                $('tip').textContent = state.readOnly
+                    ? 'Read-only: browse and query freely; changes are not saved (no backend).'
+                    : 'Tip: click a cell in the grid to edit it inline; it writes back to disk.';
+                if (isCsv(path)) {
+                    // Additive: reuse the open database, or create one if none is open.
+                    // The open/add action never writes to disk (persist() is a no-op in
+                    // read-only mode; in edit mode it only fires on an explicit edit).
+                    if (!state.db) state.db = new SQL.Database();
+                    const text = new TextDecoder().decode(bytes);
+                    const parsed = SE.parseCsv(text);
+                    const base = SE.tableNameFromPath(path);
+                    const table = SE.uniqueTableName(state.db, base);
+                    const res = SE.importCsvToDb(state.db, table, parsed.columns, parsed.rows);
+                    // In edit mode, persist the combined DB to a sibling .db on the next
+                    // edit (the CSV itself stays read-only). In read-only mode this is a
+                    // cosmetic path only.
+                    if (!state.path) state.path = path.replace(/\.csv$/i, '.db');
+                    state.table = res.table;
+                    $('reload').disabled = state.readOnly;
+                    const renamed = table !== base ? ` (renamed from "${base}")` : '';
+                    setStatus(`Imported ${res.rowCount} rows into "${table}"${renamed}` + (state.readOnly ? ' (read-only)' : ''), 'ok');
+                    await refreshTables();
+                    if (state.table) selectTable(state.table);
+                } else {
+                    state.db = new SQL.Database(bytes);
+                    state.path = path;
+                    $('reload').disabled = state.readOnly;
+                    setStatus(`Open: ${path}` + (state.readOnly ? ' (read-only)' : ''), 'ok');
+                    await refreshTables();
+                }
+            } catch (e) {
+                state.db = null; $('reload').disabled = true; $('mode').style.display = 'none';
+                setStatus('Failed: ' + e.message, 'err');
+            }
+        }
+
+        async function refreshTables() {
+            if (!state.db) return;
+            const tables = SE.listTables(state.db);
+            $('tables').innerHTML = SE.renderTableList(tables);
+            document.querySelectorAll('#tables li.tbl').forEach(li => {
+                li.onclick = () => selectTable(li.dataset.name, tables);
+            });
+            if (state.table && !tables.find(t => t.name === state.table)) selectTable(null, tables);
+        }
+
+        function selectTable(name, tables) {
+            state.table = name;
+            document.querySelectorAll('#tables li.tbl').forEach(li =>
+                li.classList.toggle('active', li.dataset.name === name));
+            if (!name) { $('colsh').style.display = 'none'; $('cols').innerHTML = ''; return; }
+            state.columns = SE.columns(state.db, name);
+            // Index of the primary-key column in the SELECT * result (row identity).
+            state.pkIndex = state.columns.findIndex(c => c.pk);
+            $('colsh').style.display = '';
+            $('cols').innerHTML = SE.renderColumns(state.columns);
+            runQuery(`SELECT * FROM ${SE.quoteIdent(name)} LIMIT 1000;`);
+        }
+
+        // ---- SQL execution ----------------------------------------------------
+        // Enable the Export CSV button only when the last SELECT returned a grid.
+        function syncExportButton() {
+            const has = !!(state.result && state.result.columns.length);
+            $('export-csv').disabled = !has;
+        }
+
+        // Download the current query result as a CSV file.
+        function exportCsv() {
+            if (!state.result || !state.result.columns.length) return;
+            const csv = SE.toCsv(state.result);
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = (state.path ? state.path.split(/[\/]/).pop().replace(/\.(db|sqlite|sqlite3|csv)$/i, '') : 'results') + '.csv';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+        }
+
+        function runQuery(sql) {
+            if (!state.db) return;
+            const isSelect = /^\s*(select|pragma|with|explain)\b/i.test(sql);
+            try {
+                if (isSelect) {
+                    const res = SE.query(state.db, sql);
+                    state.result = res;
+                    // Editable when viewing a base table via `SELECT *` (row identity = PK).
+                    const editable = !state.readOnly && !!(state.table && state.pkIndex >= 0 && res.columns.length === state.columns.length);
+                    $('results').innerHTML = SE.renderTable(res, { editable, pkIndex: state.pkIndex });
+                } else if (state.readOnly) {
+                    // Read-only: refuse to apply writes (there is no backend to save to).
+                    state.result = null;
+                    $('results').innerHTML = `<div class="hint">Read-only mode: this statement would modify data and is not applied.</div>`;
+                    setStatus('Read-only: statement not applied.', 'err');
+                } else {
+                    const r = SE.exec(state.db, sql);
+                    state.result = null;
+                    $('results').innerHTML = `<div class="hint">Executed. Rows affected: ${r.changes}.</div>`;
+                    persist().then(() => { setStatus(`Saved to ${state.path}`, 'ok'); refreshTables(); })
+                        .catch(e => setStatus('Save failed: ' + e.message, 'err'));
+                }
+            } catch (e) {
+                state.result = null;
+                $('results').innerHTML = SE.renderError(e.message);
+            }
+            syncExportButton();
+            bindCellEditing();
+        }
+
+        // ---- inline cell editing ---------------------------------------------
+        // Commit the currently-edited cell: build an UPDATE from the PK value and
+        // persist, then re-render the grid. Uses state.columns + data-row/data-col.
+        async function commitCell(td) {
+            const table = state.table;
+            if (!table || !state.db || state.pkIndex < 0) return false;
+            const cols = state.columns;
+            const pkCol = cols[state.pkIndex];
+            const colName = cols[Number(td.dataset.col)].name;
+
+            // Row identity: read the PK cell's current text from this row.
+            const row = td.closest('tr');
+            const pkTd = row.querySelector(`td.cell[data-col="${state.pkIndex}"]`);
+            const pkValue = SE.parseCell(pkTd.textContent);
+
+            // New value for the edited cell (empty -> NULL).
+            const val = SE.parseCell(td.textContent);
+
+            // Re-query so the grid always reflects the latest on-disk state.
+            const sql = SE.buildUpdate(table, pkCol.name, pkValue, colName, val);
+            try {
+                SE.exec(state.db, sql);
+                await persist();
+                setStatus(`Saved: ${sql}`, 'ok');
+                runQuery(`SELECT * FROM ${SE.quoteIdent(table)} LIMIT 1000;`);
+                return true;
+            } catch (e) {
+                setStatus('Update failed: ' + e.message, 'err');
+                return false;
+            }
+        }
+
+        function bindCellEditing() {
+            const wrap = $('results');
+            // Re-attach after each render (innerHTML replaces the old nodes).
+            wrap.querySelectorAll('td.cell[contenteditable]').forEach(td => {
+                td.onblur = () => commitCell(td);
+                td.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') { e.preventDefault(); td.blur(); }         // commit
+                    else if (e.key === 'Escape') {
+                        e.preventDefault();               // cancel: revert
+                        runQuery(`SELECT * FROM ${SE.quoteIdent(state.table)} LIMIT 1000;`);
+                    }
+                });
+            });
+        }
+
+        // ---- backend-free file loading (read-only) ---------------------------
+        // Read a File (from <input type=file> or a drop) into a Uint8Array.
+        function readFileAsBytes(file) {
+            return new Promise((resolve, reject) => {
+                const fr = new FileReader();
+                fr.onload = () => resolve(new Uint8Array(fr.result));
+                fr.onerror = () => reject(new Error('Could not read the file.'));
+                fr.readAsArrayBuffer(file);
+            });
+        }
+
+        // Open a local File in read-only mode (no backend, nothing written to disk).
+        async function openLocalFile(file) {
+            if (!file) return;
+            // Reflect the chosen file in the path box for context (it is cosmetic here).
+            $('path').value = file.name;
+            try {
+                const bytes = await readFileAsBytes(file);
+                await openDb({ path: file.name, bytes, readOnly: true });
+            } catch (e) {
+                setStatus('Failed: ' + e.message, 'err');
+            }
+        }
+
+        // ---- wire up ----------------------------------------------------------
+        function main() {
+            $('open').onclick = openDb;
+            $('reload').onclick = () => { if (state.path) openDb(); };
+            $('run').onclick = () => runQuery($('sql').value);
+            $('export-csv').onclick = exportCsv;
+            $('sql').addEventListener('keydown', (e) => {
+                if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') runQuery($('sql').value);
+            });
+
+            // Choose-file (read-only, no backend).
+            $('choose').onclick = () => $('file').click();
+            $('file').onchange = () => {
+                openLocalFile($('file').files[0]);
+                $('file').value = ''; // allow re-selecting the same file
+            };
+
+            // Drag-and-drop a .db / .csv anywhere on the page (read-only).
+            const dz = $('dropzone');
+            let depth = 0;
+            window.addEventListener('dragenter', (e) => {
+                e.preventDefault();
+                if (e.dataTransfer && Array.from(e.dataTransfer.types).includes('Files')) {
+                    depth++; dz.style.display = 'flex';
+                }
+            });
+            window.addEventListener('dragover', (e) => { e.preventDefault(); });
+            window.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                if (--depth <= 0) { depth = 0; dz.style.display = 'none'; }
+            });
+            window.addEventListener('drop', (e) => {
+                e.preventDefault();
+                depth = 0; dz.style.display = 'none';
+                const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+                if (f) openLocalFile(f);
+            });
+        }
+
+        main();
+    </script>
+</body>
+
+</html>

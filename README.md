@@ -53,3 +53,4 @@ A collection of offline first web tools.
 50. [RSA key-pair generator](https://gloryknight.github.io/offline_html_collection/html/tool_50.html) - RSA and Ed25519 key-pair generator.
 51. [Image Editor](https://gloryknight.github.io/offline_html_collection/html/tool_51.html) - In browser offline image editor. Copy - paste included.
 52. [CSV SQL inspector](https://gloryknight.github.io/offline_html_collection/html/tool_52.html) - In browser offline CSV viewer and analyzer..
+53. [SQLite SQL Browser](https://gloryknight.github.io/offline_html_collection/html/tool_53.html) - In browser offline SQLite / CSV viewer and analyzer.
