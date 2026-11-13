@@ -125,6 +125,11 @@
                     title="Copy HTML">
                     <i data-lucide="copy" class="w-4 h-4"></i>
                 </button>
+                <button onclick="printMarkdown()"
+                    class="p-1.5 hover:bg-white dark:hover:bg-slate-700 rounded-md transition-all text-slate-600 dark:text-slate-400"
+                    title="Print">
+                    <i data-lucide="printer" class="w-4 h-4"></i>
+                </button>
                 <div class="w-[1px] h-4 bg-slate-300 dark:bg-slate-600 mx-1"></div>
                 <label
                     class="p-1.5 hover:bg-white dark:hover:bg-slate-700 rounded-md transition-all text-slate-600 dark:text-slate-400 cursor-pointer"
@@ -253,6 +258,38 @@
         function copyHTML() {
             navigator.clipboard.writeText(preview.innerHTML);
             showToast("HTML copied to clipboard!");
+        }
+
+        function printMarkdown() {
+            const win = window.open('', '_blank', 'width=800,height=600');
+            if (!win) {
+                showToast("Please allow popups to print.");
+                return;
+            }
+            win.document.write(`<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Print Markdown</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css">
+    <style>
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+        .markdown-body { padding: 2rem; }
+        @media print {
+            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+    </style>
+</head>
+<body>
+    <article class="markdown-body">
+        ${preview.innerHTML}
+    </article>
+    <script>window.onload = function(){ window.print(); };<\/script>
+</body>
+</html>`);
+            win.document.close();
+            showToast("Preparing print...");
         }
 
         // --- Event Listeners ---
