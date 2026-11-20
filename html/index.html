@@ -4,10 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Offline HTML Collection</title>
-    <meta name="description" content="A collection of 54 offline-first web tools. Everything runs in your browser — no servers, no tracking, no data sent anywhere.">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <meta name="description" content="A collection of offline-first web tools. Everything runs in your browser — no servers, no tracking, no data sent anywhere.">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b1020'/%3E%3Cpath d='M9 21V11l7 6 7-6v10' fill='none' stroke='%2338bdf8' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
     <style>
         :root {
             --bg: #0b1020;
@@ -25,7 +23,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html { scroll-behavior: smooth; }
         body {
-            font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             background:
                 radial-gradient(1200px 600px at 80% -10%, rgba(129, 140, 248, 0.12), transparent 60%),
                 radial-gradient(900px 500px at 0% 0%, rgba(56, 189, 248, 0.10), transparent 55%),
@@ -589,7 +587,11 @@
             filters.querySelectorAll(".chip").forEach(c => c.classList.toggle("active", c === b));
             render();
         });
+        document.querySelector('meta[name="description"]').content = `A collection of ${TOOLS.length} offline-first web tools. Everything runs in your browser — no servers, no tracking, no data sent anywhere.`;
         q.addEventListener("input", render);
+        document.addEventListener("keydown", e => {
+            if (e.key === "/" && document.activeElement !== q) { e.preventDefault(); q.focus(); }
+        });
         render();
     </script>
 </body>
