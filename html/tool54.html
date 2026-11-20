@@ -1,0 +1,1337 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#04060f">
+<meta name="description" content="Lorentzkraft & Polarlicht — interaktive Physik-Erklärseite für die GFS (Klasse 9): Sonnenwind, Magnetosphäre, Aurora-Farben, Kp-Index, Quiz und Spickzettel.">
+<title>Lorentzkraft & Polarlicht — Interaktive GFS-Physik · Sonne → Erde</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============ TOKENS ============ */
+:root{
+  --bg0:#04060f; --bg1:#080d1c; --bg2:#0d1530; --surface:rgba(15,23,46,.72); --solid:#0a1122;
+  --line:rgba(122,160,255,.16); --line2:rgba(122,160,255,.30);
+  --green:#3dffa0; --cyan:#45d8ff; --violet:#8b7bff; --red:#ff4d6d; --amber:#ffb347; --magenta:#ff4dd8; --blue:#4d7dff; --pink:#ff7ad9;
+  --ink:#eef3ff; --muted:#a7b4d4; --warm:#ffd9a0;
+  --green-soft:rgba(61,255,160,.09); --cyan-soft:rgba(69,216,255,.09); --violet-soft:rgba(139,123,255,.10);
+  --red-soft:rgba(255,77,109,.10); --amber-soft:rgba(255,179,71,.10); --magenta-soft:rgba(255,77,216,.09); --blue-soft:rgba(77,125,255,.10);
+  --grad-aurora:linear-gradient(100deg,var(--green),var(--cyan) 48%,var(--violet));
+  --grad-solar:linear-gradient(100deg,var(--amber),var(--red) 55%,var(--magenta));
+  --grad-storm:linear-gradient(100deg,var(--magenta),var(--violet) 55%,var(--blue));
+  --disp:'Space Grotesk',system-ui,'Segoe UI',Roboto,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,'Cascadia Mono',Consolas,monospace;
+  --nav-h:64px; --acc:var(--green); --acc-soft:var(--green-soft);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:var(--disp); background:var(--bg0); color:var(--ink); font-size:16px; line-height:1.6;
+  overflow-x:clip; -webkit-font-smoothing:antialiased;
+  background-image:radial-gradient(70% 50% at 80% -5%,rgba(139,123,255,.10),transparent 60%),radial-gradient(60% 45% at 5% 30%,rgba(61,255,160,.05),transparent 60%),linear-gradient(180deg,#04060f,#070b18 40%,#04060f);
+}
+body::after{content:'';position:fixed;inset:0;z-index:3;pointer-events:none;opacity:.05;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");}
+::selection{background:rgba(61,255,160,.35);color:#fff}
+/* scrollbars in palette */
+*{scrollbar-width:thin;scrollbar-color:#2fbf85 #0a0f1e}
+::-webkit-scrollbar{width:10px;height:8px}
+::-webkit-scrollbar-track{background:#0a0f1e}
+::-webkit-scrollbar-thumb{background:linear-gradient(180deg,#2fbf85,#6f5fd8);border-radius:8px;border:2px solid #0a0f1e}
+::-webkit-scrollbar-thumb:hover{background:linear-gradient(180deg,var(--green),var(--violet))}
+a{color:var(--cyan)}
+button{font-family:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--cyan);outline-offset:2px;border-radius:6px}
+svg.ic{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+/* ============ ORBS / DECOR ============ */
+.orb{position:fixed;border-radius:50%;filter:blur(70px);pointer-events:none;z-index:0;mix-blend-mode:screen;opacity:.14;will-change:transform}
+.orb1{width:44vw;height:44vw;left:-12vw;top:12vh;background:radial-gradient(circle,var(--green),transparent 65%)}
+.orb2{width:38vw;height:38vw;right:-10vw;top:55vh;background:radial-gradient(circle,var(--violet),transparent 65%)}
+.orb3{width:30vw;height:30vw;left:22vw;top:130vh;background:radial-gradient(circle,var(--amber),transparent 65%);opacity:.09}
+/* ============ NAV ============ */
+#nav{position:fixed;top:0;left:0;right:0;height:var(--nav-h);z-index:50;background:rgba(5,8,18,.78);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.nav-inner{max-width:1240px;margin:0 auto;height:100%;display:flex;align-items:center;gap:14px;padding:0 20px}
+.logo{display:flex;align-items:center;gap:9px;text-decoration:none;color:var(--ink);font-weight:700;letter-spacing:.06em;font-size:1.02rem;white-space:nowrap}
+.logo svg{width:26px;height:26px}
+.logo em{font-style:normal;background:var(--grad-aurora);-webkit-background-clip:text;background-clip:text;color:transparent}
+.logo small{font-family:var(--mono);font-size:.58rem;color:var(--muted);letter-spacing:.22em;display:block;line-height:1}
+#navLinks{display:flex;gap:2px;margin-left:auto;overflow-x:auto;scrollbar-width:none}
+#navLinks::-webkit-scrollbar{height:0}
+#navLinks a{font-family:var(--mono);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-decoration:none;padding:8px 10px;border-radius:8px;white-space:nowrap;transition:.2s}
+#navLinks a:hover{color:var(--ink);background:rgba(122,160,255,.08)}
+#navLinks a.active{color:var(--green);background:var(--green-soft)}
+#soundBtn{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:.68rem;letter-spacing:.06em;padding:8px 12px;border-radius:10px;border:1px solid var(--line2);background:var(--solid);cursor:pointer;white-space:nowrap;transition:.2s}
+#soundBtn:hover{border-color:var(--green)}
+#soundBtn.off{color:var(--muted)}
+#soundBtn .ic{width:17px;height:17px;color:var(--green)}
+#soundBtn.off .ic{color:var(--muted)}
+#progressBar{position:absolute;left:0;bottom:-1px;height:2px;width:100%;background:var(--grad-aurora);transform-origin:left;transform:scaleX(0)}
+/* ============ LAYOUT ============ */
+.wrap{max-width:1240px;margin:0 auto;padding:0 24px;position:relative;z-index:1}
+.sec{padding:110px 0 90px;position:relative;scroll-margin-top:calc(var(--nav-h) + 14px);background:radial-gradient(55% 34% at 18% 0%,var(--acc-soft),transparent 65%)}
+.kicker{font-family:var(--mono);font-size:.72rem;letter-spacing:.28em;text-transform:uppercase;color:var(--acc);display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.kicker::before{content:'✦';font-size:.9rem}
+h2{font-size:clamp(1.9rem,4.2vw,3rem);line-height:1.06;letter-spacing:-.015em;font-weight:700;margin-bottom:16px}
+h2 .gr{background:var(--grad-aurora);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lead{color:var(--muted);max-width:74ch;font-size:1.04rem;margin-bottom:36px}
+.lead b{color:var(--ink)}
+[data-reveal]{opacity:0;transform:translateY(26px);transition:opacity .7s ease,transform .7s cubic-bezier(.2,.7,.2,1);transition-delay:var(--d,0s)}
+[data-reveal].in{opacity:1;transform:none}
+/* ============ COMPONENTS ============ */
+.chip{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:.7rem;letter-spacing:.04em;color:var(--muted);border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px}
+.chip b{color:var(--acc)}
+.btn{display:inline-flex;align-items:center;gap:9px;border:none;cursor:pointer;font-weight:700;font-size:.95rem;padding:13px 22px;border-radius:13px;color:#03130c;background:var(--grad-aurora);box-shadow:0 6px 26px rgba(61,255,160,.28);transition:.2s;text-decoration:none}
+.btn:hover{transform:translateY(-2px);box-shadow:0 10px 34px rgba(69,216,255,.4)}
+.btn:active{transform:translateY(0) scale(.98)}
+.btn.warn{background:var(--grad-solar);color:#2a0d02;box-shadow:0 6px 26px rgba(255,77,109,.3)}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line2);box-shadow:none;font-weight:600}
+.btn.ghost:hover{border-color:var(--cyan);box-shadow:0 0 22px rgba(69,216,255,.18)}
+.btn.sm{padding:8px 13px;font-size:.76rem;border-radius:10px;font-family:var(--mono);font-weight:600}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px;position:relative;overflow:hidden;transition:transform .25s,border-color .25s,box-shadow .25s}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--acc),transparent 75%);opacity:.7}
+.card:hover{transform:translateY(-4px);border-color:var(--line2);box-shadow:0 14px 40px rgba(0,0,0,.45),0 0 30px var(--acc-soft)}
+.card h3{font-size:1.12rem;margin-bottom:8px;display:flex;align-items:center;gap:10px}
+.card p{color:var(--muted);font-size:.92rem}
+.card .icon{width:40px;height:40px;border-radius:12px;background:var(--acc-soft);color:var(--acc);display:grid;place-items:center;flex:none}
+.callout{display:flex;gap:13px;align-items:flex-start;padding:15px 17px;border-radius:14px;background:var(--acc-soft);border:1px solid var(--line);border-left:3px solid var(--acc);font-size:.92rem;color:var(--muted)}
+.callout .ic{color:var(--acc);margin-top:2px}
+.callout b{color:var(--ink)}
+.callout.merke{--acc:var(--green);--acc-soft:var(--green-soft)}
+.callout.falle{--acc:var(--amber);--acc-soft:var(--amber-soft)}
+.callout.tip{--acc:var(--cyan);--acc-soft:var(--cyan-soft)}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+.mt{margin-top:26px}.mt-s{margin-top:14px}
+/* ============ SIM STAGES / PANELS ============ */
+.lab-grid{display:grid;grid-template-columns:minmax(0,1fr) 342px;gap:20px;align-items:start}
+.stage{position:relative;height:560px;border-radius:18px;border:1px solid var(--line2);overflow:hidden;isolation:isolate;touch-action:pan-y;
+  background:radial-gradient(90% 90% at 50% 40%,#0a1226,#05070f 80%);box-shadow:inset 0 0 80px rgba(0,0,10,.6),0 10px 44px rgba(0,0,0,.5)}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.stage .ly-t{mix-blend-mode:screen}
+.stage-hint{position:absolute;left:14px;bottom:12px;z-index:5;font-family:var(--mono);font-size:.66rem;color:var(--muted);background:rgba(5,8,18,.75);border:1px solid var(--line);padding:6px 11px;border-radius:999px;pointer-events:none;transition:opacity 1s}
+.stage-hint.gone{opacity:0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:13px;max-height:560px;overflow-y:auto;backdrop-filter:blur(8px)}
+.panel::-webkit-scrollbar{width:8px}
+.panel h4{font-family:var(--mono);font-size:.64rem;letter-spacing:.24em;text-transform:uppercase;color:var(--acc);border-bottom:1px solid var(--line);padding-bottom:7px}
+.ctl{display:flex;flex-direction:column;gap:5px}
+.ctl-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.ctl-head label{font-size:.82rem;font-weight:600}
+.ctl-head output{font-family:var(--mono);font-size:.7rem;color:var(--acc);background:var(--acc-soft);border-radius:7px;padding:3px 8px;white-space:nowrap}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:24px;background:transparent;cursor:pointer;--p:50%}
+input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:99px;background:linear-gradient(90deg,var(--acc) var(--p),#1a2440 var(--p))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid var(--acc);margin-top:-6px;box-shadow:0 0 12px var(--acc);transition:transform .15s}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.2)}
+input[type=range]::-moz-range-track{height:6px;border-radius:99px;background:#1a2440}
+input[type=range]::-moz-range-progress{height:6px;border-radius:99px;background:var(--acc)}
+input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:#fff;border:3px solid var(--acc);box-shadow:0 0 12px var(--acc)}
+.tgl{display:flex;align-items:center;gap:10px;background:none;border:1px solid var(--line);border-radius:10px;padding:8px 11px;cursor:pointer;font-size:.82rem;font-weight:500;text-align:left;transition:.2s;width:100%}
+.tgl:hover{border-color:var(--line2)}
+.tgl .knob{width:34px;height:20px;border-radius:999px;background:#1a2440;position:relative;flex:none;transition:.2s}
+.tgl .knob::after{content:'';position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:#5a6a92;transition:.2s}
+.tgl.on{border-color:var(--acc);color:var(--ink)}
+.tgl.on .knob{background:var(--acc-soft);box-shadow:inset 0 0 0 1px var(--acc)}
+.tgl.on .knob::after{left:17px;background:var(--acc);box-shadow:0 0 9px var(--acc)}
+.seg{display:flex;gap:6px}
+.seg button{flex:1;font-family:var(--mono);font-size:.68rem;padding:9px 6px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--muted);cursor:pointer;transition:.2s;white-space:nowrap}
+.seg button:hover{border-color:var(--line2);color:var(--ink)}
+.seg button.active{background:var(--acc-soft);color:var(--acc);border-color:var(--acc)}
+select{width:100%;background:var(--solid);color:var(--ink);border:1px solid var(--line2);border-radius:10px;padding:9px 10px;font-family:var(--mono);font-size:.76rem;cursor:pointer}
+.btnrow{display:flex;flex-wrap:wrap;gap:8px}
+.ro-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ro{background:var(--solid);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.ro span{font-size:.64rem;font-family:var(--mono);letter-spacing:.06em;color:var(--muted);display:block}
+.ro b{font-family:var(--mono);font-size:.86rem;color:var(--acc);display:block;margin-top:2px;word-break:break-word}
+.note{font-size:.74rem;color:var(--muted);background:var(--acc-soft);border-left:2px solid var(--acc);border-radius:8px;padding:8px 10px;line-height:1.5}
+/* ============ HERO ============ */
+#top{position:relative;min-height:100vh;min-height:100svh;display:flex;align-items:center;overflow:hidden}
+#heroStage{position:absolute;inset:0;border-radius:0;border:none;box-shadow:none;background:#04060f}
+.hero-inner{position:relative;z-index:4;padding-top:calc(var(--nav-h) + 30px);padding-bottom:120px;pointer-events:none}
+.hero-inner .btn,.hero-inner a{pointer-events:auto}
+.hero-kick{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:22px;animation:fadeUp .8s .1s ease both}
+.hero-kick .chip{background:rgba(5,8,18,.6);border-color:var(--line2)}
+h1{font-size:clamp(2.7rem,7.4vw,5.6rem);line-height:.96;letter-spacing:-.025em;font-weight:700;animation:fadeUp .8s .22s ease both}
+h1 .gr{background:var(--grad-aurora);-webkit-background-clip:text;background-clip:text;color:transparent}
+h1 .sol{background:var(--grad-solar);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero-sub{color:var(--muted);max-width:56ch;font-size:clamp(.98rem,1.6vw,1.15rem);margin-top:20px;animation:fadeUp .8s .34s ease both}
+.hero-sub b{color:var(--ink)}
+.hero-formula{display:inline-flex;align-items:center;gap:12px;font-family:var(--mono);font-size:clamp(.95rem,1.8vw,1.25rem);border:1px solid rgba(61,255,160,.4);background:rgba(5,10,20,.65);border-radius:14px;padding:12px 18px;margin-top:24px;box-shadow:0 0 34px rgba(61,255,160,.18);animation:fadeUp .8s .44s ease both,floaty 6s 1s ease-in-out infinite}
+.hero-stats{display:flex;gap:34px;flex-wrap:wrap;margin-top:30px;animation:fadeUp .8s .54s ease both}
+.hero-stats div b{display:block;font-size:1.7rem;font-weight:700;font-family:var(--mono)}
+.hero-stats div:nth-child(1) b{color:var(--amber)}.hero-stats div:nth-child(2) b{color:var(--cyan)}.hero-stats div:nth-child(3) b{color:var(--green)}
+.hero-stats div span{font-size:.7rem;font-family:var(--mono);letter-spacing:.1em;color:var(--muted);text-transform:uppercase}
+.hero-cta{display:flex;gap:14px;flex-wrap:wrap;margin-top:32px;animation:fadeUp .8s .64s ease both}
+.scroll-cue{position:absolute;left:50%;bottom:20px;transform:translateX(-50%);z-index:4;color:var(--muted);font-family:var(--mono);font-size:.62rem;letter-spacing:.3em;text-transform:uppercase;display:flex;flex-direction:column;align-items:center;gap:6px;animation:bob 2.2s ease-in-out infinite}
+.scroll-cue .ic{width:18px;height:18px;color:var(--green)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:none}}
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+@keyframes bob{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,8px)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
+/* ============ SECTION ACCENTS ============ */
+#reise{--acc:var(--amber);--acc-soft:var(--amber-soft)}
+#labor{--acc:var(--cyan);--acc-soft:var(--cyan-soft)}
+#magnet{--acc:var(--violet);--acc-soft:var(--violet-soft)}
+#aurora{--acc:var(--green);--acc-soft:var(--green-soft)}
+#effekte{--acc:var(--magenta);--acc-soft:var(--magenta-soft)}
+#quiz{--acc:var(--blue);--acc-soft:var(--blue-soft)}
+#gfs{--acc:var(--warm);--acc-soft:var(--amber-soft)}
+/* ============ TIMELINE ============ */
+.timeline{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:34px 70px;max-width:1000px;margin:20px auto 0}
+.timeline::before{content:'';position:absolute;left:50%;top:10px;bottom:10px;width:2px;transform:translateX(-50%);background:linear-gradient(180deg,var(--amber),var(--red) 25%,var(--cyan) 50%,var(--violet) 72%,var(--green));opacity:.55;border-radius:2px}
+.station{display:flex;gap:15px;position:relative;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px}
+.station:nth-child(odd){grid-column:1}
+.station:nth-child(even){grid-column:2;margin-top:56px}
+.station::after{content:'';position:absolute;top:28px;width:12px;height:12px;border-radius:50%;background:var(--stc,var(--amber));box-shadow:0 0 14px var(--stc,var(--amber));border:2px solid #04060f}
+.station:nth-child(odd)::after{right:-42px}
+.station:nth-child(even)::after{left:-42px}
+.st-icon{width:46px;height:46px;border-radius:14px;background:color-mix(in srgb,var(--stc) 12%,transparent);color:var(--stc);display:grid;place-items:center;flex:none;border:1px solid color-mix(in srgb,var(--stc) 35%,transparent)}
+.st-body h3{font-size:1.06rem;margin-bottom:6px}
+.st-body p{color:var(--muted);font-size:.88rem}
+.st-stat{margin-top:12px;display:flex;align-items:baseline;gap:9px}
+.st-stat b{font-family:var(--mono);font-size:1.45rem;color:var(--stc);font-weight:700}
+.st-stat span{font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+/* ============ FORMULA / HAND ============ */
+.formula{font-family:var(--mono);font-size:clamp(1.15rem,2.4vw,1.5rem);display:flex;align-items:center;gap:.45em;flex-wrap:wrap;padding:14px 0}
+.term{position:relative;cursor:help;padding:2px 6px;border-radius:8px;transition:.2s;font-weight:700}
+.term:hover{background:rgba(255,255,255,.06);text-shadow:0 0 18px currentColor}
+.vec::before{content:'→';position:absolute;top:-.68em;left:50%;transform:translateX(-50%) scale(.7);font-weight:400}
+.tF{color:var(--green)}.tq{color:var(--pink)}.tv{color:var(--cyan)}.tB{color:var(--violet)}
+.formula-sub{font-family:var(--mono);font-size:.82rem;color:var(--muted);line-height:2}
+.formula-sub b{color:var(--green)}
+.hand-wrap{display:flex;flex-direction:column;align-items:center;gap:8px}
+.hand-badge{font-family:var(--mono);font-size:.66rem;letter-spacing:.08em;padding:6px 13px;border-radius:999px;border:1px solid var(--cyan);color:var(--cyan);background:var(--cyan-soft);transition:.3s;text-align:center}
+.hand-badge.neg{border-color:var(--pink);color:var(--pink);background:rgba(255,122,217,.09)}
+#handSvg{width:min(250px,100%);height:auto}
+#handSvg .finger{transition:.3s}
+#handSvg #fingerF{transform-origin:100px 92px;transition:transform .45s cubic-bezier(.3,1.4,.4,1)}
+#handSvg.neg #fingerF{transform:rotate(180deg)}
+#handSvg .lblFpos,#handSvg .lblFneg{transition:.3s}
+#handSvg.neg .lblFpos{opacity:0}#handSvg:not(.neg) .lblFneg{opacity:0}
+#handSvg [data-hl]{cursor:help}
+#handSvg [data-hl]:hover{filter:drop-shadow(0 0 7px currentColor)}
+.tesla-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
+/* ============ MAGNETO EXTRAS ============ */
+.kp-meter{display:flex;gap:3px}
+.kp-cell{flex:1;height:15px;border-radius:4px;background:#141d38;transition:.3s}
+.kp-cell.on.c-g{background:var(--green);box-shadow:0 0 9px rgba(61,255,160,.6)}
+.kp-cell.on.c-y{background:var(--amber);box-shadow:0 0 9px rgba(255,179,71,.6)}
+.kp-cell.on.c-r{background:var(--red);box-shadow:0 0 9px rgba(255,77,109,.6)}
+.kp-cell.on.c-m{background:var(--magenta);box-shadow:0 0 11px rgba(255,77,216,.7)}
+.kp-line{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--mono)}
+.kp-line b{font-size:1.05rem;color:var(--ink)}
+.kp-line span{font-size:.66rem;color:var(--muted)}
+#kpDesc{font-size:.76rem;color:var(--muted);line-height:1.5}
+#kpDE{display:none;font-family:var(--mono);font-size:.7rem;color:#03130c;background:var(--grad-aurora);border-radius:9px;padding:7px 11px;font-weight:700;animation:pulse 1.6s infinite}
+#kpDE.show{display:block}
+/* ============ CHAMBER ============ */
+.spec-row{display:grid;grid-template-columns:118px 1fr 30px;align-items:center;gap:8px;font-family:var(--mono);font-size:.62rem;color:var(--muted)}
+.spec-row em{font-style:normal;white-space:nowrap}
+.spec-bar{height:10px;border-radius:999px;background:#141d38;overflow:hidden}
+.spec-fill{height:100%;width:0%;border-radius:999px;transition:width .35s;box-shadow:0 0 10px currentColor}
+.spec-row b{color:var(--ink);text-align:right}
+.evt{display:flex;gap:6px;flex-wrap:wrap}
+.evt span{font-family:var(--mono);font-size:.6rem;padding:5px 9px;border-radius:999px;border:1px solid var(--line);color:var(--muted);transition:.25s}
+.evt span.active{color:#03130c;background:var(--green);border-color:var(--green);box-shadow:0 0 12px rgba(61,255,160,.5)}
+.pred-chip{display:flex;align-items:center;gap:9px;font-family:var(--mono);font-size:.72rem;background:var(--solid);border:1px solid var(--line);border-radius:10px;padding:8px 11px}
+.pred-dot{width:12px;height:12px;border-radius:50%;flex:none;box-shadow:0 0 10px currentColor}
+/* ============ EFFECTS / KP MAP ============ */
+.kp-explorer{display:grid;grid-template-columns:430px 1fr;gap:22px;align-items:stretch;margin-bottom:26px}
+#kpMapStage{height:430px}
+.kp-info{display:flex;flex-direction:column;gap:13px}
+#kpMapName{font-size:1.35rem;font-weight:700}
+#kpMapDesc{color:var(--muted);font-size:.92rem;min-height:4.4em}
+#kpMapDE{display:none;align-self:flex-start;font-family:var(--mono);font-size:.72rem;font-weight:700;color:#03130c;background:var(--grad-aurora);border-radius:9px;padding:8px 13px;animation:pulse 1.6s infinite}
+#kpMapDE.show{display:inline-block}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-family:var(--mono);font-size:.62rem;color:var(--muted)}
+.legend i{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:-1px}
+.effect-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.effect-grid .card .chip{margin-top:13px;font-size:.62rem}
+.alltag{display:flex;flex-wrap:wrap;gap:9px;margin-top:24px}
+.alltag .chip{font-size:.72rem;padding:9px 14px}
+/* ============ QUIZ ============ */
+.quiz-card{max-width:790px;margin:0 auto;padding:30px;position:relative;overflow:hidden}
+.q-top{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:20px;flex-wrap:wrap}
+#qDots{display:flex;gap:6px}
+#qDots .dot{width:9px;height:9px;border-radius:50%;background:#1a2440;transition:.3s}
+#qDots .dot.done{background:var(--green);box-shadow:0 0 8px rgba(61,255,160,.5)}
+#qDots .dot.cur{background:var(--blue);transform:scale(1.35);box-shadow:0 0 10px rgba(77,125,255,.7)}
+#qScore{font-family:var(--mono);font-size:.74rem;color:var(--blue)}
+#qText{font-size:1.3rem;font-weight:700;line-height:1.35;margin-bottom:20px;min-height:2.6em}
+#qOpts{display:grid;gap:10px}
+.opt{display:flex;align-items:center;gap:13px;padding:14px 16px;border:1px solid var(--line);border-radius:13px;background:var(--solid);font-size:.94rem;text-align:left;cursor:pointer;transition:.2s}
+.opt .key{font-family:var(--mono);font-size:.7rem;color:var(--blue);border:1px solid var(--line2);border-radius:7px;padding:3px 8px;flex:none}
+.opt:not(:disabled):hover{border-color:var(--blue);transform:translateX(5px);background:var(--blue-soft)}
+.opt:disabled{cursor:default;opacity:.75}
+.opt.correct{border-color:var(--green);background:var(--green-soft);opacity:1;animation:pop .35s}
+.opt.correct .key{color:var(--green);border-color:var(--green)}
+.opt.wrong{border-color:var(--red);background:var(--red-soft);opacity:1;animation:shake .4s}
+.opt.wrong .key{color:var(--red);border-color:var(--red)}
+@keyframes pop{50%{transform:scale(1.025)}}
+@keyframes shake{20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
+#qFeed{display:none;margin-top:18px;padding:15px 17px;border-radius:13px;font-size:.9rem;color:var(--muted);border-left:3px solid var(--green);background:var(--green-soft)}
+#qFeed.bad{border-left-color:var(--red);background:var(--red-soft)}
+#qFeed.show{display:block;animation:fadeUp .4s ease}
+#qFeed b{color:var(--ink)}
+.q-foot{display:flex;justify-content:flex-end;margin-top:18px}
+#qNext{display:none}
+#qNext.show{display:inline-flex}
+#qEnd{display:none;text-align:center;padding:14px 0}
+#qEnd.show{display:block;animation:fadeUp .5s ease}
+.ring-wrap{position:relative;width:150px;height:150px;margin:0 auto 16px}
+.ring-wrap svg{transform:rotate(-90deg)}
+.ring-bg{stroke:#1a2440}
+.ring-fg{stroke:url(#ringGrad);stroke-linecap:round;transition:stroke-dashoffset 1.2s cubic-bezier(.2,.8,.2,1)}
+.ring-txt{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--mono);font-size:1.6rem;font-weight:700}
+#qRank{font-size:1.5rem;margin-bottom:8px}
+#qMsg{color:var(--muted);margin-bottom:22px}
+.cf{position:absolute;width:8px;height:13px;top:38%;left:50%;border-radius:2px;pointer-events:none;animation:cf var(--dur) cubic-bezier(.15,.6,.4,1) forwards}
+@keyframes cf{to{transform:translate(var(--dx),var(--dy)) rotate(var(--rot));opacity:0}}
+/* ============ GFS KIT ============ */
+.kit-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+.plan{list-style:none;display:flex;flex-direction:column;gap:0}
+.plan li{display:flex;gap:14px;padding:12px 0;border-bottom:1px dashed var(--line);align-items:flex-start}
+.plan li:last-child{border:none}
+.plan .t{font-family:var(--mono);font-size:.68rem;color:var(--warm);background:var(--amber-soft);border-radius:7px;padding:4px 8px;flex:none;min-width:52px;text-align:center}
+.plan b{display:block;font-size:.92rem}
+.plan p{font-size:.8rem;color:var(--muted)}
+.facts{width:100%;border-collapse:collapse;font-size:.84rem}
+.facts td{padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+.facts tr:last-child td{border:none}
+.facts td:first-child{color:var(--muted)}
+.facts td:last-child{font-family:var(--mono);font-size:.76rem;color:var(--warm);text-align:right;white-space:nowrap}
+details.qa{border:1px solid var(--line);border-radius:12px;margin-bottom:10px;background:var(--solid);transition:.2s}
+details.qa summary{padding:14px 16px;cursor:pointer;font-weight:600;font-size:.92rem;list-style:none;display:flex;justify-content:space-between;gap:12px;align-items:center}
+details.qa summary::-webkit-details-marker{display:none}
+details.qa summary::after{content:'▾';color:var(--warm);transition:.25s;flex:none}
+details.qa[open]{border-color:rgba(255,217,160,.4);background:var(--amber-soft)}
+details.qa[open] summary::after{transform:rotate(180deg)}
+details.qa .qa-body{padding:0 16px 15px;color:var(--muted);font-size:.88rem}
+.src{font-size:.8rem;color:var(--muted);line-height:2}
+.print-head{display:none}
+footer{border-top:1px solid var(--line);padding:38px 0 46px;color:var(--muted);font-size:.82rem;position:relative;z-index:1}
+footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;align-items:center}
+footer b{color:var(--ink)}
+/* ============ TOAST ============ */
+#toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,80px);z-index:60;background:rgba(8,13,28,.94);border:1px solid var(--green);color:var(--ink);font-size:.86rem;padding:13px 20px;border-radius:13px;box-shadow:0 0 34px rgba(61,255,160,.25);opacity:0;transition:.35s cubic-bezier(.2,.9,.3,1.2);max-width:min(92vw,520px);text-align:center;pointer-events:none}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+#toast.warn{border-color:var(--amber);box-shadow:0 0 34px rgba(255,179,71,.3)}
+/* ============ RESPONSIVE ============ */
+@media (max-width:1080px){
+  .lab-grid{grid-template-columns:minmax(0,1fr) 300px}
+  .effect-grid{grid-template-columns:1fr 1fr}
+  .kp-explorer{grid-template-columns:380px 1fr}
+  #kpMapStage{height:380px}
+}
+@media (max-width:880px){
+  .sec{padding:80px 0 64px}
+  .lab-grid,.kp-explorer,.kit-grid{grid-template-columns:1fr}
+  .panel{max-height:none}
+  .stage{height:420px}
+  #chStage{height:520px}
+  #kpMapStage{height:min(88vw,420px)}
+  .grid3{grid-template-columns:1fr}
+  .grid2{grid-template-columns:1fr}
+  .timeline{grid-template-columns:1fr;gap:20px}
+  .timeline::before{left:12px}
+  .station:nth-child(odd),.station:nth-child(even){grid-column:1;margin-top:0;margin-left:34px}
+  .station:nth-child(odd)::after,.station:nth-child(even)::after{left:-29px;right:auto}
+  .hero-inner{padding-bottom:150px}
+  .logo small{display:none}
+}
+@media (max-width:520px){
+  .wrap{padding:0 16px}
+  .effect-grid{grid-template-columns:1fr}
+  .hero-stats{gap:20px}
+  .stage{height:360px}
+  .quiz-card{padding:20px}
+  #qText{font-size:1.1rem}
+  .nav-inner{padding:0 12px;gap:8px}
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+  [data-reveal]{opacity:1;transform:none}
+}
+/* ============ PRINT: SPICKZETTEL ============ */
+@media print{
+  body{background:#fff;color:#111;font-size:12px}
+  body::after,.orb,#nav,#top,#reise,#labor,#magnet,#aurora,#effekte,#quiz,footer,#toast,.no-print{display:none!important}
+  #gfs{padding:0;background:none;--acc:#0a7a4d;--acc-soft:#eef7f1}
+  .print-head{display:block;margin-bottom:14px;border-bottom:2px solid #0a7a4d;padding-bottom:8px}
+  .print-head h1{font-size:20px;color:#111}
+  .print-head p{color:#444;font-size:11px}
+  .card,details.qa{background:#fff;border:1px solid #bbb;box-shadow:none;color:#111;break-inside:avoid}
+  .card p,.plan p,.qa-body,.src,.callout{color:#333}
+  .card h3,.plan b,details.qa summary{color:#111}
+  .facts td{border-color:#ccc}.facts td:first-child{color:#333}.facts td:last-child{color:#0a5c38}
+  .kicker{color:#0a7a4d}
+  h2{font-size:16px;color:#111}h2 .gr{color:#0a7a4d;-webkit-text-fill-color:#0a7a4d}
+  .lead{color:#333}
+  .callout{background:#f2faf6;border-color:#bbb;border-left-color:#0a7a4d}
+  .plan .t{color:#7a4d00;background:#fdf3e3}
+  details.qa{background:#fff}
+  [data-reveal]{opacity:1;transform:none}
+}
+</style>
+</head>
+<body>
+
+<!-- SVG SYMBOL DEFS ( reused everywhere ) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3dffa0"/><stop offset=".5" stop-color="#45d8ff"/><stop offset="1" stop-color="#8b7bff"/>
+    </linearGradient>
+    <linearGradient id="logoGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffb347"/><stop offset=".5" stop-color="#3dffa0"/><stop offset="1" stop-color="#8b7bff"/>
+    </linearGradient>
+    <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z" fill="url(#logoGrad)" stroke="none"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/></symbol>
+    <symbol id="i-wind" viewBox="0 0 24 24"><path d="M3 8h11a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h8a2.5 2.5 0 1 1-2.5 2.5"/></symbol>
+    <symbol id="i-route" viewBox="0 0 24 24"><circle cx="5" cy="19" r="2.2"/><circle cx="19" cy="5" r="2.2"/><path d="M7 17C11 13 8 9 12 7c2.4-1.2 4-1 5-1" stroke-dasharray="3 3"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 2l8 3.5v5.5c0 5.5-3.4 9.3-8 11-4.6-1.7-8-5.5-8-11V5.5z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></symbol>
+    <symbol id="i-spiral" viewBox="0 0 24 24"><path d="M12 12m0-1a1 1 0 0 1 1 1 2 2 0 0 1-2 2 3.5 3.5 0 0 1-3.5-3.5A5.5 5.5 0 0 1 13 5a8 8 0 0 1 8 8"/></symbol>
+    <symbol id="i-photon" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/><circle cx="12" cy="12" r="3.2"/><path d="M5.6 5.6l2 2M16.4 16.4l2 2M18.4 5.6l-2 2M7.6 16.4l-2 2"/></symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2L4 14h6l-1 8 9-12h-6z"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/></symbol>
+    <symbol id="i-plug" viewBox="0 0 24 24"><path d="M9 2v6M15 2v6M6 8h12v4a6 6 0 0 1-12 0zM12 18v4"/></symbol>
+    <symbol id="i-sat" viewBox="0 0 24 24"><rect x="9" y="9" width="6" height="6" rx="1" transform="rotate(45 12 12)"/><path d="M4 4l4 4M16 16l4 4M2 8l4-4 2 2-4 4zM16 20l4-4 2 2-4 4z"/></symbol>
+    <symbol id="i-steve" viewBox="0 0 24 24"><path d="M3 16c5-8 13-8 18 0" /><path d="M6 19v-2M9 19v-3M12 19v-2M15 19v-3M18 19v-2"/></symbol>
+    <symbol id="i-planet" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/><path d="M3.5 9.5c-2 1.5-2.5 3-1 4 2.5 1.7 12 1 17-2 1.7-1 2-2.3.5-3.3"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5v.5"/></symbol>
+    <symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 3L2 20h20zM12 10v4M12 17v.5"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M4 12.5l5 5L20 6.5"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+    <symbol id="i-sound" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9zM16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/></symbol>
+    <symbol id="i-mute" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9zM16 9l5 6M21 9l-5 6"/></symbol>
+    <symbol id="i-hand" viewBox="0 0 24 24"><path d="M8 12V5.5a1.5 1.5 0 0 1 3 0V11M11 11V4.5a1.5 1.5 0 0 1 3 0V11M14 11V6a1.5 1.5 0 0 1 3 0v7c0 4-2.5 7-6 7s-5-2-6.5-5L3 12.5a1.6 1.6 0 0 1 2.6-1.8L8 13"/></symbol>
+    <symbol id="i-print" viewBox="0 0 24 24"><path d="M7 8V3h10v5M7 17H4a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-3"/><rect x="7" y="14" width="10" height="7"/></symbol>
+    <symbol id="i-cam" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.5"/></symbol>
+  </defs>
+</svg>
+
+<div class="orb orb1"></div><div class="orb orb2"></div><div class="orb orb3"></div>
+
+<!-- ============ NAV ============ -->
+<nav id="nav" class="no-print" aria-label="Hauptnavigation">
+  <div class="nav-inner">
+    <a class="logo" href="#top"><svg class="ic" style="stroke:none"><use href="#i-spark"/></svg><span>AURORA<em>/</em>LAB<small>GFS · PHYSIK · K9</small></span></a>
+    <div id="navLinks">
+      <a href="#reise">Reise</a><a href="#labor">Labor</a><a href="#magnet">Magnetosphäre</a><a href="#aurora">Aurora</a><a href="#effekte">Effekte</a><a href="#quiz">Quiz</a><a href="#gfs">GFS-Kit</a>
+    </div>
+    <button id="soundBtn" aria-pressed="true" title="Alle Sounds an/aus (startet nach dem ersten Klick — Browser-Regel)">
+      <svg class="ic"><use id="soundUse" href="#i-sound"/></svg><span id="soundLbl">Ton an</span>
+    </button>
+  </div>
+  <div id="progressBar"></div>
+</nav>
+
+<!-- ============ HERO ============ -->
+<header id="top">
+  <div id="heroStage" class="stage" aria-label="Animation: Sonnenwind trifft auf das Magnetfeld der Erde"></div>
+  <div class="wrap hero-inner">
+    <div class="hero-kick">
+      <span class="chip">🎓 <b>GFS-PRESENTATION</b> · PHYSIK · KLASSE 9</span>
+      <span class="chip">SONNE → ERDE · <b>150 MIO KM</b></span>
+    </div>
+    <h1>Die <span class="sol">Lorentzkraft</span><br>&amp; das <span class="gr">Polarlicht</span></h1>
+    <p class="hero-sub">Geladene Teilchen rasen von der Sonne auf uns zu — und das Magnetfeld der Erde zwingt sie in die Knie. <b>Eine einzige Kraft</b> erklärt Schutzschild, Spiralen, Van-Allen-Gürtel und die leuchtenden Vorhänge am Nachthimmel. Erlebe sie live.</p>
+    <div class="hero-formula"><span class="term tF vec">F</span><span>=</span><span class="term tq">q</span><span>·</span><span>(</span><span class="term tv vec">v</span><span>×</span><span class="term tB vec">B</span><span>)</span><span style="color:var(--muted);font-size:.68rem">— lenkt, ohne zu beschleunigen</span></div>
+    <div class="hero-stats">
+      <div><b><span data-count="800">0</span> km/s</b><span>Sonnenwind-Tempo</span></div>
+      <div><b><span data-count="48">0</span> µT</b><span>Erdmagnetfeld (DE)</span></div>
+      <div><b><span data-count="557.7" data-dec="1">0</span> nm</b><span>das berühmte Grün</span></div>
+    </div>
+    <div class="hero-cta">
+      <a class="btn" href="#labor">⚡ Simulation starten</a>
+      <a class="btn ghost" href="#reise">Die Reise verstehen ↓</a>
+    </div>
+  </div>
+  <div class="stage-hint" id="heroHint" style="position:absolute;z-index:5;left:20px;bottom:64px">🧲 Maus bewegen = Magnetfeld-Störung · Klick = Sonnenausbruch (CME)</div>
+  <div class="scroll-cue">Scrollen<svg class="ic"><use href="#i-chev"/></svg></div>
+</header>
+
+<main>
+<!-- ============ REISE ============ -->
+<section id="reise" class="sec">
+  <div class="wrap">
+    <div class="kicker" data-reveal>Station für Station</div>
+    <h2 data-reveal>Die Reise eines <span class="gr">Sonnen­teilchens</span></h2>
+    <p class="lead" data-reveal>Von der glühenden Korona bis zum Photon über deinem Kopf: <b>sechs Stationen</b>, 150 Millionen Kilometer — und überall wirkt die Lorentzkraft. Folge dem Weg, den du gleich in den Simulationen selbst steuern kannst.</p>
+    <ol class="timeline" id="timeline"></ol>
+    <div class="callout merke mt" data-reveal><svg class="ic"><use href="#i-info"/></svg><div><b>Merke für die GFS:</b> Die Lorentzkraft <b>F = |q|·v·B·sinα</b> wirkt nur auf <b>bewegte Ladungen</b> im Magnetfeld — und immer <b>senkrecht</b> zur Bewegung. Sie ist der rote Faden durch alle sechs Stationen.</div></div>
+  </div>
+</section>
+
+<!-- ============ LORENTZ-LABOR ============ -->
+<section id="labor" class="sec">
+  <div class="wrap">
+    <div class="kicker" data-reveal>Interaktiv · Live-Physik</div>
+    <h2 data-reveal>Das <span class="gr">Lorentz-Labor</span></h2>
+    <p class="lead" data-reveal>Ein Teilchen, ein Magnetfeld — und du hast alle Regler in der Hand. <b>Ändere Ladung, Tempo und Feldstärke</b> und beobachte, wie sich Kraft, Radius und Drehsinn sofort anpassen. Die Vektoren sind farblich mit der Formel verknüpft: <b style="color:var(--cyan)">v</b> · <b style="color:var(--violet)">B</b> · <b style="color:var(--green)">F</b>. Fahre über die Formel, um den passenden Pfeil hervorzuheben!</p>
+    <div class="lab-grid" data-reveal>
+      <div id="labStage" class="stage"><div class="stage-hint">Vektoren: cyan = v · violett = B · grün = F · Formel unten berühren zum Hervorheben</div></div>
+      <aside id="labPanel" class="panel" aria-label="Steuerung Lorentz-Labor"></aside>
+    </div>
+    <div class="grid3 mt">
+      <div class="card" data-reveal id="labFormula">
+        <h3><span class="icon"><svg class="ic"><use href="#i-bolt"/></svg></span>Die Formel — zum Anfassen</h3>
+        <div class="formula"><span class="term tF vec" data-hl="F" tabindex="0">F</span>=<span class="term tq" data-hl="q" tabindex="0">q</span>·(<span class="term tv vec" data-hl="v" tabindex="0">v</span>×<span class="term tB vec" data-hl="B" tabindex="0">B</span>)</div>
+        <div class="formula-sub">Betrag: F = |q|·v·B·sinα &nbsp;·&nbsp; <span id="labSin">sin 90° = 1</span><br>Live: F = <b id="labFnum">–</b><br><span style="font-size:.7rem">Das × ist ein Kreuzprodukt: Es liefert die <b>Richtung</b> — dafür gibt es die Drei-Finger-Regel →</span></div>
+        <div class="tesla-chips">
+          <span class="chip">Erde (DE): <b>≈ 48 µT</b></span><span class="chip">Kühlschrankmagnet: <b>≈ 5 mT</b></span><span class="chip">MRT: <b>1,5–3 T</b></span><span class="chip"><b>1 T = 1 N/(A·m)</b></span>
+        </div>
+      </div>
+      <div class="card" data-reveal style="--d:.08s">
+        <h3><span class="icon"><svg class="ic"><use href="#i-hand"/></svg></span>Drei-Finger-Regel</h3>
+        <div class="hand-wrap">
+          <div class="hand-badge" id="handBadge">RECHTE Hand · für positive Ladung (+)</div>
+          <svg id="handSvg" viewBox="0 0 200 168" aria-label="Schema der Drei-Finger-Regel">
+            <path d="M78 118 q-14 -10 -12 -30 q2 -16 18 -20 l34 -6 q18 -2 24 12 q6 14 -4 26 l-22 24 q-16 12 -38 -6z" fill="rgba(122,160,255,.07)" stroke="rgba(122,160,255,.35)" stroke-width="1.5"/>
+            <g class="finger" data-hl="v" style="color:var(--cyan)"><line x1="100" y1="92" x2="100" y2="26" stroke="var(--cyan)" stroke-width="7" stroke-linecap="round"/><path d="M100 14l-8 16h16z" fill="var(--cyan)"/><text x="112" y="26" fill="var(--cyan)" font-size="12" font-family="JetBrains Mono,monospace" font-weight="700">v · Daumen</text></g>
+            <g class="finger" data-hl="B" style="color:var(--violet)"><line x1="100" y1="92" x2="168" y2="92" stroke="var(--violet)" stroke-width="7" stroke-linecap="round"/><path d="M182 92l-16 -8v16z" fill="var(--violet)"/><text x="128" y="80" fill="var(--violet)" font-size="12" font-family="JetBrains Mono,monospace" font-weight="700">B · Zeige</text></g>
+            <g class="finger" id="fingerF" data-hl="F" style="color:var(--green)"><line x1="100" y1="92" x2="56" y2="136" stroke="var(--green)" stroke-width="7" stroke-linecap="round"/><path d="M46 146l4 -17 13 13z" fill="var(--green)"/></g>
+            <text class="lblFpos" x="14" y="162" fill="var(--green)" font-size="12" font-family="JetBrains Mono,monospace" font-weight="700">F · Mittel</text>
+            <text class="lblFneg" x="118" y="46" fill="var(--green)" font-size="12" font-family="JetBrains Mono,monospace" font-weight="700">F · Mittel (um!)</text>
+            <path d="M100 74 a18 18 0 0 1 18 18" fill="none" stroke="rgba(238,243,255,.4)" stroke-width="1"/><text x="112" y="70" fill="rgba(238,243,255,.55)" font-size="9" font-family="JetBrains Mono,monospace">90°</text>
+          </svg>
+          <p style="font-size:.76rem;color:var(--muted);text-align:center">Alle drei Finger stehen <b>senkrecht</b> aufeinander. Bei Elektronen (−): <b>linke Hand</b> nehmen — oder rechte Hand &amp; <b style="color:var(--green)">F</b> umdrehen. Probier im Labor das Positron/Elektron!</p>
+        </div>
+      </div>
+      <div class="card" data-reveal style="--d:.16s">
+        <h3><span class="icon"><svg class="ic"><use href="#i-spiral"/></svg></span>Warum ein Kreis?</h3>
+        <p>F steht <b>immer senkrecht auf v</b> → die Kraft ändert nur die Richtung, nie das Tempo. Eine konstante Kraft, die immer zur Seite zieht, ist eine <b>Zentripetalkraft</b> → Kreisbahn!</p>
+        <div class="formula-sub mt-s">Radius: <b>r = m·v / (|q|·B)</b><br>Umlaufzeit: <b>T = 2π·m / (|q|·B)</b></div>
+        <p class="mt-s" style="font-size:.82rem">Schneller ⇒ größerer Kreis. Stärkeres Feld ⇒ engerer Kreis. Schwerer (Proton!) ⇒ viel größerer Kreis. <b>Fun-Fact:</b> Ein 1000-km/s-Elektron kreist im Erdfeld mit nur <b>≈ 11 cm</b> Radius — ein Proton braucht <b>≈ 209 m</b>: zwei Fußballfelder!</p>
+        <div class="callout falle mt-s" style="font-size:.8rem"><svg class="ic"><use href="#i-warn"/></svg><div><b>GFS-Falle:</b> Die Lorentzkraft verrichtet <b>keine Arbeit</b> (F ⊥ v). Wer sagt „sie beschleunigt die Teilchen“, bekommt Nachfragen!</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ MAGNETOSPHÄRE ============ -->
+<section id="magnet" class="sec">
+  <div class="wrap">
+    <div class="kicker" data-reveal>Der Schutzschild der Erde</div>
+    <h2 data-reveal>Magnetosphäre <span class="gr">im Sturm</span></h2>
+    <p class="lead" data-reveal>Jetzt der große Maßstab: Der Sonnenwind trifft auf das <b>Dipolfeld der Erde</b>. Die Lorentzkraft lenkt Protonen und Elektronen in <b>entgegengesetzte</b> Richtungen ab — klick ein Teilchen an und sieh seine Vektoren live! Drehe das Sonnen-Magnetfeld (IMF) nach <b>Süden</b> und löse einen <b>CME-Sturm</b> aus: Der Kp-Index steigt… und Deutschland bekommt Polarlicht. <span style="font-size:.8rem">(Vereinfachtes 2D-Modell — echte Teilchen spiralen in 3D.)</span></p>
+    <div class="lab-grid" data-reveal>
+      <div id="magStage" class="stage"><div class="stage-hint">🔍 Klick auf ein Teilchen = Vektor-Inspektor · Klick ins Leere = loslassen</div></div>
+      <aside id="magPanel" class="panel" aria-label="Steuerung Magnetosphäre"></aside>
+    </div>
+    <div class="grid3 mt">
+      <div class="card" data-reveal><h3><span class="icon"><svg class="ic"><use href="#i-shield"/></svg></span>Bugschock &amp; Magnetopause</h3><p>Der Sonnenwind ist schneller, als sich Wellen im Plasma ausbreiten — also staut er sich zu einem <b>Bugschock</b>, wie die Bugwelle eines Speedboots. Dahinter liegt die <b>Magnetopause</b> (Tagseite ≈ 10 Erdradien ≈ 64.000 km): Hier balancieren Magnetdruck und Winddruck. Die Ladungstrennung (p⁺ ↔ e⁻) erzeugt dort echte <b>Ströme</b> — den Chapman-Ferraro-Strom.</p></div>
+      <div class="card" data-reveal style="--d:.08s"><h3><span class="icon"><svg class="ic"><use href="#i-spiral"/></svg></span>Van-Allen-Gürtel &amp; Spiegel</h3><p>Eingefangene Teilchen <b>spiralen</b> entlang der Feldlinien und pendeln zwischen Nord und Süd. Richtung Pol wird B stärker → r = mv⊥/(qB) wird enger → das Teilchen wird <b>zurückgespiegelt</b> („magnetische Flasche“). Wer zu steil einfällt (Verlustkegel), schafft es bis in die Atmosphäre: <b>Polarlicht!</b> Die Gürtel: innen Protonen, außen Elektronen.</p></div>
+      <div class="card" data-reveal style="--d:.16s"><h3><span class="icon"><svg class="ic"><use href="#i-bolt"/></svg></span>Rekonnexion &amp; Substurm</h3><p>Zeigt das mitreisende Sonnen-Magnetfeld (IMF) nach <b>Süden</b>, verbinden sich die Feldlinien am <b>X-Punkt</b> („magnetische Rekonnexion“) — Energie flutet ins System. Der Schweif schnippt Teilchenpakete (<b>Plasmoide</b>) zurück Richtung Erde. Das Oval wächst nach Süden, der <b>Kp-Index</b> steigt. Genau das passierte beim G5-Sturm am <b>10. Mai 2024</b> — Polarlicht über fast ganz Deutschland!</p></div>
+    </div>
+    <div class="callout merke mt" data-reveal><svg class="ic"><use href="#i-check"/></svg><div><b>Merke:</b> Ohne Magnetfeld hätte die Erde ihre Atmosphäre wohl längst an den Sonnenwind verloren — vermutlich ist genau das dem <b>Mars</b> passiert, nachdem sein Feld erstarb.</div></div>
+  </div>
+</section>
+
+<!-- ============ AURORA-KAMMER ============ -->
+<section id="aurora" class="sec">
+  <div class="wrap">
+    <div class="kicker" data-reveal>Die Farbfabrik des Himmels</div>
+    <h2 data-reveal>Die <span class="gr">Aurora-Kammer</span></h2>
+    <p class="lead" data-reveal>Warum leuchtet der Himmel <b>grün, rot, blau und pink</b>? Weil die <b>Energie</b> der Elektronen entscheidet, <b>wie tief</b> sie in die Atmosphäre eindringen — und dort auf verschiedene Gase treffen. Schiebe die Energie hoch und sieh die Farbe wechseln. Das Spektrum rechts zählt jedes Photon. <b>Achtung auf die Wartezeiten:</b> Rot braucht 110 Sekunden — unten wird es vorher „weggestoßen“ (Stoßlöschung)!</p>
+    <div class="lab-grid" data-reveal>
+      <div id="chStage" class="stage" style="height:620px"><div class="stage-hint">⚡ Elektronen spiralen die Feldlinie hinab — Kollision → Anregung → Photon</div></div>
+      <aside id="chPanel" class="panel" style="max-height:620px" aria-label="Steuerung Aurora-Kammer"></aside>
+    </div>
+    <div class="grid2 mt">
+      <div class="card" data-reveal><h3><span class="icon" style="color:var(--green);background:var(--green-soft)"><svg class="ic"><use href="#i-photon"/></svg></span>Grün — 557,7 nm · Sauerstoff</h3><p>Der Klassiker in <b>100–150 km</b> Höhe: Ein Elektron trifft ein <b>O-Atom</b>, hebt es in einen angeregten Zustand — nach <b>≈ 0,7 s</b> fällt es zurück und sendet grünes Licht. Unsere Augen sind für Grün am empfindlichsten, darum wirkt es am hellsten. Mittlere Elektronen-Energie (ein paar keV) landet genau in dieser Schicht.</p></div>
+      <div class="card" data-reveal style="--d:.06s"><h3><span class="icon" style="color:var(--red);background:var(--red-soft)"><svg class="ic"><use href="#i-photon"/></svg></span>Rot — 630,0 nm · nur ganz oben</h3><p>Dasselbe O-Atom, anderer Übergang: <b>≈ 110 s</b> Wartezeit („metastabil“). Unter ~200 km kracht so oft anderes Zeug ins Atom, dass die Energie vorher als Wärme verloren geht — <b>Stoßlöschung</b>. Nur in der dünnen hohen Atmosphäre (&gt;200 km, langsamer Elektronenregen) überlebt die Anregung lang genug → rotes Glühen, oft als Schleier über dem Grün.</p></div>
+      <div class="card" data-reveal style="--d:.12s"><h3><span class="icon" style="color:var(--blue);background:var(--blue-soft)"><svg class="ic"><use href="#i-photon"/></svg></span>Blau &amp; Violett — 427,8 / 391,4 nm · N₂⁺</h3><p>Unter <b>100 km</b> dominieren Stickstoff-Moleküle und -Ionen. Hier landen nur <b>sehr energiereiche Elektronen (&gt;10 keV)</b> — bei starken Stürmen. N₂⁺ sendet blaue und violette Banden. Weil unser Auge dort unempfindlich ist, sieht man sie meist nur auf Fotos oder in extrem hellen Nächten.</p></div>
+      <div class="card" data-reveal style="--d:.18s"><h3><span class="icon" style="color:var(--pink);background:rgba(255,122,217,.09)"><svg class="ic"><use href="#i-steve"/></svg></span>Pinker Saum &amp; tanzende Vorhänge</h3><p>Bei starkem Regen erreichen Teilchen <b>80–90 km</b> Höhe: N₂ leuchtet dort in roten Banden, gemischt mit Blau ergibt das den <b>pinken unteren Saum</b> — ein Zeichen für einen heftigen Substurm. Und die <b>Vorhangform</b>? Die Elektronen regnen entlang dünner, fächerartiger Feldlinien-Schichten. Wellen im Feld lassen die Vorhänge falten und tanzen.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ EFFEKTE ============ -->
+<section id="effekte" class="sec">
+  <div class="wrap">
+    <div class="kicker" data-reveal>Mehr als nur hübsches Licht</div>
+    <h2 data-reveal>Verwandte Effekte <span class="gr">&amp; Gefahren</span></h2>
+    <p class="lead" data-reveal>Dieselbe Physik erklärt Südlicht, Blackouts und verglühte Satelliten. <b>Steuere den Kp-Index</b> (0–9, weltweiter Maßstab für geomagnetische Aktivität) und sieh, wie weit das Polarlicht-Oval Richtung Äquator wandert — und ab wann <b>Deutschland</b> etwas abbekommt.</p>
+    <div class="kp-explorer" data-reveal>
+      <div id="kpMapStage" class="stage"><div class="stage-hint">Blick auf den Nordpol · Oval wandert mit Kp nach Süden</div></div>
+      <div class="kp-info">
+        <div id="kpPanel" class="panel" style="max-height:none"></div>
+        <div id="kpMapName">Kp 4 — Aktiv</div>
+        <p id="kpMapDesc"></p>
+        <span id="kpMapDE">🇩🇪 Polarlicht in Deutschland sichtbar!</span>
+        <div class="legend"><span><i style="background:var(--green)"></i>Oval (Grün)</span><span><i style="background:var(--red)"></i>Rot-Rand bei Sturm</span><span><i style="background:var(--cyan)"></i>Stadt sieht Aurora</span><span><i style="background:#39445f"></i>Stadt im Dunkeln</span></div>
+        <div class="callout tip" style="font-size:.8rem"><svg class="ic"><use href="#i-info"/></svg><div><b>Aktuell:</b> Sonnenzyklus 25 hatte sein Maximum um <b>2024–2026</b> — deshalb gab es zuletzt so viele Polarlicht-Nächte über Deutschland. Beste Chancen: dunkler Ort, Blick nach Norden, Kamera-Langzeitbelichtung!</div></div>
+      </div>
+    </div>
+    <div class="effect-grid" id="effectGrid"></div>
+    <div class="alltag" data-reveal>
+      <span class="chip" style="--acc:var(--magenta)"><b>LORENTZKRAFT IM ALLTAG:</b></span>
+      <span class="chip">⚙️ Elektromotor</span><span class="chip">📺 Röhren-TV (Ablenkspulen)</span><span class="chip">🧪 Massenspektrometer</span><span class="chip">⚛️ CERN-Beschleuniger</span><span class="chip">🧭 Hall-Sensor im Handy</span><span class="chip">🚄 Magnetschwebebahn</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ QUIZ ============ -->
+<section id="quiz" class="sec">
+  <div class="wrap">
+    <div class="kicker" data-reveal>Check dein Wissen</div>
+    <h2 data-reveal>Das <span class="gr">GFS-Quiz</span></h2>
+    <p class="lead" data-reveal>Neun Fragen, wie sie deine Lehrerin oder dein Lehrer stellen könnte. Jede Antwort wird sofort erklärt — <b>perfekt zum Üben vor der Präsentation</b>. Tastatur: <b>1–4</b> wählen, <b>Enter</b> für weiter.</p>
+    <div class="card quiz-card" data-reveal id="quizCard">
+      <div id="qBody">
+        <div class="q-top"><div id="qDots"></div><div id="qScore">Punkte: 0 / 9</div></div>
+        <div id="qText"></div>
+        <div id="qOpts"></div>
+        <div id="qFeed"></div>
+        <div class="q-foot"><button class="btn sm" id="qNext">Weiter →</button></div>
+      </div>
+      <div id="qEnd">
+        <div class="ring-wrap">
+          <svg width="150" height="150"><circle class="ring-bg" cx="75" cy="75" r="62" fill="none" stroke-width="10"/><circle class="ring-fg" id="ringFg" cx="75" cy="75" r="62" fill="none" stroke-width="10" stroke-dasharray="389.6" stroke-dashoffset="389.6"/></svg>
+          <div class="ring-txt" id="ringTxt">0/9</div>
+        </div>
+        <h3 id="qRank"></h3><p id="qMsg"></p>
+        <button class="btn" id="qRestart">↺ Noch eine Runde</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ GFS-KIT ============ -->
+<section id="gfs" class="sec">
+  <div class="wrap">
+    <div class="print-head"><h1>Lorentzkraft &amp; Polarlicht — GFS-Spickzettel</h1><p>Physik · Klasse 9 · Sonne → Magnetosphäre → Aurora · F = |q|·v·B·sinα</p></div>
+    <div class="kicker" data-reveal>Dein Vorteil vor der Klasse</div>
+    <h2 data-reveal>Das <span class="gr">GFS-Kit</span></h2>
+    <p class="lead" data-reveal>Fertiger Ablaufplan, alle Schlüsselzahlen, die typischen Lehrerfragen mit Antworten — und ein <b>Druck-Button</b>, der dir daraus einen sauberen Spickzettel macht. <b>Tipp:</b> Diese Seite mit <b>Strg+S</b> speichern — alle Simulationen laufen offline, direkt im Browser.</p>
+    <div class="kit-grid">
+      <div class="card" data-reveal>
+        <h3><span class="icon"><svg class="ic"><use href="#i-route"/></svg></span>Ablaufplan (≈ 15 Minuten)</h3>
+        <ol class="plan" id="planList"></ol>
+        <div class="callout tip mt-s no-print" style="font-size:.8rem"><svg class="ic"><use href="#i-info"/></svg><div><b>GFS-Tipp:</b> Lass die Klasse die Drei-Finger-Regel mit der eigenen Hand nachmachen — und drücke den <b>Sturm-Button</b> live. Das bleibt hängen.</div></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:20px">
+        <div class="card" data-reveal style="--d:.06s">
+          <h3><span class="icon"><svg class="ic"><use href="#i-bolt"/></svg></span>Formeln &amp; Merksätze</h3>
+          <div class="formula-sub">Lorentzkraft: <b>F = |q|·v·B·sinα</b> (α = Winkel v↔B)<br>Kreisradius: <b>r = m·v⊥ / (|q|·B)</b> · Umlaufzeit: <b>T = 2π·m / (|q|·B)</b><br>Einheit: <b>[B] = 1 Tesla = 1 N/(A·m)</b> · Ladung: e = 1,602·10⁻¹⁹ C</div>
+          <div class="callout merke mt-s" style="font-size:.82rem"><svg class="ic"><use href="#i-check"/></svg><div><b>Lenken ≠ Beschleunigen:</b> F ⊥ v → keine Arbeit → Tempo bleibt gleich.</div></div>
+          <div class="callout falle mt-s" style="font-size:.82rem"><svg class="ic"><use href="#i-warn"/></svg><div><b>Elektronen:</b> linke Hand (oder rechte + F umdrehen). <b>Grün = O bei 100–150 km.</b></div></div>
+        </div>
+        <div class="card" data-reveal style="--d:.12s">
+          <h3><span class="icon"><svg class="ic"><use href="#i-info"/></svg></span>Schlüsselzahlen</h3>
+          <table class="facts"><tbody id="factsTable"></tbody></table>
+        </div>
+      </div>
+    </div>
+    <div class="card mt" data-reveal>
+      <h3><span class="icon"><svg class="ic"><use href="#i-hand"/></svg></span>Typische Lehrerfragen — mit Antworten</h3>
+      <div id="qaList" class="mt-s"></div>
+    </div>
+    <div class="grid2 mt">
+      <div class="card" data-reveal>
+        <h3><span class="icon"><svg class="ic"><use href="#i-globe"/></svg></span>Quellen zum Weiterlesen</h3>
+        <p class="src">NASA Space Place &amp; NASA Goddard (Space Weather) · ESA Space Weather Office · <b>GFZ Potsdam</b> (Kp-Index, Heimat des Index!) · NOAA Space Weather Prediction Center · Spektrum der Wissenschaft: „Polarlichter“ · Wikipedia: Lorentzkraft / Polarlicht / Carrington-Ereignis.<br><span style="font-size:.72rem">Namensgeber: <b>Hendrik Antoon Lorentz</b> (1853–1928), Nobelpreis Physik 1902.</span></p>
+      </div>
+      <div class="card no-print" data-reveal style="--d:.06s">
+        <h3><span class="icon"><svg class="ic"><use href="#i-print"/></svg></span>Handout &amp; Backup</h3>
+        <p>Drucke diesen Abschnitt als Spickzettel (Simulationen werden automatisch ausgeblendet, alle Lehrerfragen aufgeklappt). Und in den Laboren oben wartet jeweils ein <b>📸 Export-Button</b>: Er speichert das aktuelle Simulationsbild als PNG — perfekt für dein Handout.</p>
+        <div class="btnrow mt-s"><button class="btn" id="printBtn"><svg class="ic" style="width:18px;height:18px"><use href="#i-print"/></svg>Spickzettel drucken</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer class="no-print">
+  <div class="wrap">
+    <div><b>AURORA/LAB</b> — gebaut für deine GFS · Physik Klasse 9 · Alle Simulationen laufen lokal, auch offline.</div>
+    <div style="font-family:var(--mono);font-size:.68rem">F = q·(v × B) · H. A. Lorentz · Nobelpreis 1902 · 2026</div>
+  </div>
+</footer>
+
+<div id="toast" role="status" aria-live="polite"></div>
+<noscript><div style="position:fixed;inset:0;background:#04060f;color:#eef3ff;display:grid;place-items:center;z-index:99;padding:30px;text-align:center">Diese Seite braucht JavaScript für die Simulationen. Bitte aktiviere es — dann startet die Reise von der Sonne zur Erde.</div></noscript>
+
+<script>
+(function(){
+'use strict';
+/* ================= UTILS ================= */
+const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
+const clamp=(v,a,b)=>v<a?a:v>b?b:v, lerp=(a,b,t)=>a+(b-a)*t, rand=(a,b)=>a+Math.random()*(b-a);
+const TAU=Math.PI*2, RAD=Math.PI/180;
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const isSmall=()=>innerWidth<760;
+const de=(v,d=1)=>v.toFixed(d).replace('.',',');
+const SUP='⁰¹²³⁴⁵⁶⁷⁸⁹';
+const sup=n=>(n<0?'⁻':'')+String(Math.abs(n)).split('').map(c=>SUP[+c]).join('');
+function sci(v,d=1){if(v===0)return'0';const e=Math.floor(Math.log10(Math.abs(v)));return de(v/Math.pow(10,e),d)+'·10'+sup(e);}
+function fmtLen(m){if(m<0.01)return de(m*1000,1)+' mm';if(m<1)return de(m*100,1)+' cm';if(m<1000)return de(m,1)+' m';return de(m/1000,1)+' km';}
+function fmtTime(s){if(s<1e-3)return de(s*1e6,2)+' µs';if(s<1)return de(s*1e3,2)+' ms';return de(s,2)+' s';}
+function hexA(hex,a){const n=parseInt(hex.slice(1),16);return`rgba(${n>>16&255},${n>>8&255},${n&255},${a})`;}
+const PAL={green:'#3dffa0',cyan:'#45d8ff',violet:'#8b7bff',red:'#ff4d6d',amber:'#ffb347',magenta:'#ff4dd8',blue:'#4d7dff',pink:'#ff7ad9',gray:'#9aa7c7',white:'#eef3ff',pale:'#cfe8ff',orange:'#ff8c3b'};
+if(!CanvasRenderingContext2D.prototype.roundRect){CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){r=Math.min(r,w/2,h/2);this.moveTo(x+r,y);this.arcTo(x+w,y,x+w,y+h,r);this.arcTo(x+w,y+h,x,y+h,r);this.arcTo(x,y+h,x,y,r);this.arcTo(x,y,x+w,y,r);this.closePath();return this;};}
+const MONO='"JetBrains Mono",monospace';
+/* sprites */
+const spriteCache={};
+function glow(color){let s=spriteCache[color];if(s)return s;s=document.createElement('canvas');s.width=s.height=64;const x=s.getContext('2d');const g=x.createRadialGradient(32,32,0,32,32,32);g.addColorStop(0,'rgba(255,255,255,.95)');g.addColorStop(.16,hexA(color,.9));g.addColorStop(.45,hexA(color,.3));g.addColorStop(1,hexA(color,0));x.fillStyle=g;x.fillRect(0,0,64,64);spriteCache[color]=s;return s;}
+function stamp(x,color,px,py,size,alpha=1){x.globalAlpha=alpha;x.drawImage(glow(color),px-size/2,py-size/2,size,size);x.globalAlpha=1;}
+function arrow(x,px,py,dx,dy,o={}){const len=Math.hypot(dx,dy);if(len<3)return;const c=o.color||'#fff',w=o.width||2.5;x.save();x.globalAlpha=o.alpha??1;x.strokeStyle=c;x.fillStyle=c;x.lineWidth=w;x.lineCap='round';x.beginPath();x.moveTo(px,py);x.lineTo(px+dx,py+dy);x.stroke();const a=Math.atan2(dy,dx),hs=5+w*2;x.beginPath();x.moveTo(px+dx,py+dy);x.lineTo(px+dx-hs*Math.cos(a-.42),py+dy-hs*Math.sin(a-.42));x.lineTo(px+dx-hs*Math.cos(a+.42),py+dy-hs*Math.sin(a+.42));x.closePath();x.fill();if(o.label){x.font='700 12px '+MONO;const tw=x.measureText(o.label).width;const lx=px+dx+(dx/len)*14-tw/2,ly=py+dy+(dy/len)*14;x.fillStyle='rgba(5,8,18,.8)';x.beginPath();x.roundRect(lx-5,ly-11,tw+10,17,5);x.fill();x.fillStyle=c;x.fillText(o.label,lx,ly+2);}x.restore();}
+function tag(x,px,py,text,color,o={}){x.save();x.font=(o.font||'600 11px ')+MONO;const tw=x.measureText(text).width;let lx=o.align==='right'?px-tw-14:o.align==='center'?px-tw/2-7:px+7;lx=clamp(lx,4,x.canvas.clientWidth-tw-18);const ly=clamp(py,14,(x.canvas.clientHeight||600)-10);x.globalAlpha=o.alpha??1;x.fillStyle='rgba(5,8,18,.82)';x.beginPath();x.roundRect(lx,ly-12,tw+14,19,6);x.fill();x.strokeStyle=hexA(color,.4);x.lineWidth=1;x.stroke();x.fillStyle=color;x.fillText(text,lx+7,ly+2);x.restore();}
+function symbolB(x,px,py,out,size,alpha){x.save();x.globalAlpha=alpha;x.strokeStyle=PAL.violet;x.fillStyle=PAL.violet;x.lineWidth=1.4;x.beginPath();x.arc(px,py,size,0,TAU);x.stroke();if(out){x.beginPath();x.arc(px,py,size*.24,0,TAU);x.fill();}else{const k=size*.55;x.beginPath();x.moveTo(px-k,py-k);x.lineTo(px+k,py+k);x.moveTo(px+k,py-k);x.lineTo(px-k,py+k);x.stroke();}x.restore();}
+function kill(arr,i){arr[i]=arr[arr.length-1];arr.pop();}
+class Floaties{constructor(){this.l=[];}add(x,y,text,color){this.l.push({x,y,text,color,life:1.6});}step(dt){for(let i=this.l.length-1;i>=0;i--){const f=this.l[i];f.life-=dt;f.y-=22*dt;if(f.life<=0)kill(this.l,i);}}draw(x){for(const f of this.l)tag(x,f.x,f.y,f.text,f.color,{alpha:clamp(f.life,0,1),align:'center'});}}
+/* ================= AUDIO ================= */
+const AudioFX={ctx:null,master:null,enabled:true,last:{},
+ init(){try{this.enabled=localStorage.getItem('aurora-sound')!=='off';}catch(e){}},
+ ensure(){if(!this.enabled)return false;try{if(!this.ctx){const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return false;this.ctx=new AC();this.master=this.ctx.createGain();this.master.gain.value=.14;this.master.connect(this.ctx.destination);}if(this.ctx.state==='suspended')this.ctx.resume();return true;}catch(e){return false;}},
+ ok(key,gap){const n=performance.now();if(this.last[key]&&n-this.last[key]<gap)return false;this.last[key]=n;return this.ensure();},
+ tone(f,dur,o={}){if(!this.ensure())return;const t=this.ctx.currentTime,osc=this.ctx.createOscillator(),g=this.ctx.createGain();osc.type=o.type||'sine';osc.frequency.setValueAtTime(f,t);if(o.f2)osc.frequency.exponentialRampToValueAtTime(Math.max(20,o.f2),t+dur);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(o.g||.3,t+(o.a||.006));g.gain.exponentialRampToValueAtTime(.0001,t+dur);osc.connect(g);g.connect(this.master);osc.start(t);osc.stop(t+dur+.05);},
+ noise(dur,freq,g){if(!this.ensure())return;const t=this.ctx.currentTime,len=Math.floor(this.ctx.sampleRate*dur),buf=this.ctx.createBuffer(1,len,this.ctx.sampleRate),d=buf.getChannelData(0);for(let i=0;i<len;i++)d[i]=Math.random()*2-1;const src=this.ctx.createBufferSource();src.buffer=buf;const f=this.ctx.createBiquadFilter();f.type='lowpass';f.frequency.value=freq;const gn=this.ctx.createGain();gn.gain.setValueAtTime(g,t);gn.gain.exponentialRampToValueAtTime(.0001,t+dur);src.connect(f);f.connect(gn);gn.connect(this.master);src.start(t);},
+ tick(){if(this.ok('tick',70))this.tone(1700,.04,{g:.07});},
+ click(){if(this.ok('click',60))this.tone(880,.06,{g:.12,type:'triangle'});},
+ fire(){if(this.ok('fire',120))this.tone(340,.2,{f2:110,g:.2,type:'triangle'});},
+ photon(c){if(!this.ok('ph',95))return;const f={red:392,green:523,blue:659,violet:784,pink:494}[c]||523;this.tone(f,.5,{g:.16});this.tone(f*2,.3,{g:.05});},
+ quench(){if(this.ok('qu',200))this.tone(150,.14,{f2:90,g:.14,type:'triangle'});},
+ storm(){if(this.ok('storm',2000)){this.noise(1.7,240,.5);this.tone(58,1.4,{f2:34,g:.3});}},
+ cme(){if(this.ok('cme',700)){this.noise(.8,600,.3);this.tone(220,.5,{f2:520,g:.14,type:'sawtooth'});}},
+ correct(){if(!this.ensure())return;[523,659,784].forEach((f,i)=>setTimeout(()=>this.tone(f,.28,{g:.16}),i*75));},
+ wrong(){if(this.ok('wr',300))this.tone(220,.3,{f2:165,g:.14,type:'sawtooth'});},
+ setEnabled(b){this.enabled=b;try{localStorage.setItem('aurora-sound',b?'on':'off');}catch(e){}if(b)this.ensure();if(this.master)this.master.gain.value=b?.14:0;updateSoundBtn();}
+};
+AudioFX.init();
+function updateSoundBtn(){const b=$('#soundBtn');b.classList.toggle('off',!AudioFX.enabled);b.setAttribute('aria-pressed',String(AudioFX.enabled));$('#soundUse').setAttribute('href',AudioFX.enabled?'#i-sound':'#i-mute');$('#soundLbl').textContent=AudioFX.enabled?'Ton an':'Ton aus';}
+$('#soundBtn').addEventListener('click',()=>{AudioFX.setEnabled(!AudioFX.enabled);if(AudioFX.enabled)AudioFX.click();});
+updateSoundBtn();
+addEventListener('pointerdown',()=>{if(AudioFX.enabled)AudioFX.ensure();},{once:true});
+addEventListener('keydown',()=>{if(AudioFX.enabled)AudioFX.ensure();},{once:true});
+/* ================= TOAST ================= */
+let toastT=null;
+function toast(msg,warn){const t=$('#toast');t.textContent=msg;t.classList.toggle('warn',!!warn);t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),3600);}
+/* ================= ENGINE / SIM BASE ================= */
+const Engine={sims:[],last:performance.now()};
+function loop(now){const dt=Math.min(.033,(now-Engine.last)/1000);Engine.last=now;if(!document.hidden)for(const s of Engine.sims)if(s.active&&s.w)s.frame(dt);requestAnimationFrame(loop);}
+requestAnimationFrame(loop);
+const hasIO='IntersectionObserver'in window;
+const simIO=hasIO?new IntersectionObserver(es=>{for(const e of es){const s=e.target.__sim;if(s)s.active=e.isIntersecting;}},{rootMargin:'140px',threshold:.02}):null;
+class Sim{
+ constructor(sel,o={}){this.host=typeof sel==='string'?$(sel):sel;this.o=Object.assign({fade:.09,bg:false},o);this.host.classList.add('stage');
+  const mk=cls=>{const c=document.createElement('canvas');c.className=cls;this.host.appendChild(c);return c;};
+  if(this.o.bg){this.cB=mk('ly-b');this.xB=this.cB.getContext('2d');}
+  this.cT=mk('ly-t');this.xT=this.cT.getContext('2d');this.cF=mk('ly-f');this.xF=this.cF.getContext('2d');
+  this.t=0;this.paused=false;this.active=!hasIO;this.state={};this.ui={};this.roEls={};this.fadeNow=null;this.w=0;this.h=0;
+  this.host.__sim=this;if(simIO)simIO.observe(this.host);
+  if('ResizeObserver'in window){this._ro=new ResizeObserver(()=>this.resize());this._ro.observe(this.host);}else addEventListener('resize',()=>this.resize());
+  Promise.resolve().then(()=>this.resize());
+  const pt=(type,e)=>{if(!this.onPointer)return;const r=this.host.getBoundingClientRect();this.onPointer(type,e.clientX-r.left,e.clientY-r.top,e);};
+  this.host.addEventListener('pointermove',e=>pt('move',e));
+  this.host.addEventListener('pointerdown',e=>pt('down',e));
+  this.host.addEventListener('pointerleave',e=>pt('leave',e));
+  Engine.sims.push(this);
+ }
+ layers(){const a=[[this.cT,this.xT],[this.cF,this.xF]];if(this.cB)a.unshift([this.cB,this.xB]);return a;}
+ resize(){const w=this.host.clientWidth,h=this.host.clientHeight;if(!w||!h)return;const dpr=Math.min(window.devicePixelRatio||1,isSmall()?1.6:2);if(w===this.w&&h===this.h&&dpr===this.dpr)return;this.w=w;this.h=h;this.dpr=dpr;for(const[c,x]of this.layers()){c.width=Math.round(w*dpr);c.height=Math.round(h*dpr);x.setTransform(dpr,0,0,dpr,0,0);}if(this.onResize)this.onResize();}
+ frame(dt){if(!this.paused){const st=dt*(this.state.timescale??1);this.t+=st;const x=this.xT;x.globalCompositeOperation='destination-out';x.globalAlpha=1;x.fillStyle='rgba(0,0,0,'+(this.fadeNow??this.o.fade)+')';x.fillRect(0,0,this.w,this.h);x.globalCompositeOperation='lighter';if(this.step)this.step(st);}this.xF.clearRect(0,0,this.w,this.h);if(this.draw)this.draw(this.xF);}
+ clearT(){const x=this.xT;x.save();x.setTransform(1,0,0,1,0,0);x.clearRect(0,0,this.cT.width,this.cT.height);x.restore();}
+ setRO(id,txt){const el=this.roEls[id];if(el)el.textContent=txt;}
+ export(name){const c=document.createElement('canvas');c.width=this.cF.width;c.height=this.cF.height;const x=c.getContext('2d');x.fillStyle='#04060f';x.fillRect(0,0,c.width,c.height);if(this.cB)x.drawImage(this.cB,0,0);x.drawImage(this.cT,0,0);x.drawImage(this.cF,0,0);x.setTransform(this.dpr,0,0,this.dpr,0,0);x.font='500 11px '+MONO;x.fillStyle='rgba(238,243,255,.6)';x.fillText('AURORA/LAB · GFS Physik · '+new Date().toLocaleDateString('de-DE'),12,this.h-12);const a=document.createElement('a');a.download=name;a.href=c.toDataURL('image/png');a.click();toast('📸 Bild gespeichert — perfekt fürs GFS-Handout!');AudioFX.click();}
+}
+/* ================= UI FACTORY ================= */
+function setRangeFill(inp){const p=(inp.value-inp.min)/(inp.max-inp.min)*100;inp.style.setProperty('--p',p+'%');}
+function buildPanel(sim,host,schema){
+ for(const it of schema){
+  if(it.type==='group'){const h=document.createElement('h4');h.textContent=it.label;host.appendChild(h);continue;}
+  if(it.type==='note'){const n=document.createElement('div');n.className='note';n.innerHTML=it.html;host.appendChild(n);continue;}
+  if(it.type==='html'){const d=document.createElement('div');d.innerHTML=it.html;host.appendChild(d);sim.ui[it.key]={el:d,set:it.set};continue;}
+  if(it.type==='slider'){const d=document.createElement('div');d.className='ctl';d.innerHTML=`<div class="ctl-head"><label for="sl-${sim.host.id}-${it.key}">${it.label}</label><output></output></div><input id="sl-${sim.host.id}-${it.key}" type="range" min="${it.min}" max="${it.max}" step="${it.step}" value="${sim.state[it.key]}" aria-label="${it.label}">`;const inp=d.querySelector('input'),out=d.querySelector('output');const show=v=>{out.textContent=it.fmt?it.fmt(v):de(v,it.dec??0)+(it.unit||'');setRangeFill(inp);};inp.addEventListener('input',()=>{const v=parseFloat(inp.value);sim.state[it.key]=v;show(v);AudioFX.tick();if(sim.onState)sim.onState(it.key);});host.appendChild(d);show(sim.state[it.key]);sim.ui[it.key]={set(v){inp.value=v;sim.state[it.key]=v;show(v);if(sim.onState)sim.onState(it.key);}};continue;}
+  if(it.type==='toggle'){const b=document.createElement('button');b.className='tgl';b.setAttribute('role','switch');b.innerHTML=`<span class="knob"></span><span>${it.label}</span>`;const show=v=>{b.classList.toggle('on',v);b.setAttribute('aria-checked',String(v));};b.addEventListener('click',()=>{sim.state[it.key]=!sim.state[it.key];show(sim.state[it.key]);AudioFX.click();if(sim.onState)sim.onState(it.key);});host.appendChild(b);show(sim.state[it.key]);sim.ui[it.key]={set(v){sim.state[it.key]=v;show(v);if(sim.onState)sim.onState(it.key);}};continue;}
+  if(it.type==='seg'){const d=document.createElement('div');d.className='seg';const btns=it.opts.map(o=>{const b=document.createElement('button');b.textContent=o.label;b.addEventListener('click',()=>{sim.state[it.key]=o.v;show(o.v);AudioFX.click();if(sim.onState)sim.onState(it.key);});d.appendChild(b);return b;});const show=v=>btns.forEach((b,i)=>b.classList.toggle('active',it.opts[i].v===v));host.appendChild(d);show(sim.state[it.key]);sim.ui[it.key]={set(v){sim.state[it.key]=v;show(v);if(sim.onState)sim.onState(it.key);}};continue;}
+  if(it.type==='select'){const d=document.createElement('div');d.className='ctl';d.innerHTML=`<div class="ctl-head"><label>${it.label}</label></div>`;const s=document.createElement('select');s.setAttribute('aria-label',it.label);it.opts.forEach(o=>{const op=document.createElement('option');op.value=o.v;op.textContent=o.label;s.appendChild(op);});s.value=sim.state[it.key];s.addEventListener('change',()=>{sim.state[it.key]=s.value;AudioFX.click();if(sim.onState)sim.onState(it.key);});d.appendChild(s);host.appendChild(d);sim.ui[it.key]={set(v){s.value=v;sim.state[it.key]=v;if(sim.onState)sim.onState(it.key);}};continue;}
+  if(it.type==='readouts'){const d=document.createElement('div');d.className='ro-grid';it.items.forEach(r=>{const el=document.createElement('div');el.className='ro';el.innerHTML=`<span>${r.label}</span><b>–</b>`;d.appendChild(el);sim.roEls[r.id]=el.querySelector('b');});host.appendChild(d);continue;}
+  if(it.type==='actions'){const d=document.createElement('div');d.className='btnrow';it.items.forEach(a=>{const b=document.createElement('button');b.className='btn sm '+(a.cls||'ghost');b.innerHTML=a.label;if(a.pause){b.setAttribute('aria-pressed','false');b.addEventListener('click',()=>{sim.paused=!sim.paused;b.innerHTML=sim.paused?'▶ Weiter':'⏸ Pause';b.setAttribute('aria-pressed',String(sim.paused));AudioFX.click();});}else b.addEventListener('click',()=>a.fn(sim,b));d.appendChild(b);});host.appendChild(d);continue;}
+ }
+}
+function resetSim(sim){Object.assign(sim.state,JSON.parse(JSON.stringify(sim.defaults)));for(const k in sim.ui)if(sim.ui[k].set&&k in sim.defaults)sim.ui[k].set(sim.defaults[k]);sim.paused=false;sim.clearT();if(sim.onReset)sim.onReset();toast('↺ Zurückgesetzt — Ausgangswerte wiederhergestellt.');}
+/* ================= SHARED DRAW: EARTH & DIPOLE ================= */
+function drawEarth(x,ex,ey,R,aurora,t){
+ const g=x.createRadialGradient(ex-R*.55,ey-R*.25,R*.1,ex,ey,R);
+ g.addColorStop(0,'#9fd8ff');g.addColorStop(.35,'#3f7fd9');g.addColorStop(.75,'#16305e');g.addColorStop(1,'#0a1430');
+ x.fillStyle=g;x.beginPath();x.arc(ex,ey,R,0,TAU);x.fill();
+ x.save();x.globalCompositeOperation='lighter';
+ x.strokeStyle=hexA(PAL.cyan,.5);x.lineWidth=1.6;x.beginPath();x.arc(ex,ey,R+1.5,0,TAU);x.stroke();
+ const a=clamp(aurora,0,1.4);
+ for(const s of[-1,1]){const py=ey+s*R*.9;
+  stamp(x,PAL.green,ex,py,R*2.4,.4*a);
+  x.strokeStyle=hexA(PAL.green,.75*a);x.lineWidth=3.2;
+  x.beginPath();x.ellipse(ex,py,R*.55*(1+.06*Math.sin(t*2+s)),R*.17,0,0,TAU);x.stroke();
+  if(a>.55){x.strokeStyle=hexA(PAL.red,.4*(a-.5));x.lineWidth=2;x.beginPath();x.ellipse(ex,py+s*3,R*.68,R*.22,0,0,TAU);x.stroke();}
+ }
+ x.restore();
+ x.fillStyle='rgba(255,220,150,.85)';
+ for(let i=0;i<7;i++){const an=(i*1.7+.4),rr=R*(.35+.4*((i*37)%10)/10);const px=ex+Math.cos(an)*rr*.8+R*.25,py=ey+Math.sin(an)*rr;if(px>ex+R*.1&&Math.hypot(px-ex,py-ey)<R*.92)x.fillRect(px,py,1.4,1.4);}
+}
+function dipolePts(ex,ey,R,L,side,squash,stretch){const pts=[];const lm=Math.acos(Math.min(1,1/Math.sqrt(L)));for(let i=0;i<=46;i++){const la=-lm+2*lm*i/46;const r=L*R*Math.cos(la)**2;let px=ex+side*r*Math.cos(la)*(side<0?squash:stretch),py=ey-r*Math.sin(la);pts.push([px,py]);}return pts;}
+function drawDipole(x,ex,ey,R,alpha,t,squash=0.78,stretch=1.25){
+ x.save();x.strokeStyle=hexA(PAL.violet,alpha);x.lineWidth=1.2;
+ for(const L of[1.5,2.1,2.9,3.9])for(const side of[-1,1]){const pts=dipolePts(ex,ey,R,L,side,squash,stretch+(L>3?.4:0));x.beginPath();pts.forEach((p,i)=>i?x.lineTo(p[0],p[1]):x.moveTo(p[0],p[1]));x.stroke();
+  const k=Math.floor(((t*.35+L)%1)*44)+1;const p=pts[k];if(p){x.fillStyle=hexA(PAL.violet,alpha*2);x.beginPath();x.arc(p[0],p[1],1.8,0,TAU);x.fill();}}
+ x.restore();
+}
+/* ================= HERO ================= */
+class Hero extends Sim{
+ constructor(){super('#heroStage',{bg:true,fade:.075});this.p=[];this.sparks=[];this.shock=null;this.storm=0;this.aurora=.3;this.auroraP=0;this.mouse=null;this.spawnAcc=0;this.tw=[];}
+ onResize(){const x=this.xB,w=this.w,h=this.h;x.clearRect(0,0,w,h);
+  const neb=(px,py,r,c,a)=>{const g=x.createRadialGradient(px,py,0,px,py,r);g.addColorStop(0,hexA(c,a));g.addColorStop(1,hexA(c,0));x.fillStyle=g;x.fillRect(0,0,w,h);};
+  neb(w*.85,h*.15,w*.5,PAL.violet,.10);neb(w*.1,h*.9,w*.45,PAL.green,.07);neb(w*.5,h*.5,w*.6,PAL.blue,.05);
+  const n=isSmall()?150:260;this.tw=[];
+  for(let i=0;i<n;i++){const px=Math.random()*w,py=Math.random()*h,s=Math.random();x.fillStyle=`rgba(238,243,255,${.15+s*.6})`;x.fillRect(px,py,s>0.92?2:1,s>0.92?2:1);if(s>.88)this.tw.push({x:px,y:py,ph:Math.random()*TAU});}
+  this.sx=w*(isSmall()?.14:.12);this.sy=h*.40;this.sr=clamp(Math.min(w,h)*.15,52,105);
+  this.ex=w*(isSmall()?.78:.80);this.ey=h*.52;this.er=clamp(Math.min(w,h)*.085,30,62);
+ }
+ onPointer(type,px,py){if(type==='move')this.mouse={x:px,y:py};else if(type==='leave')this.mouse=null;else if(type==='down'){this.cme();$('#heroHint').classList.add('gone');}}
+ cme(){if(this.p.length>(isSmall()?260:460))return;this.storm=1;this.shock={r:this.sr};const n=isSmall()?50:90;for(let i=0;i<n;i++){const a=Math.atan2(this.ey-this.sy,this.ex-this.sx)+rand(-.5,.5);const sp=rand(240,400);this.p.push({x:this.sx+Math.cos(a)*this.sr,y:this.sy+Math.sin(a)*this.sr,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,q:Math.random()<.7?1:-1,age:0,cme:true});}AudioFX.cme();}
+ step(st){const w=this.w,h=this.h,ex=this.ex,ey=this.ey,er=this.er;
+  this.storm*=Math.exp(-st/7);this.auroraP*=Math.exp(-st/2);
+  this.spawnAcc+=st*(isSmall()?26:46)*(1+this.storm*2.5);
+  const cap=isSmall()?260:460;
+  while(this.spawnAcc>1&&this.p.length<cap){this.spawnAcc--;const a=Math.atan2(ey-this.sy,ex-this.sx)+rand(-.34,.34);const sp=rand(85,165)*(1+this.storm*.9);this.p.push({x:this.sx+Math.cos(a)*this.sr*1.05,y:this.sy+Math.sin(a)*this.sr*1.05,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,q:Math.random()<.7?1:-1,age:0});}
+  const M=12*er*er;
+  for(let i=this.p.length-1;i>=0;i--){const p=this.p[i];p.age+=st;
+   const dx=p.x-ex,dy=p.y-ey,r=Math.hypot(dx,dy);let th=0;
+   if(r<er*7&&r>1){const Bz=M*dy/(r*r*r);th=clamp(p.q*Bz*st,-.5,.5);}
+   if(this.mouse){const md=Math.hypot(p.x-this.mouse.x,p.y-this.mouse.y);if(md<95)th+=p.q*.9*st*(1-md/95);}
+   if(th){const c=Math.cos(th),s=Math.sin(th),vx=p.vx*c-p.vy*s,vy=p.vx*s+p.vy*c;p.vx=vx;p.vy=vy;}
+   p.x+=p.vx*st;p.y+=p.vy*st;
+   if(r<er*1.06){if(Math.abs(dy)/r>.5){this.auroraP+=1;this.sparks.push({x:p.x,y:p.y,vx:rand(-40,40),vy:(dy<0?-1:1)*rand(30,80),life:.9,c:Math.random()<.8?PAL.green:PAL.red});}kill(this.p,i);continue;}
+   if(p.age>16||p.x<-60||p.x>w+60||p.y<-60||p.y>h+60){kill(this.p,i);continue;}
+   stamp(this.xT,p.cme?PAL.magenta:(p.q>0?PAL.amber:'#ffe9a0'),p.x,p.y,p.cme?9:6.5,.8);
+  }
+  for(let i=this.sparks.length-1;i>=0;i--){const s=this.sparks[i];s.life-=st;s.x+=s.vx*st;s.y+=s.vy*st;if(s.life<=0){kill(this.sparks,i);continue;}stamp(this.xT,s.c,s.x,s.y,10,s.life);}
+  if(this.shock){this.shock.r+=520*st;if(this.shock.r>w*1.4)this.shock=null;}
+  const target=.28+Math.min(.9,this.auroraP*.05)+this.storm*.9;this.aurora+=(target-this.aurora)*st*1.2;
+ }
+ draw(x){const w=this.w,h=this.h,t=this.t;
+  for(const s of this.tw){x.fillStyle=`rgba(238,243,255,${.3+.5*Math.abs(Math.sin(t*1.4+s.ph))})`;x.fillRect(s.x,s.y,1.6,1.6);}
+  /* sun */
+  const sr=this.sr*(1+.02*Math.sin(t*.8));
+  x.save();x.globalCompositeOperation='lighter';
+  stamp(x,PAL.amber,this.sx,this.sy,sr*7,.5+this.storm*.3);stamp(x,PAL.orange,this.sx,this.sy,sr*3.4,.6);
+  x.restore();
+  const g=x.createRadialGradient(this.sx,this.sy,0,this.sx,this.sy,sr);g.addColorStop(0,'#fff7e8');g.addColorStop(.55,'#ffcf6e');g.addColorStop(.85,'#ff8c3b');g.addColorStop(1,hexA(PAL.red,.9));
+  x.fillStyle=g;x.beginPath();x.arc(this.sx,this.sy,sr,0,TAU);x.fill();
+  x.save();x.strokeStyle=hexA(PAL.amber,.4);x.lineWidth=2;x.lineCap='round';
+  for(let i=0;i<22;i++){const a=i/22*TAU+t*.06;const l=sr*(1.12+.22*Math.abs(Math.sin(t*.7+i*2.4))+this.storm*.3);x.beginPath();x.moveTo(this.sx+Math.cos(a)*sr*1.02,this.sy+Math.sin(a)*sr*1.02);x.lineTo(this.sx+Math.cos(a)*l,this.sy+Math.sin(a)*l);x.stroke();}
+  x.restore();
+  /* earth + field */
+  drawDipole(x,this.ex,this.ey,this.er,.22+.08*Math.sin(t),t,.7,1.15);
+  x.save();x.strokeStyle=hexA(PAL.cyan,.3);x.lineWidth=1.4;x.setLineDash([5,6]);x.beginPath();x.arc(this.ex,this.ey,this.er*2.7,Math.PI*.62,Math.PI*1.38);x.stroke();x.restore();
+  drawEarth(x,this.ex,this.ey,this.er,this.aurora,t);
+  if(this.shock){x.save();x.globalCompositeOperation='lighter';x.strokeStyle=hexA(PAL.magenta,.55);x.lineWidth=14;x.beginPath();x.arc(this.sx,this.sy,this.shock.r,-.9,.9);x.stroke();x.strokeStyle=hexA(PAL.amber,.8);x.lineWidth=3;x.beginPath();x.arc(this.sx,this.sy,this.shock.r,-.9,.9);x.stroke();x.restore();}
+  /* aurora curtains bottom */
+  x.save();x.globalCompositeOperation='lighter';
+  for(let i=0;i<3;i++){const base=h-6-i*14,amp=16+i*8,hh=52+i*26+this.storm*40;const col=i===2?PAL.violet:PAL.green;
+   const gr=x.createLinearGradient(0,base-hh-amp,0,base);gr.addColorStop(0,hexA(col,0));gr.addColorStop(.6,hexA(col,(.07+.05*i)*(1+this.storm)));gr.addColorStop(1,hexA(col,.16*(1+this.storm)));
+   x.fillStyle=gr;x.beginPath();x.moveTo(0,base);
+   for(let px=0;px<=w;px+=24){const y=base-hh-amp*Math.sin(px*.008+t*(.4+.13*i)+i*2)-10*Math.sin(px*.021-t*.6);x.lineTo(px,y);}
+   x.lineTo(w,base);x.closePath();x.fill();}
+  x.restore();
+  tag(x,this.sx,this.sy+this.sr+26,'SONNE',PAL.amber,{align:'center',alpha:.85});
+  tag(x,this.ex,this.ey+this.er+22,'ERDE + MAGNETFELD',PAL.cyan,{align:'center',alpha:.85});
+ }
+}
+/* ================= LORENTZ LAB ================= */
+const PRESETS={
+ electron:{q:-1,m:9.109e-31,mv:1,label:'Elektron e⁻',color:PAL.cyan},
+ proton:{q:1,m:1.673e-27,mv:2.6,label:'Proton p⁺',color:PAL.amber},
+ alpha:{q:2,m:6.645e-27,mv:3.4,label:'α-Teilchen He²⁺',color:PAL.orange},
+ positron:{q:1,m:9.109e-31,mv:1,label:'Positron e⁺',color:PAL.pink}
+};
+const E_CH=1.602e-19;
+class Lab extends Sim{
+ constructor(){super('#labStage',{fade:.05});
+  this.defaults={particle:'electron',v:1000,B:50,dir:1,alpha:90,angle:-15,timescale:1,trail:260,vectors:true,grid:true};
+  Object.assign(this.state,this.defaults);this.p=null;this.hl=null;this.gridPts=[];this.relaunchT=0;}
+ onResize(){this.gridPts=[];for(let px=30;px<this.w;px+=56)for(let py=30;py<this.h;py+=56)this.gridPts.push([px,py]);this.relaunch();}
+ preset(){return PRESETS[this.state.particle];}
+ visOmega(){const s=this.state,pr=this.preset();if(s.alpha===0)return 0;let om=s.dir*pr.q*(s.B/50)*(2.4/pr.mv);const vV=50+s.v*.13;const rMax=Math.min(this.w,this.h)*.44;if(Math.abs(vV/om)>rMax)om=Math.sign(om)*vV/rMax;return om;}
+ relaunch(){const s=this.state,pr=this.preset();const vV=50+s.v*.13,a=s.angle*RAD;const vx=Math.cos(a)*vV,vy=Math.sin(a)*vV;const om=this.visOmega();let px,py;
+  if(om!==0){const r=vV/Math.abs(om);const fx=Math.sign(om)*(-vy/vV),fy=Math.sign(om)*(vx/vV);px=this.w/2-fx*r;py=this.h/2-fy*r;}
+  else{px=this.w/2-Math.cos(a)*this.w*.42;py=this.h/2-Math.sin(a)*this.w*.42;}
+  this.p={x:px,y:py,vx,vy};this.clearT();this.updateRO();}
+ updateRO(){const s=this.state,pr=this.preset();const vms=s.v*1000,BT=s.B*1e-6,q=Math.abs(pr.q)*E_CH;const sin=s.alpha===90?1:0;
+  const F=q*vms*BT*sin,r=sin?pr.m*vms/(q*BT):Infinity,T=sin?TAU*pr.m/(q*BT):Infinity;
+  this.setRO('r',sin?fmtLen(r):'∞ · geradeaus');this.setRO('T',sin?fmtTime(T):'—');this.setRO('F',sin?sci(F)+' N':'0 N');
+  this.setRO('spin',sin?(pr.q*s.dir>0?'↻ im Uhrzeigersinn':'↺ gegen Uhrzeiger'):'→ keine Ablenkung');
+  $('#labFnum').textContent=sin?sci(F)+' N':'0 N (v ∥ B!)';
+  $('#labSin').textContent=sin?'sin 90° = 1 → maximale Kraft':'sin 0° = 0 → keine Kraft!';
+  const neg=pr.q<0;$('#handBadge').textContent=neg?'LINKE Hand · für Elektronen (−) — F dreht um!':'RECHTE Hand · für positive Ladung (+)';
+  $('#handBadge').classList.toggle('neg',neg);$('#handSvg').classList.toggle('neg',neg);}
+ onState(key){const s=this.state;this.fadeNow=lerp(.22,.012,(s.trail-40)/560);
+  if(['angle','particle','dir','alpha'].includes(key))this.relaunch();
+  else if(['v','B'].includes(key)){if(this.p){const sp=Math.hypot(this.p.vx,this.p.vy)||1,vV=50+s.v*.13;this.p.vx*=vV/sp;this.p.vy*=vV/sp;}this.updateRO();}
+  else this.updateRO();
+  this.syncHand();}
+ syncHand(){this.updateRO();}
+ onReset(){this.relaunch();}
+ step(st){if(!this.p){this.relaunchT-=st;if(this.relaunchT<=0)this.relaunch();return;}
+  const p=this.p,om=this.visOmega();
+  if(om){const th=om*st,c=Math.cos(th),s=Math.sin(th),vx=p.vx*c-p.vy*s,vy=p.vx*s+p.vy*c;p.vx=vx;p.vy=vy;}
+  p.x+=p.vx*st;p.y+=p.vy*st;
+  stamp(this.xT,this.preset().color,p.x,p.y,11,.9);
+  if(p.x<-40||p.x>this.w+40||p.y<-40||p.y>this.h+40){this.p=null;this.relaunchT=.35;}}
+ draw(x){const s=this.state,pr=this.preset(),t=this.t;
+  if(s.grid)for(const[px,py]of this.gridPts)symbolB(x,px,py,s.dir>0,7,this.hl==='B'?.75+.2*Math.sin(t*5):.32);
+  tag(x,12,20,s.dir>0?'B ⊙ aus dem Bildschirm':'B ⊗ in den Bildschirm',PAL.violet,{alpha:.9});
+  tag(x,12,44,'B = '+de(s.B,0)+' µT · '+pr.label,PAL.violet,{alpha:.75});
+  if(!this.p){tag(x,this.w/2,this.h/2,'nächstes Teilchen startet…',PAL.gray,{align:'center'});return;}
+  const p=this.p,sp=Math.hypot(p.vx,p.vy)||1;
+  stamp(x,pr.color,p.x,p.y,26,.9);
+  x.fillStyle='#fff';x.beginPath();x.arc(p.x,p.y,3.4,0,TAU);x.fill();
+  x.font='700 11px '+MONO;x.fillStyle=pr.color;x.fillText(pr.q>0?'+':'−',p.x+7,p.y-7);
+  if(s.vectors){const dim=k=>this.hl&&this.hl!==k?.3:1;const boost=k=>this.hl===k?4.4:2.6;
+   arrow(x,p.x,p.y,p.vx/sp*58,p.vy/sp*58,{color:PAL.cyan,width:boost('v'),label:'v',alpha:dim('v')});
+   const om=this.visOmega();
+   if(om){const fx=Math.sign(om)*(-p.vy/sp),fy=Math.sign(om)*(p.vx/sp);arrow(x,p.x,p.y,fx*46,fy*46,{color:PAL.green,width:boost('F'),label:'F',alpha:dim('F')});
+    const r=sp/Math.abs(om);if(this.hl==='F'||this.hl==='v'){x.save();x.strokeStyle=hexA(PAL.green,.25);x.setLineDash([4,5]);x.lineWidth=1;x.beginPath();x.arc(p.x+fx*r,p.y+fy*r,r,0,TAU);x.stroke();x.restore();}}
+   else tag(x,p.x,p.y-26,'F = 0 — v ∥ B',PAL.green,{align:'center'});
+   symbolB(x,p.x-24,p.y-24,s.dir>0,8,dim('B')*(this.hl==='B'?1:.7));
+  }
+  if(this.hl==='q')tag(x,p.x,p.y+30,'q = '+(pr.q>0?'+':'')+pr.q+' e',PAL.pink,{align:'center'});
+ }
+}
+/* ================= MAGNETOSPHERE ================= */
+class Magneto extends Sim{
+ constructor(){super('#magStage',{fade:.1});
+  this.defaults={wind:450,density:5,field:100,imf:'north',belts:true,lines:true,labels:true,inspect:true,timescale:1};
+  Object.assign(this.state,this.defaults);
+  this.p=[];this.belt=[];this.plasm=[];this.fl=new Floaties();this.spawnAcc=0;this.storm=0;this.shockX=null;this.kp=2;this.aurora=.15;this.capt=0;this.captures=0;this.locked=null;this.shakeT=0;this.ringT=0;this.plasT=0;this.uiT=0;this.stormCd=0;
+  for(let i=0;i<(isSmall()?44:64);i++)this.belt.push({inner:i<24,L:i<24?1.7:2.9,side:Math.random()<.5?-1:1,lm:rand(.55,.95),ph:rand(0,TAU),om:rand(.5,.9)});}
+ geo(){const R=clamp(Math.min(this.w,this.h)*.10,28,54);return{ex:this.w*.60,ey:this.h*.52,R,rmp:R*3.0*(this.state.field/100)*Math.pow(450/this.state.wind,.28)*(1-.28*this.storm)};}
+ mpR(rmp,cosphi){return rmp*(1+1.15*Math.pow((1+cosphi)/2,1.3));}
+ onPointer(type,px,py){if(type!=='down'||!this.state.inspect)return;let best=null,bd=26;for(const p of this.p){const d=Math.hypot(p.x-px,p.y-py);if(d<bd){bd=d;best=p;}}
+  if(best){this.locked=best;AudioFX.click();$('.stage-hint',this.host);}
+  else if(this.locked){this.locked=null;AudioFX.click();}}
+ storm(b){if(this.stormCd>0)return;this.storm=1;this.shockX=-30;this.stormCd=9;this.shakeT=RM?0:.5;AudioFX.storm();toast('☄️ CME eingeschlagen! Magnetopause komprimiert — Kp steigt…',true);
+  const n=isSmall()?60:110,{ex,ey}=this.geo();for(let i=0;i<n;i++){const sp=rand(260,420);this.p.push({x:-20,y:rand(0,this.h),vx:sp,vy:rand(-15,15),q:Math.random()<.7?1:-1,age:0,cme:true,seed:Math.random()});}
+  b.disabled=true;let left=9;const iv=setInterval(()=>{left--;b.innerHTML=left>0?'☄️ Sturm ('+left+'s)':'☄️ CME-Sturm!';if(left<=0){clearInterval(iv);b.disabled=false;this.stormCd=0;}},1000);}
+ onReset(){this.p=[];this.plasm=[];this.locked=null;this.storm=0;this.kp=2;this.captures=0;this.capt=0;}
+ step(st){const s=this.state,{ex,ey,R,rmp}=this.geo(),w=this.w,h=this.h;
+  this.storm*=Math.exp(-st/9);this.capt*=Math.exp(-st/2);this.ringT+=st;this.plasT+=st;
+  if(this.shakeT>0){this.shakeT-=st;this.host.style.transform=`translate(${rand(-3,3)}px,${rand(-3,3)}px)`;if(this.shakeT<=0)this.host.style.transform='';}
+  if(this.shockX!==null){this.shockX+=520*st;if(this.shockX>w+60)this.shockX=null;}
+  this.spawnAcc+=st*s.density*(isSmall()?4:6.5);
+  const cap=isSmall()?240:500,vW=60+s.wind*.22;
+  while(this.spawnAcc>1&&this.p.length<cap){this.spawnAcc--;this.p.push({x:-16,y:ey+rand(-h*.46,h*.46),vx:vW*rand(.9,1.1),vy:rand(-12,12),q:Math.random()<.72?1:-1,age:0,seed:Math.random()});}
+  const M=14*R*R*(s.field/100),south=s.imf==='south';
+  for(let i=this.p.length-1;i>=0;i--){const p=this.p[i];p.age+=st;
+   const dx=p.x-ex,dy=p.y-ey,r=Math.max(1,Math.hypot(dx,dy)),cosphi=dx/r,rb=this.mpR(rmp,cosphi);
+   const lat=Math.atan2(-dy,Math.abs(dx))/RAD;
+   const cusp=dx<0&&Math.abs(lat)>50&&Math.abs(lat)<82&&(south||this.storm>.3||p.seed<.2);
+   let th=0;
+   if(r<rmp*1.35){const Bz=M*dy/(r*r*r);th=clamp(p.q*Bz*st,-.5,.5);}
+   if(th){const c=Math.cos(th),sn=Math.sin(th),vx=p.vx*c-p.vy*sn,vy=p.vx*sn+p.vy*c;p.vx=vx;p.vy=vy;}
+   if(r<rb&&!cusp&&dx<rmp*2){const nx=dx/r,ny=dy/r,vn=p.vx*nx+p.vy*ny;
+    if(vn<0){p.vx-=1.75*vn*nx;p.vy-=1.75*vn*ny;}
+    let tx=-ny,ty=nx;if(tx<0){tx=-tx;ty=-ty;}p.vx+=tx*34*st;p.vy+=ty*34*st;
+    p.x=ex+nx*(rb+1);p.y=ey+ny*(rb+1);}
+   p.x+=p.vx*st;p.y+=p.vy*st;
+   if(r<R*1.16&&Math.abs(dy)/r>.5){this.capt+=1;this.captures++;this.fl.add(p.x,p.y-14,'+1 ⚡',PAL.green);if(this.captures%6===0)AudioFX.photon('green');if(this.locked===p){this.locked=null;}kill(this.p,i);continue;}
+   if(r<R*1.03){if(this.locked===p)this.locked=null;kill(this.p,i);continue;}
+   if(p.age>22||p.x>w+40||p.y<-50||p.y>h+50){if(this.locked===p){this.locked=null;toast('🔍 Teilchen hat die Magnetosphäre verlassen — wähle ein neues.');}kill(this.p,i);continue;}
+   stamp(this.xT,p.cme?PAL.magenta:(p.q>0?PAL.amber:PAL.pale),p.x,p.y,p.q>0?7:5.5,.75);
+  }
+  if(s.belts)for(const b of this.belt){const la=b.lm*Math.sin(b.om*this.t+b.ph);const r=b.L*R*Math.cos(la)**2;let px=ex+b.side*r*Math.cos(la)*(b.side<0?.78:1.1),py=ey-r*Math.sin(la);stamp(this.xT,b.inner?PAL.amber:PAL.cyan,px,py,4.6,.4);}
+  if(south&&this.storm>.25&&this.plasT>2.4&&this.plasm.length<3){this.plasT=0;this.plasm.push({x:ex+rmp*.9,y:ey+rand(-8,8)});}
+  for(let i=this.plasm.length-1;i>=0;i--){const pl=this.plasm[i];pl.x+=150*st;if(pl.x>w+40){kill(this.plasm,i);continue;}for(let k=0;k<4;k++)stamp(this.xT,k%2?PAL.magenta:PAL.violet,pl.x+rand(-9,9),pl.y+rand(-7,7),16,.4);}
+  const target=clamp(.12+(south?.28:0)+Math.min(.55,this.capt*.05)+this.storm*.85+(s.wind-300)/600*.15,0,1.5);
+  this.aurora+=(target-this.aurora)*st*.9;
+  const kpT=clamp(1+(s.wind-300)/600*2.5+(s.density-1)/11*1.5+(south?2.2:0)+this.storm*3.5,0,9);
+  this.kp+=(kpT-this.kp)*st*.5;
+  this.fl.step(st);
+  this.uiT+=st;if(this.uiT>.2){this.uiT=0;this.updateKpUI();}
+ }
+ updateKpUI(){const kp=this.kp,n=Math.round(kp);const cells=$$('#kpGauge .kp-cell');cells.forEach((c,i)=>{c.classList.toggle('on',i<n);});
+  const names=['Ruhig','Sehr ruhig','Ruhig','Leicht aktiv','Aktiv','Aktiv / Sturm G1','Sturm G2','Sturm G3','Sturm G4','Extrem G5'];
+  this.setRO('kp','Kp '+de(kp,1));
+  $('#kpLabel').textContent='Kp '+de(kp,1);$('#kpName').textContent=names[clamp(n,0,9)];
+  const lat=Math.round(67-3.2*kp);$('#kpLat').textContent='Oval-Rand: ~'+lat+'° Nord';
+  $('#kpDesc').textContent=kp<4?'Ruhiges Weltraumwetter — das Oval liegt über Nordskandinavien. Tromsø schaut zu, Deutschland geht leer aus.':kp<7?'Sturm im Anmarsch! Das Oval dehnt sich nach Süden aus — Island und Schottland melden erste Vorhänge.':'G'+clamp(n-4,1,5)+'-Sturm! Das Oval steht über Mitteleuropa — jetzt bloß nicht verschlafen!';
+  $('#kpDE').classList.toggle('show',lat<=54);
+  this.setRO('count',String(this.captures));}
+ draw(x){const s=this.state,{ex,ey,R,rmp}=this.geo(),t=this.t,w=this.w,h=this.h;
+  /* solar wind edge */
+  const sg=x.createLinearGradient(0,0,90,0);sg.addColorStop(0,hexA(PAL.amber,.22));sg.addColorStop(1,hexA(PAL.amber,0));x.fillStyle=sg;x.fillRect(0,0,90,h);
+  for(let i=0;i<3;i++){const py=h*.2+i*h*.3;x.save();x.globalAlpha=.5+.3*Math.sin(t*3+i);arrow(x,10,py,26,0,{color:PAL.amber,width:2});x.restore();}
+  tag(x,8,16,'SONNENWIND '+de(s.wind,0)+' km/s',PAL.amber);
+  /* IMF */
+  const south=s.imf==='south';const ic=south?PAL.magenta:PAL.cyan;
+  arrow(x,w-26,30,0,south?22:-22,{color:ic,width:2.4});tag(x,w-40,26,'IMF '+(south?'↓ Süd':'↑ Nord'),ic,{align:'right'});
+  /* tail plasma sheet */
+  x.save();x.globalCompositeOperation='lighter';const tg=x.createLinearGradient(ex,0,w,0);tg.addColorStop(0,hexA(PAL.violet,0));tg.addColorStop(1,hexA(PAL.magenta,.05+.14*this.storm));x.fillStyle=tg;x.fillRect(ex,ey-R*.9,w-ex,R*1.8);x.restore();
+  if(s.lines){drawDipole(x,ex,ey,R,.3,t,.78,1.3);
+   x.save();x.strokeStyle=hexA(PAL.violet,.28);x.lineWidth=1.1;
+   for(const sy of[-1,1]){x.beginPath();x.moveTo(ex,ey+sy*R*.95);x.bezierCurveTo(ex+R*3,ey+sy*R*1.6,ex+R*6,ey+sy*R*.9,w,ey+sy*R*.8);x.stroke();}
+   x.restore();}
+  /* magnetopause + bow shock */
+  x.save();x.strokeStyle=hexA(PAL.cyan,.45);x.lineWidth=1.6;x.beginPath();
+  for(let a=100;a<=260;a+=4){const phi=a*RAD,rb=this.mpR(rmp,Math.cos(phi));const px=ex+Math.cos(phi)*rb,py=ey+Math.sin(phi)*rb;a===100?x.moveTo(px,py):x.lineTo(px,py);}x.stroke();
+  x.strokeStyle=hexA(PAL.amber,.3);x.setLineDash([6,7]);x.beginPath();
+  for(let a=112;a<=248;a+=4){const phi=a*RAD,rb=this.mpR(rmp,Math.cos(phi))*1.3;const px=ex+Math.cos(phi)*rb,py=ey+Math.sin(phi)*rb;a===112?x.moveTo(px,py):x.lineTo(px,py);}x.stroke();x.restore();
+  /* reconnection X */
+  if(south){const xx=ex-rmp,pu=.5+.5*Math.sin(t*4);x.save();x.strokeStyle=hexA(PAL.magenta,.5+.4*pu);x.lineWidth=2.6;x.beginPath();x.moveTo(xx-9,ey-9);x.lineTo(xx+9,ey+9);x.moveTo(xx+9,ey-9);x.lineTo(xx-9,ey+9);x.stroke();
+   const rr=(this.ringT%2.2)/2.2*46;x.strokeStyle=hexA(PAL.cyan,.5*(1-rr/46));x.beginPath();x.arc(xx,ey,rr,0,TAU);x.stroke();x.restore();}
+  if(this.shockX!==null){x.save();x.globalCompositeOperation='lighter';x.strokeStyle=hexA(PAL.magenta,.4);x.lineWidth=18;x.beginPath();x.moveTo(this.shockX,0);x.quadraticCurveTo(this.shockX+44,h/2,this.shockX,h);x.stroke();x.strokeStyle=hexA(PAL.amber,.8);x.lineWidth=3;x.stroke();x.restore();}
+  drawEarth(x,ex,ey,R,this.aurora,t);
+  /* labels */
+  if(s.labels){tag(x,ex-rmp*1.32,ey-h*.31,'Bugschock',PAL.amber,{align:'center',alpha:.8});
+   tag(x,ex-rmp-6,ey+h*.3,'Magnetopause',PAL.cyan,{align:'center',alpha:.8});
+   tag(x,w-90,ey-R*1.4,'Magnetischer Schweif →',PAL.violet,{align:'center',alpha:.7});
+   if(south)tag(x,ex-rmp,ey-24,'X-Punkt: Rekonnexion',PAL.magenta,{align:'center',alpha:.9});
+   if(s.belts)tag(x,ex+2.9*R*1.1,ey+26,'Van-Allen-Gürtel',PAL.cyan,{align:'center',alpha:.75});
+   tag(x,ex,ey-R-26,'Polarlicht-Oval',PAL.green,{align:'center',alpha:.85});
+   tag(x,ex-rmp*.62,ey-R*1.9,'Cusp — Einfallstor',PAL.pink,{align:'center',alpha:.7});}
+  /* inspector */
+  const p=this.locked;
+  if(p){const sp=Math.hypot(p.vx,p.vy)||1,dx=p.x-ex,dy=p.y-ey,r=Math.max(1,Math.hypot(dx,dy));
+   x.save();x.strokeStyle='rgba(238,243,255,.9)';x.setLineDash([4,4]);x.lineWidth=1.6;x.beginPath();x.arc(p.x,p.y,15+2*Math.sin(t*5),0,TAU);x.stroke();x.restore();
+   arrow(x,p.x,p.y,p.vx/sp*44,p.vy/sp*44,{color:PAL.cyan,width:3,label:'v'});
+   const inside=r<this.geo().rmp*1.35;const Bz=inside?14*R*R*(s.field/100)*dy/(r*r*r):0;
+   if(Math.abs(Bz)>1e-4){const fx=p.q*Math.sign(Bz)*(-p.vy/sp),fy=p.q*Math.sign(Bz)*(p.vx/sp);arrow(x,p.x,p.y,fx*36,fy*36,{color:PAL.green,width:3,label:'F'});symbolB(x,p.x+20,p.y-20,Bz>0,7,.9);}
+   const vkm=Math.max(50,(sp-60)/.22),BnT=inside?30000/Math.pow(r/R,3):5,F=E_CH*vkm*1000*BnT*1e-9;
+   const bx=clamp(p.x+24,8,w-215),by=clamp(p.y-58,8,h-84);
+   x.save();x.fillStyle='rgba(5,8,18,.9)';x.strokeStyle=hexA(PAL.cyan,.5);x.beginPath();x.roundRect(bx,by,207,72,10);x.fill();x.stroke();
+   x.font='600 10.5px '+MONO;x.fillStyle=PAL.amber;x.fillText((p.q>0?'PROTON p⁺':'ELEKTRON e⁻')+(p.cme?' · CME':' · Sonnenwind'),bx+10,by+17);
+   x.fillStyle=PAL.cyan;x.fillText('v ≈ '+de(vkm,0)+' km/s',bx+10,by+34);
+   x.fillStyle=PAL.violet;x.fillText('B ≈ '+(BnT>1000?de(BnT/1000,1)+' µT':de(BnT,0)+' nT')+(inside?'':' (IMF)'),bx+10,by+49);
+   x.fillStyle=PAL.green;x.fillText('F = qvB ≈ '+sci(F)+' N',bx+10,by+64);x.restore();}
+  this.fl.draw(x);
+ }
+}
+/* ================= AURORA CHAMBER ================= */
+const CH_COLORS={red:{c:PAL.red,nm:'Rot 630,0 nm',gas:'O',wait:2.2,waitTxt:'110 s (gerafft)'},green:{c:PAL.green,nm:'Grün 557,7 nm',gas:'O',wait:.7,waitTxt:'0,7 s'},blue:{c:PAL.blue,nm:'Blau 427,8 nm',gas:'N₂⁺',wait:.12,waitTxt:'sofort'},violet:{c:PAL.violet,nm:'Violett 391,4 nm',gas:'N₂⁺',wait:.12,waitTxt:'sofort'},pink:{c:PAL.pink,nm:'Rosa N₂-Bande',gas:'N₂',wait:.12,waitTxt:'sofort'}};
+class Chamber extends Sim{
+ constructor(){super('#chStage',{fade:.12});
+  this.defaults={eRaw:56,flux:3,timescale:1,labels:true};
+  Object.assign(this.state,this.defaults);
+  this.e=[];this.exc=[];this.ph=[];this.fl=new Floaties();this.acc=0;this.counts={red:0,green:0,blue:0,violet:0,pink:0,quench:0};this.total=0;this.uiT=0;this.phN=0;this.energy=4;}
+ yOf(alt){const p=10;return p+(this.h-2*p-40)*(1-Math.log(alt/70)/Math.log(600/70));}
+ altOf(y){const p=10;return 70*Math.exp((1-(y-p)/(this.h-2*p-40))*Math.log(600/70));}
+ depAlt(E){return clamp(260-55*Math.log(E),82,420);}
+ colorFor(alt){if(alt>205)return'red';if(alt>=92)return'green';const r=Math.random();return r<.42?'blue':r<.75?'violet':'pink';}
+ onResize(){this.paintBg();}
+ paintBg(){const x=this.xB,w=this.w,h=this.h;x.clearRect(0,0,w,h);
+  const g=x.createLinearGradient(0,0,0,h);g.addColorStop(0,'#04060f');g.addColorStop(.55,'#071228');g.addColorStop(.85,'#0a1a30');g.addColorStop(1,'#0d2033');x.fillStyle=g;x.fillRect(0,0,w,h);
+  const band=(a1,a2,c,al)=>{const y1=this.yOf(a1),y2=this.yOf(a2);x.fillStyle=hexA(c,al);x.fillRect(0,y1,w,y2-y1);};
+  band(600,205,PAL.red,.05);band(205,100,PAL.green,.06);band(100,86,PAL.violet,.08);band(88,80,PAL.pink,.06);
+  for(let i=0;i<70;i++){x.fillStyle=`rgba(238,243,255,${rand(.1,.5)})`;x.fillRect(Math.random()*w,Math.random()*this.yOf(380),1,1);}
+  /* ground */
+  const gy=h-40;x.fillStyle='#05070d';x.beginPath();x.moveTo(0,h);x.lineTo(0,gy+16);
+  for(let px=0;px<=w;px+=40)x.lineTo(px,gy+16-14*Math.abs(Math.sin(px*.013+2)));
+  x.lineTo(w,h);x.closePath();x.fill();
+  x.fillStyle='#03050a';for(let i=0;i<9;i++){const tx=(i*97+31)%w,th=8+(i*13)%9;x.beginPath();x.moveTo(tx,gy+18);x.lineTo(tx+5,gy+18-th);x.lineTo(tx+10,gy+18);x.closePath();x.fill();}
+  const ox=w*.68;x.strokeStyle='#1c2740';x.lineWidth=2;x.beginPath();x.moveTo(ox,gy+16);x.lineTo(ox,gy+7);x.moveTo(ox-4,gy+11);x.lineTo(ox+4,gy+11);x.stroke();x.fillStyle='#1c2740';x.beginPath();x.arc(ox,gy+4,2.6,0,TAU);x.fill();
+  stamp(x,PAL.amber,ox+3,gy+3,7,.8);
+  x.font='500 9px '+MONO;x.fillStyle='rgba(167,180,212,.7)';x.fillText('Beobachter:in · Boden (Symbolbild)',ox+10,gy+12);
+  /* altitude axis */
+  x.font='500 10px '+MONO;x.textAlign='right';
+  for(const a of[600,400,300,200,150,100,90,80]){const y=this.yOf(a);x.strokeStyle='rgba(122,160,255,.25)';x.beginPath();x.moveTo(w-66,y);x.lineTo(w-56,y);x.stroke();x.fillStyle='rgba(167,180,212,.85)';x.fillText(a+' km',w-8,y+3);}
+  x.textAlign='left';
+  const lbl=(alt,txt,c)=>{x.fillStyle=hexA(c,.9);x.font='600 10px '+MONO;x.fillText(txt,12,this.yOf(alt)+3);};
+  lbl(430,'Thermosphäre · atomarer Sauerstoff O',PAL.red);
+  lbl(160,'O-Schicht · Grün-Zone',PAL.green);
+  lbl(94,'N₂ / O₂ · Blau & Violett',PAL.violet);
+  lbl(83,'pinker Saum (nur bei Sturm)',PAL.pink);
+ }
+ pred(){const alt=this.depAlt(this.energy);const cn=alt>205?'Rot (O, 110 s!)':alt>=92?'Grün (O, 0,7 s)':'Blau/Violett/Pink (N₂)';const cc=alt>205?PAL.red:alt>=92?PAL.green:PAL.violet;
+  const el=$('#chPred');if(el)el.innerHTML=`<span class="pred-dot" style="color:${cc};background:${cc}"></span>≈ ${Math.round(alt)} km → ${cn}`;}
+ onState(key){if(key==='eRaw'){this.energy=.3*Math.exp(this.state.eRaw/100*Math.log(100));this.pred();}}
+ onReset(){this.e=[];this.exc=[];this.ph=[];this.counts={red:0,green:0,blue:0,violet:0,pink:0,quench:0};this.total=0;this.updateSpec();}
+ single(){this.spawnE();AudioFX.fire();}
+ spawnE(){const E=this.energy*rand(.85,1.15);this.e.push({y:-8,ph:rand(0,TAU),E,dep:this.depAlt(E)+rand(-10,10),v:80+E*5.5});}
+ step(st){const s=this.state;this.acc+=st*s.flux;while(this.acc>1){this.acc--;if(this.e.length<60)this.spawnE();}
+  const fx=this.w*.40;
+  for(let i=this.e.length-1;i>=0;i--){const e=this.e[i];e.y+=e.v*st;const alt=this.altOf(e.y);
+   const om=5+14*(1-clamp(alt,70,600)/600);e.ph+=om*st;
+   const A=16*(.25+.75*clamp(alt,70,600)/600);const px=fx+A*Math.sin(e.ph);
+   stamp(this.xT,PAL.cyan,px,e.y,7,.85);
+   if(alt<=e.dep){const key=this.colorFor(e.dep);const cc=CH_COLORS[key];
+    stamp(this.xT,'#ffffff',px,e.y,30,.9);
+    this.exc.push({x:px,y:e.y,key,timer:cc.wait,wait:cc.wait,alt:e.dep});
+    kill(this.e,i);this.evt(1);continue;}
+   if(e.y>this.h-46){kill(this.e,i);}}
+  for(let i=this.exc.length-1;i>=0;i--){const ex=this.exc[i];ex.timer-=st;
+   if(ex.timer<=0){const cc=CH_COLORS[ex.key];
+    const quenched=(ex.key==='green'&&ex.alt<102&&Math.random()<.35)||(ex.key==='red'&&ex.alt<205);
+    if(quenched){this.counts.quench++;this.fl.add(ex.x,ex.y-16,'Stoßlöschung! Energie → Wärme',PAL.gray);stamp(this.xT,PAL.gray,ex.x,ex.y,22,.7);AudioFX.quench();}
+    else{const ang=rand(-160,-20)*RAD;this.ph.push({x:ex.x,y:ex.y,dx:Math.cos(ang),dy:Math.sin(ang),key:ex.key,life:1.4,ph:rand(0,TAU)});
+     this.counts[ex.key]++;this.total++;this.phN++;AudioFX.photon(ex.key);this.evt(3);
+     if(this.phN%4===0&&this.state.labels)this.fl.add(ex.x,ex.y-16,'+1 Photon · '+cc.nm.split(' ')[1],cc.c);}
+    kill(this.exc,i);this.updateSpec();}}
+  for(let i=this.ph.length-1;i>=0;i--){const p=this.ph[i];p.life-=st;p.x+=p.dx*230*st;p.y+=p.dy*230*st;p.ph+=12*st;
+   if(p.life<=0||p.x<-20||p.x>this.w+20||p.y<-20){kill(this.ph,i);continue;}
+   const cc=CH_COLORS[p.key].c;stamp(this.xT,cc,p.x,p.y,10,clamp(p.life,0,1));
+   const x=this.xT;x.save();x.globalAlpha=clamp(p.life,0,1)*.9;x.strokeStyle=cc;x.lineWidth=1.6;x.beginPath();
+   for(let k=0;k<=5;k++){const px=p.x-p.dx*k*7-p.dy*Math.sin(p.ph+k*1.3)*3.5,py=p.y-p.dy*k*7+p.dx*Math.sin(p.ph+k*1.3)*3.5;k?x.lineTo(px,py):x.moveTo(px,py);}x.stroke();x.restore();}
+  this.fl.step(st);
+  this.uiT+=st;if(this.uiT>.25){this.uiT=0;this.setRO('total',String(this.total));this.setRO('quench',String(this.counts.quench));
+   let dom='—',mx=0;for(const k of['red','green','blue','violet','pink'])if(this.counts[k]>mx){mx=this.counts[k];dom=CH_COLORS[k].nm.split(' ')[0];}
+   this.setRO('dom',dom);}
+ }
+ evt(n){const ids=['#ev1','#ev2','#ev3'];ids.forEach((id,i)=>{const el=$(id);if(!el)return;el.classList.toggle('active',i===n-1);});clearTimeout(this._evtT);this._evtT=setTimeout(()=>{const e2=$('#ev2');if(e2&&this.exc.length)e2.classList.add('active');},350);}
+ updateSpec(){const mx=Math.max(1,...Object.values(this.counts));for(const k in this.counts){const f=$('#spec-'+k),c=$('#cnt-'+k);if(f)f.style.width=(this.counts[k]?Math.max(4,this.counts[k]/mx*100):0)+'%';if(c)c.textContent=this.counts[k];}}
+ draw(x){const t=this.t,fx=this.w*.40;
+  x.save();x.strokeStyle=hexA(PAL.violet,.5);x.setLineDash([7,7]);x.lineWidth=1.4;x.beginPath();x.moveTo(fx,0);x.lineTo(fx,this.yOf(78));x.stroke();x.setLineDash([]);
+  x.strokeStyle=hexA(PAL.violet,.2);x.beginPath();for(let y=0;y<=this.yOf(80);y+=8){const alt=this.altOf(y),A=16*(.25+.75*clamp(alt,70,600)/600);y?x.lineTo(fx-A,y):x.moveTo(fx-A,y);}x.stroke();
+  x.beginPath();for(let y=0;y<=this.yOf(80);y+=8){const alt=this.altOf(y),A=16*(.25+.75*clamp(alt,70,600)/600);y?x.lineTo(fx+A,y):x.moveTo(fx+A,y);}x.stroke();x.restore();
+  if(this.state.labels)tag(x,fx,16,'Feldlinie B ↓ · Spirale wird enger (B wächst)',PAL.violet,{align:'center',alpha:.85});
+  for(const ex of this.exc){const cc=CH_COLORS[ex.key];const pr=1-ex.timer/ex.wait;
+   x.save();x.strokeStyle=hexA(cc.c,.9);x.lineWidth=2;x.beginPath();x.arc(ex.x,ex.y,9+2.5*Math.sin(t*7),0,TAU);x.stroke();
+   x.strokeStyle=hexA(cc.c,.5);x.lineWidth=3;x.beginPath();x.arc(ex.x,ex.y,14,-Math.PI/2,-Math.PI/2+pr*TAU);x.stroke();x.restore();
+   stamp(x,cc.c,ex.x,ex.y,16,.5);
+   if(this.state.labels)tag(x,ex.x+18,ex.y,cc.gas+'* wartet: '+cc.waitTxt,cc.c,{alpha:.9});}
+  this.fl.draw(x);
+ }
+}
+/* ================= KP MAP ================= */
+const KP_INFO=[
+ ['Kp 0 — Still','Fast kein Wind, kaum Aktivität. Das Oval ist ein blasses Ringelchen weit im Norden — nur Forschungsstationen sehen etwas.'],
+ ['Kp 1 — Sehr ruhig','Ein ruhiger Tag im Weltraumwetter. Polarlicht-Fotografen in Tromsø warten auf mehr.'],
+ ['Kp 2 — Ruhig','Leichtes Grundrauschen. Das Oval liegt bei ~61–67° — Nordskandinavien hat eine Chance auf einen blassen Bogen.'],
+ ['Kp 3 — Leicht aktiv','Erste Bewegung! Ein grüner Bogen steht am Nordhorizont von Tromsø und Abisko.'],
+ ['Kp 4 — Aktiv','Jetzt wird’s hübsch: Vorhänge über Lappland, Islands Himmel bekommt Farbe. In Deutschland noch nichts.'],
+ ['Kp 5 — Sturm G1','Ein kleiner geomagnetischer Sturm. Das Oval erreicht ~51° Nord in der Nacht — Schottland und Dänemark fotografieren Polarlicht!'],
+ ['Kp 6 — Sturm G2','Mäßiger Sturm. Norddeutschland kann am Nordhorizont ein Glühen erhaschen — Kamera-Langzeitbelichtung hilft enorm.'],
+ ['Kp 7 — Sturm G3','Starker Sturm! Rote Schleier und grüne Bögen über Norddeutschland. So eine Nacht gibt es nur ein paar Mal pro Sonnenzyklus.'],
+ ['Kp 8 — Sturm G4','Schwerer Sturm — Polarlicht über fast ganz Deutschland, oft rot-dominant. Handys raus, Wolken weg, nach Norden schauen!'],
+ ['Kp 9 — Extrem G5','Maximalstufe! Wie am 10. Mai 2024: Polarlicht bis zu den Alpen und Mittelmeer. Québec-1989 lag auch hier — damals fiel das Stromnetz aus.']
+];
+const LAND=[
+ [[-45,60],[-52,64],[-55,70],[-50,76],[-35,80],[-25,76],[-30,68],[-40,62]],
+ [[-24,64],[-22,66],[-16,66.5],[-14,65],[-18,63.5]],
+ [[5,58],[5,62],[12,65],[18,69],[26,71],[30,70],[28,66],[22,63],[18,60],[12,56],[8,57]],
+ [[-6,55],[-5,58],[-2,58.5],[0,53],[-4,52.5],[-6,54]],
+ [[7,54],[14,54],[15,51],[13,48],[8,48],[6,51]],
+ [[-95,50],[-85,55],[-75,58],[-68,60],[-80,52],[-92,49]],
+ [[60,55],[90,58],[120,60],[150,62],[170,66],[140,55],[100,52],[70,52]]
+];
+const CITIES=[['Tromsø',69.6,18.9],['Reykjavík',64.1,-21.9],['Berlin',52.5,13.4],['München',48.1,11.6]];
+class KpMap extends Sim{
+ constructor(){super('#kpMapStage',{fade:.2});this.defaults={kp:4};Object.assign(this.state,this.defaults);}
+ proj(lon,lat){const k=(Math.min(this.w,this.h)/2-26)/50;const a=(lon+90)*RAD;const r=(90-lat)*k;return[this.w/2+Math.cos(a)*r,this.h/2+Math.sin(a)*r];}
+ onResize(){const x=this.xB,w=this.w,h=this.h,cx=w/2,cy=h/2,k=(Math.min(w,h)/2-26)/50;x.clearRect(0,0,w,h);
+  const g=x.createRadialGradient(cx,cy,0,cx,cy,Math.min(w,h)/2);g.addColorStop(0,'#0b1430');g.addColorStop(1,'#05070f');x.fillStyle=g;x.fillRect(0,0,w,h);
+  const ng=x.createLinearGradient(0,0,0,h);ng.addColorStop(0,'rgba(0,0,12,.4)');ng.addColorStop(.5,'rgba(0,0,12,0)');x.fillStyle=ng;x.fillRect(0,0,w,h);
+  x.strokeStyle='rgba(122,160,255,.16)';x.lineWidth=1;
+  for(const lat of[80,70,60,50,40]){x.beginPath();x.arc(cx,cy,(90-lat)*k,0,TAU);x.stroke();x.fillStyle='rgba(167,180,212,.5)';x.font='500 9px '+MONO;x.fillText(lat+'°',cx+3,cy-(90-lat)*k-3);}
+  for(let lon=0;lon<360;lon+=45){const[px,py]=this.proj(lon,38);x.beginPath();x.moveTo(cx,cy);x.lineTo(px,py);x.stroke();}
+  for(const poly of LAND){x.beginPath();poly.forEach((p,i)=>{const[px,py]=this.proj(p[0],p[1]);i?x.lineTo(px,py):x.moveTo(px,py);});x.closePath();x.fillStyle='rgba(90,120,180,.14)';x.fill();x.strokeStyle='rgba(122,160,255,.35)';x.stroke();}
+  const[sx,sy]=this.proj(16,78.5);x.fillStyle='rgba(90,120,180,.3)';x.beginPath();x.arc(sx,sy,3,0,TAU);x.fill();
+  x.fillStyle='rgba(167,180,212,.6)';x.font='500 9px '+MONO;x.textAlign='center';x.fillText('NACHT',cx,16);x.fillText('TAG ☀',cx,h-8);x.fillText('vereinfachte Karte',cx,h-22);x.textAlign='left';
+  x.fillStyle='rgba(238,243,255,.8)';x.beginPath();x.arc(cx,cy,2,0,TAU);x.fill();x.font='500 9px '+MONO;x.fillText('Nordpol',cx+6,cy+3);}
+ onState(){this.updateInfo();}
+ updateInfo(){const kp=this.state.kp;$('#kpMapName').textContent=KP_INFO[kp][0];$('#kpMapDesc').textContent=KP_INFO[kp][1];$('#kpMapDE').classList.toggle('show',kp>=7);}
+ step(){}
+ draw(x){const kp=this.state.kp,t=this.t;
+  x.save();x.globalCompositeOperation='lighter';
+  for(let lon=0;lon<360;lon+=3){const latEq=67-3.2*kp+3*Math.cos(lon*RAD),latP=latEq+6+kp*.5;
+   const a1=(lon+90)*RAD,a2=(lon+3.4+90)*RAD;const k=(Math.min(this.w,this.h)/2-26)/50;
+   const r1=(90-latEq)*k,r2=(90-latP)*k;const al=.13+.09*Math.sin(lon*.07+t*2)+kp*.015;
+   x.fillStyle=hexA(PAL.green,clamp(al,0,.5));x.beginPath();
+   x.arc(this.w/2,this.h/2,r1,a1,a2);x.arc(this.w/2,this.h/2,r2,a2,a1,true);x.closePath();x.fill();
+   if(kp>=6&&lon%6===0){x.strokeStyle=hexA(PAL.red,.25);x.lineWidth=2;x.beginPath();x.arc(this.w/2,this.h/2,r2-1,a1,a2);x.stroke();}
+   if(kp>=8&&lon%9===0){x.strokeStyle=hexA(PAL.magenta,.2);x.lineWidth=1.5;x.beginPath();x.arc(this.w/2,this.h/2,(r1+r2)/2,a1,a2);x.stroke();}}
+  x.restore();
+  for(const[nm,lat,lon]of CITIES){const[px,py]=this.proj(lon,lat);const latEq=67-3.2*kp+3*Math.cos(lon*RAD),latP=latEq+6+kp*.5;
+   const sees=lat>=latEq-1.5&&lat<=latP+1.5;
+   if(sees)stamp(x,PAL.green,px,py,20,.7);
+   x.fillStyle=sees?PAL.cyan:'#39445f';x.beginPath();x.arc(px,py,3.4,0,TAU);x.fill();
+   x.font='600 10px '+MONO;x.fillStyle=sees?PAL.green:'rgba(167,180,212,.75)';x.fillText(nm+(sees?' ✓':''),px+7,py+3);}
+ }
+}
+/* ================= INSTANTIATE SIMS ================= */
+const hero=new Hero(), lab=new Lab(), mag=new Magneto(), ch=new Chamber(), kpmap=new KpMap();
+lab.fadeNow=lerp(.22,.012,(lab.state.trail-40)/560);
+ch.energy=.3*Math.exp(ch.state.eRaw/100*Math.log(100));
+/* ---- LAB PANEL ---- */
+buildPanel(lab,$('#labPanel'),[
+ {type:'group',label:'Teilchen & Feld'},
+ {type:'select',key:'particle',label:'Teilchenart',opts:Object.keys(PRESETS).map(k=>({v:k,label:PRESETS[k].label}))},
+ {type:'slider',key:'v',label:'Geschwindigkeit v',min:100,max:2000,step:10,unit:' km/s',dec:0},
+ {type:'slider',key:'B',label:'Magnetfeld B',min:5,max:100,step:1,unit:' µT',dec:0},
+ {type:'seg',key:'dir',opts:[{v:1,label:'⊙ B heraus'},{v:-1,label:'⊗ B hinein'}]},
+ {type:'seg',key:'alpha',opts:[{v:90,label:'α = 90° (v ⊥ B)'},{v:0,label:'α = 0° (v ∥ B)'}]},
+ {type:'slider',key:'angle',label:'Abschusswinkel',min:-90,max:90,step:1,unit:'°',dec:0},
+ {type:'group',label:'Darstellung'},
+ {type:'slider',key:'timescale',label:'Zeitlupe',min:.2,max:2,step:.05,fmt:v=>'× '+de(v,2)},
+ {type:'slider',key:'trail',label:'Spurlänge',min:40,max:600,step:10,dec:0},
+ {type:'toggle',key:'vectors',label:'Vektoren anzeigen (v · B · F)'},
+ {type:'toggle',key:'grid',label:'Feld-Symbole (⊙ / ⊗)'},
+ {type:'group',label:'Live-Messwerte (echte Einheiten!)'},
+ {type:'readouts',items:[{id:'r',label:'Radius r = mv/(qB)'},{id:'T',label:'Umlaufzeit T'},{id:'F',label:'Kraft F = qvB·sinα'},{id:'spin',label:'Drehsinn'}]},
+ {type:'note',html:'⚠️ Tempo &amp; Radien im Bild sind skaliert, damit alles sichtbar bleibt — die Messwerte oben sind die <b>echten</b> physikalischen Werte.'},
+ {type:'actions',items:[
+  {label:'⚡ Neu schießen',cls:'',fn:s=>{s.relaunch();AudioFX.fire();}},
+  {label:'⏸ Pause',pause:true},
+  {label:'🎲 Zufall',fn:s=>{const ks=Object.keys(PRESETS);s.ui.particle.set(ks[Math.floor(Math.random()*4)]);s.ui.v.set(Math.round(rand(200,1800)/10)*10);s.ui.B.set(Math.round(rand(10,90)));s.ui.dir.set(Math.random()<.5?1:-1);s.ui.angle.set(Math.round(rand(-60,60)));s.ui.alpha.set(90);s.relaunch();AudioFX.fire();}},
+  {label:'↺ Reset',fn:s=>resetSim(s)},
+  {label:'📸 Export',fn:s=>s.export('lorentz-labor.png')}
+ ]}
+]);
+lab.updateRO();
+/* ---- MAGNETO PANEL ---- */
+buildPanel(mag,$('#magPanel'),[
+ {type:'group',label:'Weltraumwetter-Lage'},
+ {type:'html',key:'kphtml',html:`<div class="kp-line"><b id="kpLabel">Kp 2,0</b><span id="kpName">Ruhig</span></div><div class="kp-meter" id="kpGauge">${Array.from({length:10},(_,i)=>`<div class="kp-cell ${i<4?'c-g':i<6?'c-y':i<8?'c-r':'c-m'}"></div>`).join('')}</div><div class="kp-line" style="margin-top:6px"><span id="kpLat">Oval-Rand: ~61° Nord</span></div><p id="kpDesc" style="margin-top:6px"></p><div id="kpDE" style="margin-top:8px">🇩🇪 Polarlicht in Deutschland möglich!</div>`},
+ {type:'slider',key:'wind',label:'Sonnenwind-Tempo',min:300,max:900,step:10,unit:' km/s',dec:0},
+ {type:'slider',key:'density',label:'Teilchendichte',min:1,max:12,step:.5,unit:' /cm³',dec:1},
+ {type:'slider',key:'field',label:'Erdmagnetfeld-Stärke',min:50,max:150,step:5,unit:' %',dec:0},
+ {type:'seg',key:'imf',opts:[{v:'north',label:'IMF ↑ Nord (ruhig)'},{v:'south',label:'IMF ↓ Süd (Kopplung!)'}]},
+ {type:'group',label:'Ansicht'},
+ {type:'toggle',key:'belts',label:'Van-Allen-Gürtel (Spiegel-Effekt)'},
+ {type:'toggle',key:'lines',label:'Feldlinien & Schweif'},
+ {type:'toggle',key:'labels',label:'Beschriftungen'},
+ {type:'toggle',key:'inspect',label:'Vektor-Inspektor (Klick auf Teilchen)'},
+ {type:'readouts',items:[{id:'kp',label:'Kp-Index (0–9)'},{id:'count',label:'Teilchen eingeschleust ⚡'}]},
+ {type:'actions',items:[
+  {label:'☄️ CME-Sturm!',cls:'warn',fn:(s,b)=>s.storm(b)},
+  {label:'⏸ Pause',pause:true},
+  {label:'↺ Reset',fn:s=>resetSim(s)},
+  {label:'📸 Export',fn:s=>s.export('magnetosphaere.png')}
+ ]},
+ {type:'note',html:'💡 <b>Experiment:</b> IMF auf Süd stellen, dann CME zünden und den Kp-Index beobachten. Danach Feldstärke auf 50 % senken — was passiert mit dem Schutzschild?'}
+]);
+mag.updateKpUI();
+/* ---- CHAMBER PANEL ---- */
+buildPanel(ch,$('#chPanel'),[
+ {type:'group',label:'Elektronenregen'},
+ {type:'slider',key:'eRaw',label:'Elektronen-Energie',min:0,max:100,step:1,fmt:()=>de(ch.energy,ch.energy<3?2:1)+' keV'},
+ {type:'html',key:'pred',html:'<div class="pred-chip" id="chPred"></div>'},
+ {type:'slider',key:'flux',label:'Teilchenfluss',min:0,max:14,step:.5,unit:' e⁻/s',dec:1},
+ {type:'slider',key:'timescale',label:'Zeitlupe',min:.25,max:2,step:.05,fmt:v=>'× '+de(v,2)},
+ {type:'toggle',key:'labels',label:'Beschriftungen & Wartezeiten'},
+ {type:'group',label:'Emissions-Spektrum (live gezählt)'},
+ {type:'html',key:'spec',html:['red','green','blue','violet','pink','quench'].map(k=>{const inf=k==='quench'?{nm:'Stoßlöschung (grau)',c:PAL.gray}:CH_COLORS[k];return`<div class="spec-row"><em>${inf.nm}</em><div class="spec-bar"><div class="spec-fill" id="spec-${k}" style="background:${inf.c};color:${inf.c}"></div></div><b id="cnt-${k}">0</b></div>`;}).join('')},
+ {type:'readouts',items:[{id:'total',label:'Photonen gesamt'},{id:'quench',label:'Stoßlöschungen'},{id:'dom',label:'Hellste Farbe'},{id:'alt',label:'→ siehe Vorhersage'}]},
+ {type:'html',key:'evt',html:'<div class="evt"><span id="ev1">1 · Anregung</span><span id="ev2">2 · Warten…</span><span id="ev3">3 · Photon!</span></div>'},
+ {type:'actions',items:[
+  {label:'⚡ Einzelschuss',cls:'',fn:s=>s.single()},
+  {label:'⏸ Pause',pause:true},
+  {label:'↺ Reset',fn:s=>resetSim(s)},
+  {label:'📸 Export',fn:s=>s.export('aurora-kammer.png')}
+ ]},
+ {type:'note',html:'🔬 <b>Teste die Physik:</b> Energie &lt; 1 keV → Rot oben. 3–8 keV → Grün. &gt; 15 keV → Blau/Pink unten. Warum verschwindet Rot, wenn die Anregung zu tief landet? → <b>Stoßlöschung!</b>'}
+]);
+ch.pred();ch.setRO('alt','live oben ↑');
+/* ---- KP MAP PANEL ---- */
+buildPanel(kpmap,$('#kpPanel'),[
+ {type:'slider',key:'kp',label:'Kp-Index einstellen',min:0,max:9,step:1,fmt:v=>'Kp '+v},
+ {type:'note',html:'Der Kp-Index wird alle 3 Stunden aus Magnetometer-Daten weltweit berechnet — erfunden am <b>GFZ Potsdam</b>. Deutschland sieht Aurora typischerweise ab <b>Kp 7–8</b>.'}
+]);
+kpmap.updateInfo();
+/* cross-highlight formula/hand ↔ canvas */
+$$('[data-hl]').forEach(el=>{const k=el.dataset.hl;const on=()=>{lab.hl=k;};const off=()=>{if(lab.hl===k)lab.hl=null;};el.addEventListener('mouseenter',on);el.addEventListener('mouseleave',off);el.addEventListener('focus',on);el.addEventListener('blur',off);});
+/* ================= CONTENT BUILDERS ================= */
+const STATIONS=[
+ {icon:'i-sun',c:PAL.amber,title:'Alles beginnt in der Korona',text:'Kernfusion heizt die Sonnen-Atmosphäre auf 1–2 Millionen °C. Protonen und Elektronen verdampfen als Plasma — der Sonnenwind entsteht.',n:1.5,dec:1,suf:' Mio °C',lbl:'Korona-Temperatur'},
+ {icon:'i-wind',c:PAL.orange,title:'Rasen durchs All',text:'300–800 km/s, nur ~5 Teilchen pro cm³ — dünner als jedes Labor-Vakuum. Das Magnetfeld der Sonne reist mit (Parker-Spirale).',n:800,dec:0,suf:' km/s',lbl:'Spitzentempo'},
+ {icon:'i-route',c:PAL.red,title:'150 Millionen Kilometer',text:'2–4 Tage dauert die Reise. Licht schafft es in 8 Minuten! Ein CME (Korona-Massenauswurf) rast in unter 20 Stunden zu uns.',n:150,dec:0,suf:' Mio km',lbl:'1 Astronomische Einheit'},
+ {icon:'i-shield',c:PAL.cyan,title:'Aufprall auf den Schutzschild',text:'Bugschock! Das Erdmagnetfeld lenkt die Ladungen ab — die Lorentzkraft macht’s möglich. Die Magnetopause liegt bei ~10 Erdradien.',n:64000,dec:0,suf:' km',lbl:'Magnetopause (Tagseite)'},
+ {icon:'i-spiral',c:PAL.violet,title:'Gefangen & gespiegelt',text:'Teilchen spiralen entlang der Feldlinien und pendeln zwischen den Polen — die Van-Allen-Gürtel. Am Spiegelpunkt wird B stärker → zurück!',n:2,dec:0,suf:' Gürtel',lbl:'Van-Allen: innen p⁺, außen e⁻'},
+ {icon:'i-photon',c:PAL.green,title:'Kollision → Photon!',text:'In 90–400 km Höhe treffen Elektronen auf O und N₂. Anregung → Rückfall → Photon → Polarlicht! Der Himmel wird zum Leuchtschirm.',n:557.7,dec:1,suf:' nm',lbl:'das berühmte Grün'}
+];
+$('#timeline').innerHTML=STATIONS.map((s,i)=>`<li class="station" data-reveal style="--stc:${s.c};--d:${i%2*.08}s"><div class="st-icon"><svg class="ic"><use href="#${s.icon}"/></svg></div><div class="st-body"><h3>${i+1}. ${s.title}</h3><p>${s.text}</p><div class="st-stat"><b><span data-count="${s.n}" data-dec="${s.dec}">0</span>${s.suf}</b><span>${s.lbl}</span></div></div></li>`).join('');
+const EFFECTS=[
+ {icon:'i-globe',c:PAL.green,title:'Aurora Australis — das Südlicht',text:'Am Südpol leuchtet es fast spiegelbildlich: Nord- und Südlicht hängen an denselben Feldlinien („konjugierte Punkte“). Was oben passiert, passiert unten auch — beobachtet über Tasmanien, Neuseeland und der Antarktis.',chip:'Tasmanien · Antarktis · fast Spiegelbild'},
+ {icon:'i-bolt',c:PAL.red,title:'Carrington-Event 1859',text:'Der stärkste bekannte Sturm: Ein CME erreichte die Erde in ~17 Stunden. Polarlicht bis in die Karibik, Telegrafen funkten — manche Papierbögen fingen Feuer. Ein „Carrington 2.0“ heute wäre eine teure Angelegenheit.',chip:'1.–2. Sept 1859 · Kp ≈ 9+'},
+ {icon:'i-plug',c:PAL.amber,title:'Blackout Québec 1989',text:'Geomagnetisch induzierte Ströme (GIC) legten am 13. März 1989 das Stromnetz von Québec für 9 Stunden lahm — 6 Millionen Menschen saßen im Dunkeln. Auch Pipelines leiden: GIC beschleunigen Korrosion.',chip:'13. März 1989 · 9 h · 6 Mio Menschen'},
+ {icon:'i-sat',c:PAL.cyan,title:'Satelliten & GPS in Gefahr',text:'Stürme heizen die Hochatmosphäre auf → sie bläht sich auf → mehr Luftwiderstand: Im Februar 2022 verglühten bis zu 38 frische Starlink-Satelliten. Dazu: Ladeeffekte an Elektronik, GPS-Fehler durch die Ionosphäre, Strahlenrisiko für Astronaut:innen.',chip:'Feb 2022 · bis zu 38 Satelliten verloren'},
+ {icon:'i-steve',c:PAL.magenta,title:'STEVE — der violette Cousin',text:'Ein mauve-farbener Bogen, oft mit grünem „Picket Fence“ daneben: kein klassisches Polarlicht, sondern ein ~3000 °C heißes Gasband in ~450 km Höhe. 2016 von Bürgerforschern entdeckt, 2018 wissenschaftlich benannt.',chip:'≈ 3000 °C · ≈ 450 km · Citizen Science'},
+ {icon:'i-planet',c:PAL.violet,title:'Polarlicht auf anderen Planeten',text:'Jupiter hat das stärkste Polarlicht des Sonnensystems — gespeist von Vulkanen des Monds Io und der schnellen Rotation. Saturn leuchtet auch. Mars besitzt kein Globalfeld mehr: Dort gibt es nur fleckige Rest-Aurora über Krustenmagnetfeldern.',chip:'Jupiter: Io-Vulkane · Mars: nur fleckig'}
+];
+$('#effectGrid').innerHTML=EFFECTS.map((e,i)=>`<div class="card" data-reveal style="--acc:${e.c};--acc-soft:${hexA(e.c,.09)};--d:${i%3*.07}s"><h3><span class="icon"><svg class="ic"><use href="#${e.icon}"/></svg></span>${e.title}</h3><p>${e.text}</p><span class="chip"><b>${e.chip}</b></span></div>`).join('');
+const PLAN=[
+ ['0:00','Hook','Polarlicht-Foto zeigen: „Warum leuchtet der Himmel — und warum ausgerechnet dort?“'],
+ ['1:00','Sonne & Sonnenwind','Korona, Plasma, 400–800 km/s, 2–4 Tage Reise. (Abschnitt „Reise“)'],
+ ['3:00','Lorentzkraft','F = |q|·v·B·sinα an die Tafel. Drei-Finger-Regel: Klasse macht mit der Hand mit. Live im Labor: Elektron ↔ Proton umschalten.'],
+ ['7:00','Magnetosphäre','Simulation: Schutzschild, Van-Allen-Gürtel. IMF auf Süd + Sturm-Button → Kp steigt live.'],
+ ['10:00','Farben','Aurora-Kammer: Energie hochschieben → Farbe wechselt. Grün = O bei 100–150 km, Rot nur oben (110 s!).'],
+ ['12:30','Effekte','Carrington, Québec, Starlink, STEVE. Kp-Karte: „Ab Kp 7–8 sehen WIR was!“'],
+ ['14:00','Quiz & Fazit','2–3 Quizfragen mit der Klasse. Merksatz: „Die Lorentzkraft lenkt — sie beschleunigt nicht.“']
+];
+$('#planList').innerHTML=PLAN.map(p=>`<li><span class="t">${p[0]}</span><div><b>${p[1]}</b><p>${p[2]}</p></div></li>`).join('');
+const FACTS=[
+ ['Sonnenwind-Tempo','300–800 km/s'],['Entfernung Sonne–Erde','150 Mio km (1 AE)'],['Reisezeit Sonnenwind','2–4 Tage'],['Erdmagnetfeld (Deutschland)','≈ 48 µT'],['Magnetopause (Tagseite)','≈ 10 R⊕ ≈ 64.000 km'],['Polarlicht-Höhe','90–400 km'],['Grün: O-Atom, Lebensdauer','557,7 nm · ≈ 0,7 s'],['Rot: O-Atom, nur > 200 km','630,0 nm · ≈ 110 s'],['Blau: N₂⁺-Ion','427,8 nm'],['Elektron-Gyroradius (1000 km/s, 50 µT)','≈ 11 cm'],['Sonnenzyklus (Maximum ~2024–26)','11 Jahre'],['Polarlicht in Deutschland','ab Kp 7–8'],['Elementarladung e','1,602·10⁻¹⁹ C']
+];
+$('#factsTable').innerHTML=FACTS.map(f=>`<tr><td>${f[0]}</td><td>${f[1]}</td></tr>`).join('');
+const QA=[
+ ['Warum ändert die Lorentzkraft das Tempo nicht?','F steht immer senkrecht auf v. Arbeit ist W = F·s·cosα — mit α = 90° folgt W = 0. Keine Arbeit → keine Energieänderung → das Tempo bleibt gleich, nur die Richtung dreht sich. Deshalb: Kreisbahn (bzw. Schraube).'],
+ ['Warum spiralen die Teilchen, statt gerade zu fliegen?','Zerlege v in einen Anteil senkrecht zu B (→ Kreisbewegung) und einen parallel zu B (→ gleichförmige Bewegung, denn F = 0 für v∥B). Überlagert ergibt das eine Schraubenlinie (Helix) um die Feldlinie. Radius: r = m·v⊥/(|q|·B).'],
+ ['Warum leuchtet es in einem Oval und nicht direkt am Pol?','Die Teilchen werden entlang bestimmter Feldlinien geführt, die den Magnetpol ringförmig umgeben — das Polarlicht-Oval bei ~65–75° geomagnetischer Breite. Direkt über dem Pol liegen „offene“ Feldlinien (Polarkappe), in die der Sonnenwind kaum eindringt. Bei Stürmen wandert das Oval Richtung Äquator.'],
+ ['Was ist eigentlich Plasma?','Ein Gas aus freien Elektronen und Ionen — der „vierte Aggregatzustand“. Es entsteht, wenn Atome bei hoher Temperatur (oder durch Strahlung) ionisiert werden. Über 99 % der sichtbaren Materie im Universum ist Plasma: Sterne, Sonnenwind, Nebel.'],
+ ['Warum gibt es Rot nur ganz oben?','Der rote O-Übergang (630 nm) ist metastabil: ~110 Sekunden Wartezeit. Unter ~200 km stoßen andere Teilchen so häufig ins angeregte Atom, dass die Energie vorher als Wärme abgegeben wird (Stoßlöschung). Nur oben ist die Luft dünn genug, dass die Anregung „überlebt“.'],
+ ['Ist das gefährlich für uns am Boden?','Das Polarlicht selbst ist harmlos — Atmosphäre und Magnetfeld schirmen die Teilchen ab. Gefährdet sind Technik (Netze, Satelliten, GPS, Funk) und Astronaut:innen außerhalb des Schutzschilds. Für starke Stürme gibt es Warnsysteme, z. B. bei ESA und NOAA.'],
+ ['Warum sehen Nord- und Südlicht fast gleich aus?','Beide hängen an denselben Feldlinien: Ein Teilchenregen, der im Norden einfädelt, spiegelt sich entlang der Feldlinie in den Süden. Satellitenbilder zeigen fast deckungsgleiche Muster an den „konjugierten Punkten“.'],
+ ['Was würde ein Supersturm heute ausrichten?','Ein Carrington-ähnliches Ereignis würde Satelliten Elektronik grillen, GPS tagelang stören und in Stromnetzen große Transformatoren beschädigen — Schätzungen gehen in die Milliarden. Mai 2024 (G5) gab einen Vorgeschmack: beautiful aurora, aber Netze und Netzbetreiber arbeiteten am Limit.']
+];
+$('#qaList').innerHTML=QA.map(q=>`<details class="qa"><summary>${q[0]}</summary><div class="qa-body">${q[1]}</div></details>`).join('');
+/* ================= QUIZ ================= */
+const QUIZ=[
+ {q:'Wie lautet die Lorentzkraft, wenn v senkrecht auf B steht?',o:['F = m·g','F = |q|·v·B','F = m·v²/r','F = q·E'],a:1,e:'F = |q|·v·B·sinα — bei α = 90° ist sinα = 1, also F = |q|·v·B. Die Richtung liefert die Drei-Finger-Regel.'},
+ {q:'Ein Elektron fliegt genau parallel zur Feldlinie. Was passiert?',o:['Es wird schneller','Es wird abgebremst','Nichts — F = 0, es fliegt geradeaus','Es beginnt zu kreisen'],a:2,e:'sin 0° = 0 → keine Lorentzkraft! Nur der senkrechte Anteil von v spürt das Feld. Deshalb schrauben sich Teilchen um Feldlinien: Kreis (⊥) + Geradeaus (∥).'},
+ {q:'Welche Hand nimmt man bei der Drei-Finger-Regel für Elektronen?',o:['Immer die rechte','Die linke (oder rechte + F umdrehen)','Beide — egal','Keine, man rechnet nur'],a:1,e:'Elektronen sind negativ → linke Hand. Trick: rechte Hand nehmen und die F-Richtung umdrehen. Daumen = v, Zeigefinger = B, Mittelfinger = F.'},
+ {q:'Warum ändert die Lorentzkraft nie das Tempo eines Teilchens?',o:['Weil B immer so schwach ist','Weil Elektronen fast keine Masse haben','Weil der Sonnenwind bremst','Weil F ⊥ v: sie verrichtet keine Arbeit'],a:3,e:'F steht senkrecht auf v → W = F·s·cos90° = 0. Keine Arbeit, keine Energieänderung — nur die Richtung wird gedreht. Merke: lenken ≠ beschleunigen!'},
+ {q:'In welcher Einheit misst man die magnetische Feldstärke B?',o:['Newton','Volt','Tesla','Ampere'],a:2,e:'1 Tesla = 1 N/(A·m). Die Erde hat in Deutschland nur ~48 µT (Mikrotesla), ein Kühlschrankmagnet ~5 mT, ein MRT 1,5–3 T.'},
+ {q:'Wie lange braucht der Sonnenwind (400–800 km/s) bis zur Erde?',o:['8 Minuten','2–4 Tage','3 Wochen','1 Jahr'],a:1,e:'150 Mio km ÷ 500 km/s ≈ 3,5 Tage. Die 8 Minuten gelten für LICHT — der Sonnenwind ist viel langsamer. Ein extremes CME schafft es in unter 20 Stunden (Carrington: ~17 h).'},
+ {q:'Das typische Grün (557,7 nm) im Polarlicht kommt von…',o:['Stickstoff-Molekülen ganz unten','Ozon in der Ozonschicht','angeregten Sauerstoff-Atomen in 100–150 km','Wasserstoff in der Exosphäre'],a:2,e:'O-Atome werden angeregt und fallen nach ~0,7 s zurück → grünes Photon. Unsere Augen sind für Grün am empfindlichsten — darum wirkt es am hellsten.'},
+ {q:'Warum gibt es das rote Polarlicht (630 nm) fast nur über 200 km?',o:['Weil Rot von Luft absorbiert wird','Weil die Anregung ~110 s braucht — unten wird sie vorher weggestoßen','Weil rotes Licht zu schwach ist','Weil N₂ rot leuchtet'],a:1,e:'Der rote O-Übergang ist metastabil (~110 s). Unter ~200 km kommt es vorher zu Stößen → Stoßlöschung, Energie wird Wärme. Nur ganz oben überlebt die Anregung lang genug.'},
+ {q:'Ab welchem Kp-Wert sieht man Polarlicht typischerweise in Deutschland?',o:['Schon ab Kp 1–2','Ab Kp 3–4','Ab Kp 7–8','In Deutschland niemals'],a:2,e:'Ab Kp 7–8 wandert das Oval weit genug nach Süden. Mai 2024 (G5, Kp 9): Polarlicht über fast ganz Deutschland! Solche Nächte gibt es nur wenige pro 11-Jahr-Sonnenzyklus.'}
+];
+let qi=0,qscore=0,qAnswered=false,quizActive=false;
+const qDots=$('#qDots');
+function renderDots(){qDots.innerHTML=QUIZ.map((_,i)=>`<span class="dot ${i<qi?'done':i===qi?'cur':''}"></span>`).join('');}
+function renderQ(){qAnswered=false;const Q=QUIZ[qi];renderDots();$('#qScore').textContent=`Punkte: ${qscore} / ${QUIZ.length}`;$('#qText').textContent=`Frage ${qi+1}: ${Q.q}`;
+ $('#qOpts').innerHTML='';Q.o.forEach((o,i)=>{const b=document.createElement('button');b.className='opt';b.innerHTML=`<span class="key">${i+1}</span><span>${o}</span>`;b.addEventListener('click',()=>answer(i));$('#qOpts').appendChild(b);});
+ $('#qFeed').className='';$('#qFeed').classList.remove('show');$('#qNext').classList.remove('show');}
+function answer(i){if(qAnswered)return;qAnswered=true;const Q=QUIZ[qi];const opts=$$('#qOpts .opt');opts.forEach(o=>o.disabled=true);
+ const good=i===Q.a;opts[Q.a].classList.add('correct');if(!good){opts[i].classList.add('wrong');AudioFX.wrong();}else{qscore++;AudioFX.correct();}
+ const f=$('#qFeed');f.classList.toggle('bad',!good);f.innerHTML=`<b>${good?'✓ Richtig!':'✗ Leider falsch.'}</b> ${Q.e}`;f.classList.add('show');
+ $('#qScore').textContent=`Punkte: ${qscore} / ${QUIZ.length}`;
+ const nx=$('#qNext');nx.textContent=qi<QUIZ.length-1?'Weiter →':'Ergebnis 🏁';nx.classList.add('show');}
+function nextQ(){if(!qAnswered)return;if(qi<QUIZ.length-1){qi++;renderQ();}else endQuiz();}
+function endQuiz(){$('#qBody').style.display='none';const end=$('#qEnd');end.classList.add('show');
+ $('#ringTxt').textContent=qscore+'/'+QUIZ.length;
+ requestAnimationFrame(()=>{$('#ringFg').style.strokeDashoffset=389.6*(1-qscore/QUIZ.length);});
+ const r=qscore===9?['🏆 GFS-Ass!','Neun von neun — du bist bereit für die 1+. Geh vor die Klasse und zeig ihnen den Sturm!']:qscore>=7?['🌟 Lorentz-Profi','Stark! Schau dir die eine oder andere Erklärung nochmal an — dann sitzt alles.']:qscore>=5?['👍 Solide Basis','Gut unterwegs! Dreh noch eine Runde im Lorentz-Labor und in der Aurora-Kammer — die Bilder helfen beim Merken.']:['🔁 Noch eine Runde!','Kein Stress — scroll hoch, spiel mit den Simulationen und komm zurück. Physik versteht man mit den Händen!'];
+ $('#qRank').textContent=r[0];$('#qMsg').textContent=r[1];
+ if(qscore>=7&&!RM)confetti();if(qscore>=7)AudioFX.correct();}
+function confetti(){const card=$('#quizCard');const cols=[PAL.green,PAL.cyan,PAL.violet,PAL.amber,PAL.magenta,PAL.pink];
+ for(let i=0;i<46;i++){const s=document.createElement('span');s.className='cf';s.style.background=cols[i%6];s.style.setProperty('--dx',rand(-260,260)+'px');s.style.setProperty('--dy',rand(-220,300)+'px');s.style.setProperty('--rot',rand(-540,540)+'deg');s.style.setProperty('--dur',rand(.9,1.6)+'s');s.addEventListener('animationend',()=>s.remove());card.appendChild(s);}}
+$('#qNext').addEventListener('click',nextQ);
+$('#qRestart').addEventListener('click',()=>{qi=0;qscore=0;$('#qEnd').classList.remove('show');$('#ringFg').style.strokeDashoffset=389.6;$('#qBody').style.display='';renderQ();AudioFX.click();});
+addEventListener('keydown',e=>{if(!quizActive)return;if(e.key>='1'&&e.key<='4'){const i=+e.key-1;if(!qAnswered&&i<QUIZ[qi].o.length)answer(i);}else if(e.key==='Enter'&&qAnswered&&$('#qBody').style.display!=='none')nextQ();});
+renderQ();
+if(hasIO)new IntersectionObserver(es=>{quizActive=es[0].isIntersecting;},{threshold:.25}).observe($('#quiz'));else quizActive=true;
+/* ================= REVEAL / COUNTUP / NAVSPY / SCROLL ================= */
+if(hasIO){
+ const rio=new IntersectionObserver(es=>{for(const e of es)if(e.isIntersecting){e.target.classList.add('in');rio.unobserve(e.target);}},{threshold:.12,rootMargin:'0px 0px -40px'});
+ $$('[data-reveal]').forEach(el=>rio.observe(el));
+ const cio=new IntersectionObserver(es=>{for(const e of es){if(!e.isIntersecting)continue;cio.unobserve(e.target);const el=e.target,end=parseFloat(el.dataset.count),dec=parseInt(el.dataset.dec||'0');if(RM){el.textContent=de(end,dec);continue;}const t0=performance.now();const tick=n=>{const p=Math.min(1,(n-t0)/1300),ease=1-Math.pow(1-p,3);el.textContent=de(end*ease,dec);if(p<1)requestAnimationFrame(tick);};requestAnimationFrame(tick);}},{threshold:.5});
+ $$('[data-count]').forEach(el=>cio.observe(el));
+ const links=$$('#navLinks a');const secs=links.map(a=>$(a.getAttribute('href')));
+ const nio=new IntersectionObserver(es=>{for(const e of es){if(e.isIntersecting){const i=secs.indexOf(e.target);links.forEach((l,j)=>l.classList.toggle('active',i===j));}}},{rootMargin:'-35% 0px -55%'});
+ secs.forEach(s=>{if(s)nio.observe(s);});
+}else{$$('[data-reveal]').forEach(el=>el.classList.add('in'));$$('[data-count]').forEach(el=>el.textContent=de(parseFloat(el.dataset.count),parseInt(el.dataset.dec||'0')));}
+let scrollTick=false;
+addEventListener('scroll',()=>{if(scrollTick)return;scrollTick=true;requestAnimationFrame(()=>{scrollTick=false;const max=document.documentElement.scrollHeight-innerHeight;$('#progressBar').style.transform='scaleX('+(max>0?scrollY/max:0)+')';if(!RM){$('.orb1').style.transform='translateY('+scrollY*-.06+'px)';$('.orb2').style.transform='translateY('+scrollY*-.1+'px)';$('.orb3').style.transform='translateY('+scrollY*-.04+'px)';}});},{passive:true});
+/* ================= PRINT ================= */
+$('#printBtn').addEventListener('click',()=>{AudioFX.click();window.print();});
+addEventListener('beforeprint',()=>{$$('details.qa').forEach(d=>{d.dataset.was=d.open?'1':'0';d.open=true;});});
+addEventListener('afterprint',()=>{$$('details.qa').forEach(d=>{d.open=d.dataset.was==='1';});});
+/* welcome */
+setTimeout(()=>{if(scrollY<80)toast('👋 Willkommen! Klick in den Sternenhimmel für einen Sonnenausbruch — oder scroll zur Reise.');},1800);
+})();
+</script>
+</body>
+</html>
