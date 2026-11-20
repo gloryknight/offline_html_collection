@@ -1,380 +1,596 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Offline html collection</title>
+    <title>Offline HTML Collection</title>
+    <meta name="description" content="A collection of 54 offline-first web tools. Everything runs in your browser — no servers, no tracking, no data sent anywhere.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #0f172a;
-            --card-bg: rgba(30, 41, 59, 0.7);
-            --accent-color: #38bdf8;
-            --text-main: #f1f5f9;
-            --text-muted: #94a3b8;
-            --card-border: rgba(255, 255, 255, 0.1);
-            --hover-bg: rgba(56, 189, 248, 0.1);
+            --bg: #0b1020;
+            --card: rgba(255, 255, 255, 0.04);
+            --card-hover: rgba(255, 255, 255, 0.07);
+            --border: rgba(255, 255, 255, 0.08);
+            --border-hover: rgba(56, 189, 248, 0.5);
+            --text: #e6edf7;
+            --muted: #8b97ad;
+            --accent: #38bdf8;
+            --accent-2: #818cf8;
+            --radius: 16px;
+            --shadow: 0 18px 40px -18px rgba(0, 0, 0, 0.7);
         }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-color);
-            background-image:
-                radial-gradient(circle at 2px 2px, rgba(255, 255, 255, 0.05) 1px, transparent 0);
-            background-size: 40px 40px;
-            color: var(--text-main);
-            line-height: 1.6;
-            padding: 2rem 1rem;
+            font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+            background:
+                radial-gradient(1200px 600px at 80% -10%, rgba(129, 140, 248, 0.12), transparent 60%),
+                radial-gradient(900px 500px at 0% 0%, rgba(56, 189, 248, 0.10), transparent 55%),
+                var(--bg);
+            color: var(--text); line-height: 1.6; min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
         }
+        .wrap { max-width: 1240px; margin: 0 auto; padding: 0 1.25rem; }
 
-        header {
-            max-width: 1200px;
-            margin: 0 auto 3rem auto;
-            text-align: center;
+        header { padding: 3.5rem 0 1.5rem; text-align: center; }
+        header .badge {
+            display: inline-flex; align-items: center; gap: 0.5rem;
+            font-size: 0.78rem; font-weight: 600; letter-spacing: 0.04em;
+            color: var(--accent); background: rgba(56, 189, 248, 0.1);
+            border: 1px solid rgba(56, 189, 248, 0.25);
+            padding: 0.35rem 0.8rem; border-radius: 999px; margin-bottom: 1.1rem;
         }
-
+        header .dot { width: 7px; height: 7px; border-radius: 50%; background: #34d399; box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.18); }
         header h1 {
-            font-size: 2.5rem;
-            font-weight: 700;
-            letter-spacing: -0.025em;
-            margin-bottom: 0.5rem;
-            background: linear-gradient(to right, #fff, var(--accent-color));
-            background-clip: text;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            font-size: clamp(2rem, 5vw, 3rem); font-weight: 800; letter-spacing: -0.03em;
+            background: linear-gradient(120deg, #fff, var(--accent) 55%, var(--accent-2));
+            -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
         }
+        header p { color: var(--muted); font-size: 1.05rem; max-width: 640px; margin: 0.75rem auto 0; }
 
-        header p {
-            color: var(--text-muted);
-            font-size: 1.1rem;
+        .controls {
+            position: sticky; top: 0; z-index: 20;
+            background: rgba(11, 16, 32, 0.82); backdrop-filter: blur(14px);
+            border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+            padding: 0.9rem 0;
         }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 1.5rem;
+        .controls .inner { display: flex; flex-wrap: wrap; gap: 0.8rem; align-items: center; }
+        .search { position: relative; flex: 1 1 260px; min-width: 200px; }
+        .search svg { position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); opacity: 0.5; }
+        .search input {
+            width: 100%; padding: 0.7rem 0.9rem 0.7rem 2.4rem;
+            background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+            color: var(--text); font-size: 0.95rem; font-family: inherit; outline: none;
+            transition: border-color .2s, background .2s;
         }
+        .search input::placeholder { color: var(--muted); }
+        .search input:focus { border-color: var(--border-hover); background: var(--card-hover); }
+        .filters { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+        .chip {
+            font-size: 0.82rem; font-weight: 600; cursor: pointer;
+            color: var(--muted); background: var(--card);
+            border: 1px solid var(--border); border-radius: 999px;
+            padding: 0.42rem 0.85rem; transition: all .18s ease; white-space: nowrap;
+        }
+        .chip:hover { color: var(--text); border-color: var(--border-hover); }
+        .chip .n { opacity: 0.6; font-weight: 500; margin-left: 0.3rem; }
+        .chip.active { color: #06121f; background: var(--accent); border-color: var(--accent); }
+        .chip.active .n { opacity: 0.7; }
 
+        main { padding: 1.75rem 0 3rem; }
+        .count { color: var(--muted); font-size: 0.85rem; margin-bottom: 1.1rem; }
+        .count b { color: var(--text); font-weight: 700; }
+        .grid { display: grid; gap: 1.1rem; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
         .card {
-            background: var(--card-bg);
-            backdrop-filter: blur(10px);
-            border: 1px solid var(--card-border);
-            border-radius: 16px;
-            padding: 1.5rem;
-            text-decoration: none;
-            color: inherit;
-            display: flex;
-            flex-direction: column;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            overflow: hidden;
+            display: flex; flex-direction: column; text-decoration: none; color: inherit;
+            background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+            padding: 1.25rem 1.3rem; position: relative; overflow: hidden;
+            transition: transform .25s cubic-bezier(.2,.7,.2,1), border-color .25s, background .25s, box-shadow .25s;
         }
-
         .card::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 4px;
-            background: linear-gradient(90deg, transparent, var(--accent-color), transparent);
-            transform: translateX(-100%);
-            transition: transform 0.5s ease;
+            content: ""; position: absolute; inset: 0 0 auto 0; height: 3px;
+            background: linear-gradient(90deg, var(--accent), var(--accent-2));
+            opacity: 0; transition: opacity .25s;
         }
-
-        .card:hover {
-            transform: translateY(-5px);
-            border-color: var(--accent-color);
-            background: var(--hover-bg);
-            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+        .card:hover, .card:focus-visible {
+            transform: translateY(-5px); border-color: var(--border-hover);
+            background: var(--card-hover); box-shadow: var(--shadow); outline: none;
         }
-
-        .card:hover::before {
-            transform: translateX(0);
+        .card:hover::before, .card:focus-visible::before { opacity: 1; }
+        .card .top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.7rem; }
+        .tag {
+            font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+            color: var(--accent); background: rgba(56, 189, 248, 0.12);
+            padding: 0.22rem 0.55rem; border-radius: 999px;
         }
+        .slug { font-size: 0.72rem; font-weight: 500; color: var(--muted); font-family: ui-monospace, monospace; }
+        .card h2 { font-size: 1.12rem; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 0.45rem; }
+        .card p { font-size: 0.88rem; color: var(--muted); flex: 1; }
+        .card .go { margin-top: 0.9rem; font-size: 0.82rem; font-weight: 600; color: var(--accent); opacity: 0; transform: translateY(4px); transition: all .25s; }
+        .card:hover .go, .card:focus-visible .go { opacity: 1; transform: none; }
 
-        .card-id {
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: var(--accent-color);
-            text-transform: uppercase;
-            margin-bottom: 0.5rem;
-            opacity: 0.8;
-        }
+        .empty { text-align: center; color: var(--muted); padding: 4rem 1rem; display: none; }
+        .empty h3 { color: var(--text); font-size: 1.2rem; margin-bottom: 0.4rem; }
 
-        .card h2 {
-            font-size: 1.25rem;
-            margin-bottom: 0.75rem;
-            font-weight: 600;
-        }
+        footer { border-top: 1px solid var(--border); padding: 2rem 0 3rem; text-align: center; color: var(--muted); font-size: 0.85rem; }
+        footer a { color: var(--accent); text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
 
-        .card p {
-            font-size: 0.9rem;
-            color: var(--text-muted);
-            flex-grow: 1;
-        }
-
-        footer {
-            text-align: center;
-            margin-top: 4rem;
-            color: var(--text-muted);
-            font-size: 0.875rem;
-        }
-
-        /* Responsive adjustments */
         @media (max-width: 640px) {
-            header h1 {
-                font-size: 2rem;
-            }
-
-            .container {
-                grid-template-columns: 1fr;
-            }
+            header { padding: 2.5rem 0 1rem; }
+            .grid { grid-template-columns: 1fr; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            * { transition: none !important; scroll-behavior: auto !important; }
         }
     </style>
 </head>
-
 <body>
-
-    <header>
-        <h1>Offline html collection</h1>
-        <p>All tools work offline and no data is sent anywhere.</p>
+    <header class="wrap">
+        <span class="badge"><span class="dot"></span> 100% offline · no data leaves your browser</span>
+        <h1>Offline HTML Collection</h1>
+        <p>A curated set of single-file web tools. Open any of them and it just works — no installs, no servers, no tracking.</p>
     </header>
-    <main class="container" id="grid">
-        <!-- Cards will be injected here by JavaScript for cleanliness -->
-        <a href="tool_1.html" class="card">
-            <div class="card-id">Tool #1</div>
-            <h2>JSON Formatter</h2>
-            <p>Create a sleek JSON beautifier and validator with syntax highlighting.</p>
-        </a><a href="tool_2.html" class="card">
-            <div class="card-id">Tool #2</div>
-            <h2>Regex Tester</h2>
-            <p>Build a real-time Regular Expression tester with match highlighting.</p>
-        </a><a href="tool_3.html" class="card">
-            <div class="card-id">Tool #3</div>
-            <h2>Base64 Tool</h2>
-            <p>A professional Base64 encoder/decoder with support for text and images.</p>
-        </a><a href="tool_4.html" class="card">
-            <div class="card-id">Tool #4</div>
-            <h2>Markdown Previewer</h2>
-            <p>A split-pane Markdown editor with live HTML preview.</p>
-        </a><a href="tool_5.html" class="card">
-            <div class="card-id">Tool #5</div>
-            <h2>JWT Decoder</h2>
-            <p>An intuitive JSON Web Token debugger that visualizes header &amp; payload.</p>
-        </a><a href="tool_6.html" class="card">
-            <div class="card-id">Tool #6</div>
-            <h2>CSS Glassmorphism Generator</h2>
-            <p>Adjust blur/transparency and export CSS code instantly.</p>
-        </a><a href="tool_7.html" class="card">
-            <div class="card-id">Tool #7</div>
-            <h2>Color Palette Pro</h2>
-            <p>Generate harmonious color schemes with HEX/RGB export.</p>
-        </a><a href="tool_8.html" class="card">
-            <div class="card-id">Tool #8</div>
-            <h2>Diff Checker</h2>
-            <p>A side-by-side text comparison tool highlighting changes.</p>
-        </a><a href="tool_9.html" class="card">
-            <div class="card-id">Tool #9</div>
-            <h2>SQL Formatter</h2>
-            <p>Beautify messy SQL queries with smart indentation logic.</p>
-        </a><a href="tool_10.html" class="card">
-            <div class="card-id">Tool #10</div>
-            <h2>Unit Converter Pro</h2>
-            <p>High-end converter for length, weight, and temperature.</p>
-        </a><a href="tool_11.html" class="card">
-            <div class="card-id">Tool #11</div>
-            <h2>Sorting Visualizer</h2>
-            <p>Interactive visualization of Bubble, Merge, and Quick Sort.</p>
-        </a><a href="tool_12.html" class="card">
-            <div class="card-id">Tool #12</div>
-            <h2>Pathfinding Visualizer</h2>
-            <p>Grid-based tool demonstrating A* or Dijkstra’s algorithm.</p>
-        </a><a href="tool_13.html" class="card">
-            <div class="card-id">Tool #13</div>
-            <h2>Conway’s Game of Life</h2>
-            <p>Beautiful implementation of the cellular automaton.</p>
-        </a><a href="tool_14.html" class="card">
-            <div class="card-id">Tool #14</div>
-            <h2>Fractal Generator</h2>
-            <p>HTML5 Canvas tool to explore the Mandelbrot set via zooming.</p>
-        </a><a href="tool_15.html" class="card">
-            <div class="card-id">Tool #15</div>
-            <h2>Particle Physics Sandbox</h2>
-            <p>High-performance particle system reacting to mouse movement.</p>
-        </a><a href="tool_16.html" class="card">
-            <div class="card-id">Tool #16</div>
-            <h2>Fourier Series Visualizer</h2>
-            <p>Animation showing how circles create complex wave shapes.</p>
-        </a><a href="tool_17.html" class="card">
-            <div class="card-id">Tool #17</div>
-            <h2>Binary Search Tree Visualizer</h2>
-            <p>Animate the insertion and searching of nodes in a BST.</p>
-        </a><a href="tool_18.html" class="card">
-            <div class="card-id">Tool #18</div>
-            <h2>Data Dashboard Template</h2>
-            <p>Professional single-page dashboard using Chart.js.</p>
-        </a><a href="tool_19.html" class="card">
-            <div class="card-id">Tool #19</div>
-            <h2>Algorithm Complexity Timer</h2>
-            <p>Visualize Big O notation growth visually via loops.</p>
-        </a><a href="tool_20.html" class="card">
-            <div class="card-id">Tool #20</div>
-            <h2>Sorting vs. Searching Demo</h2>
-            <p>Split-screen visual comparing algorithm traversal.</p>
-        </a><a href="tool_21.html" class="card">
-            <div class="card-id">Tool #21</div>
-            <h2>Minimalist Pomodoro</h2>
-            <p>Zen-style timer with customizable work/break intervals.</p>
-        </a><a href="tool_22.html" class="card">
-            <div class="card-id">Tool #22</div>
-            <h2>Kanban Board</h2>
-            <p>Drag-and-drop task manager using LocalStorage.</p>
-        </a><a href="tool_23.html" class="card">
-            <div class="card-id">Tool #23</div>
-            <h2>Habit Tracker Heatmap</h2>
-            <p>GitHub-style contribution grid for tracking daily habits.</p>
-        </a><a href="tool_24.html" class="card">
-            <div class="card-id">Tool #24</div>
-            <h2>Zen Notepad</h2>
-            <p>Distraction-free markdown notepad with auto-save.</p>
-        </a><a href="tool_25.html" class="card">
-            <div class="card-id">Tool #25</div>
-            <h2>Budget Calculator</h2>
-            <p>Sleek expense tracker with dynamic pie charts.</p>
-        </a><a href="tool_26.html" class="card">
-            <div class="card-id">Tool #26</div>
-            <h2>Password Architect</h2>
-            <p>Customizable password generator with entropy calculation.</p>
-        </a><a href="tool_27.html" class="card">
-            <div class="card-id">Tool #27</div>
-            <h2>Daily Focus Timer</h2>
-            <p>Countdown timer featuring a minimalist progress ring.</p>
-        </a><a href="tool_28.html" class="card">
-            <div class="card-id">Tool #28</div>
-            <h2>Interactive Mind Map</h2>
-            <p>Create nodes and connections using SVG drag-and-drop.</p>
-        </a><a href="tool_29.html" class="card">
-            <div class="card-id">Tool #29</div>
-            <h2>Breathwork Guide</h2>
-            <p>Calming, animated circle expansion for guided breathing.</p>
-        </a><a href="tool_30.html" class="card">
-            <div class="card-id">Tool #30</div>
-            <h2>Minimalist Weather App</h2>
-            <p>Clean dashboard with real-time API data &amp; dynamic backgrounds.</p>
-        </a><a href="tool_31.html" class="card">
-            <div class="card-id">Tool #31</div>
-            <h2>Retro Terminal Emulator</h2>
-            <p>Functional CLI styled like a 1980s CRT monitor.</p>
-        </a><a href="tool_32.html" class="card">
-            <div class="card-id">Tool #32</div>
-            <h2>Neumorphic Calculator</h2>
-            <p>Calculator using the soft, extruded Neumorphism design trend.</p>
-        </a><a href="tool_33.html" class="card">
-            <div class="card-id">Tool #33</div>
-            <h2>Cyberpunk Dashboard</h2>
-            <p>High-contrast, neon-accented UI for monitoring stats.</p>
-        </a><a href="tool_34.html" class="card">
-            <div class="card-id">Tool #34</div>
-            <h2>Generative Art Canvas</h2>
-            <p>Generate geometric patterns via mathematical logic.</p>
-        </a><a href="tool_35.html" class="card">
-            <div class="card-id">Tool #35</div>
-            <h2>3D CSS Cube Playground</h2>
-            <p>Manipulate 3D shapes created entirely with CSS transforms.</p>
-        </a><a href="tool_36.html" class="card">
-            <div class="card-id">Tool #36</div>
-            <h2>Audio Visualizer</h2>
-            <p>Web Audio API implementation for microphone input.</p>
-        </a><a href="tool_37.html" class="card">
-            <div class="card-id">Tool #37</div>
-            <h2>Glassmorphism UI Kit</h2>
-            <p>Interactive showcase of various glass-style components.</p>
-        </a><a href="tool_38.html" class="card">
-            <div class="card-id">Tool #38</div>
-            <h2>Interactive Particle Background</h2>
-            <p>Lightweight, high-performance background for landing pages.</p>
-        </a><a href="tool_39.html" class="card">
-            <div class="card-id">Tool #39</div>
-            <h2>CSS Grid Playground</h2>
-            <p>Visual tool to build and export complex CSS Grid layouts.</p>
-        </a><a href="tool_40.html" class="card">
-            <div class="card-id">Tool #40</div>
-            <h2>Digital Clock (Modern)</h2>
-            <p>Typography-focused clock with smooth transitions.</p>
-        </a><a href="tool_41.html" class="card">
-            <div class="card-id">Tool #41</div>
-            <h2>HTML Live Previewer</h2>
-            <p>Real-time HTML editor with instant preview in a modal.</p>
-        </a><a href="tool_42.html" class="card">
-            <div class="card-id">Tool #42</div>
-            <h2>Video Background Generator</h2>
-            <p>Generate video for audio using Bunny.</p>
-        </a><a href="tool_43.html" class="card">
-            <div class="card-id">Tool #43</div>
-            <h2>Text Video Creator</h2>
-            <p>Generate video with text.</p>
-        </a><a href="tool_44.html" class="card">
-            <div class="card-id">Tool #44</div>
-            <h2>EV Optimal Speed Calculator</h2>
-            <p>Find the speed that minimizes total trip time — driving + charging.</p>
-        </a><a href="tool_45.html" class="card">
-            <div class="card-id">Tool #45</div>
-            <h2>CSV Batch LLM Processor</h2>
-            <p>Process CSV data through OpenAI-compatible endpoint.</p>
-        </a><a href="tool_46.html" class="card">
-            <div class="card-id">Tool #46</div>
-            <h2>CSV HTML Inspector</h2>
-            <p>Preview CSV data in an HTML format.</p>
-        </a><a href="tool_47.html" class="card">
-            <div class="card-id">Tool #47</div>
-            <h2>CSV File Extractor</h2>
-            <p>Convert CSV rows into individual files inside a ZIP archive instantly.</p>
-        </a><a href="tool_48.html" class="card">
-            <div class="card-id">Tool #48</div>
-            <h2>Tower defense game</h2>
-            <p>Modern and fancy-looking tower defense game in single HTML.</p>
-        </a><a href="tool_49.html" class="card">
-            <div class="card-id">Tool #49</div>
-            <h2>Screen recorder</h2>
-            <p>Screen recorder webm/mp4.</p>
-        </a><a href="tool_50.html" class="card">
-            <div class="card-id">Tool #50</div>
-            <h2>PKI Key Generator</h2>
-            <p>Generate RSA &amp; Ed25519 key pairs, SSH keys &amp; self-signed certificates.</p>
-        </a><a href="tool_51.html" class="card">
-            <div class="card-id">Tool #51</div>
-            <h2>image_one — Image Editor</h2>
-            <p>In browser offline image editor. Copy - paste included.</p>
-        </a><a href="tool_52.html" class="card">
-            <div class="card-id">Tool #52</div>
-            <h2>CSV SQL inspector</h2>
-            <p>In browser offline CSV inspector and analyzer.</p>
-        </a><a href="tool_53.html" class="card">
-            <div class="card-id">Tool #53</div>
-            <h2>SQLite SQL inspector</h2>
-            <p>In browser offline SQLite / CSV viewer and analyzer.</p>
-        </a><a href="tool_54.html" class="card">
-            <div class="card-id">Tool #53</div>
-            <h2>Lorentzkraft visualization</h2>
-            <p>In browser offline SQLite / CSV viewer and analyzer.</p>
-        </a>
+
+    <div class="controls">
+        <div class="wrap inner">
+            <div class="search">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+                <input id="q" type="search" placeholder="Search tools…" autocomplete="off" aria-label="Search tools">
+            </div>
+            <div class="filters" id="filters" role="group" aria-label="Filter by category"></div>
+        </div>
+    </div>
+
+    <main class="wrap">
+        <div class="count" id="count"></div>
+        <div class="grid" id="grid"></div>
+        <div class="empty" id="empty">
+            <h3>No tools match</h3>
+            <p>Try a different search or category.</p>
+        </div>
     </main>
 
-    <footer>
-        &copy; 2026 Built for Performance
+    <footer class="wrap">
+        <p>Built for performance · <a href="https://github.com/gloryknight/offline_html_collection">Source on GitHub</a> · MIT License</p>
     </footer>
-</body>
 
+    <script>
+        const TOOLS = [
+    {
+        "id": 1,
+        "name": "JSON Formatter",
+        "desc": "Create a sleek JSON beautifier and validator with syntax highlighting.",
+        "category": "developer",
+        "slug": "json-formatter"
+    },
+    {
+        "id": 2,
+        "name": "Regex Tester",
+        "desc": "Build a real-time Regular Expression tester with match highlighting.",
+        "category": "developer",
+        "slug": "regex-tester"
+    },
+    {
+        "id": 3,
+        "name": "Base64 Tool",
+        "desc": "A professional Base64 encoder/decoder with support for text and images.",
+        "category": "developer",
+        "slug": "base64-tool"
+    },
+    {
+        "id": 4,
+        "name": "Markdown Previewer",
+        "desc": "A split-pane Markdown editor with live HTML preview.",
+        "category": "developer",
+        "slug": "markdown-previewer"
+    },
+    {
+        "id": 5,
+        "name": "JWT Decoder",
+        "desc": "An intuitive JSON Web Token debugger that visualizes header &amp; payload.",
+        "category": "developer",
+        "slug": "jwt-decoder"
+    },
+    {
+        "id": 6,
+        "name": "CSS Glassmorphism Generator",
+        "desc": "Adjust blur/transparency and export CSS code instantly.",
+        "category": "design",
+        "slug": "css-glassmorphism-generator"
+    },
+    {
+        "id": 7,
+        "name": "Color Palette Pro",
+        "desc": "Generate harmonious color schemes with HEX/RGB export.",
+        "category": "design",
+        "slug": "color-palette-pro"
+    },
+    {
+        "id": 8,
+        "name": "Diff Checker",
+        "desc": "A side-by-side text comparison tool highlighting changes.",
+        "category": "developer",
+        "slug": "diff-checker"
+    },
+    {
+        "id": 9,
+        "name": "SQL Formatter",
+        "desc": "Beautify messy SQL queries with smart indentation logic.",
+        "category": "developer",
+        "slug": "sql-formatter"
+    },
+    {
+        "id": 10,
+        "name": "Unit Converter Pro",
+        "desc": "High-end converter for length, weight, and temperature.",
+        "category": "calculator",
+        "slug": "unit-converter-pro"
+    },
+    {
+        "id": 11,
+        "name": "Sorting Visualizer",
+        "desc": "Interactive visualization of Bubble, Merge, and Quick Sort.",
+        "category": "visualization",
+        "slug": "sorting-visualizer"
+    },
+    {
+        "id": 12,
+        "name": "Pathfinding Visualizer",
+        "desc": "Grid-based tool demonstrating A* or Dijkstra’s algorithm.",
+        "category": "visualization",
+        "slug": "pathfinding-visualizer"
+    },
+    {
+        "id": 13,
+        "name": "Conway’s Game of Life",
+        "desc": "Beautiful implementation of the cellular automaton.",
+        "category": "visualization",
+        "slug": "conway-s-game-of-life"
+    },
+    {
+        "id": 14,
+        "name": "Fractal Generator",
+        "desc": "HTML5 Canvas tool to explore the Mandelbrot set via zooming.",
+        "category": "visualization",
+        "slug": "fractal-generator"
+    },
+    {
+        "id": 15,
+        "name": "Particle Physics Sandbox",
+        "desc": "High-performance particle system reacting to mouse movement.",
+        "category": "visualization",
+        "slug": "particle-physics-sandbox"
+    },
+    {
+        "id": 16,
+        "name": "Fourier Series Visualizer",
+        "desc": "Animation showing how circles create complex wave shapes.",
+        "category": "visualization",
+        "slug": "fourier-series-visualizer"
+    },
+    {
+        "id": 17,
+        "name": "Binary Search Tree Visualizer",
+        "desc": "Animate the insertion and searching of nodes in a BST.",
+        "category": "visualization",
+        "slug": "binary-search-tree-visualizer"
+    },
+    {
+        "id": 18,
+        "name": "Data Dashboard Template",
+        "desc": "Professional single-page dashboard using Chart.js.",
+        "category": "creative",
+        "slug": "data-dashboard-template"
+    },
+    {
+        "id": 19,
+        "name": "Algorithm Complexity Timer",
+        "desc": "Visualize Big O notation growth visually via loops.",
+        "category": "visualization",
+        "slug": "algorithm-complexity-timer"
+    },
+    {
+        "id": 20,
+        "name": "Sorting vs. Searching Demo",
+        "desc": "Split-screen visual comparing algorithm traversal.",
+        "category": "visualization",
+        "slug": "sorting-vs-searching-demo"
+    },
+    {
+        "id": 21,
+        "name": "Minimalist Pomodoro",
+        "desc": "Zen-style timer with customizable work/break intervals.",
+        "category": "productivity",
+        "slug": "minimalist-pomodoro"
+    },
+    {
+        "id": 22,
+        "name": "Kanban Board",
+        "desc": "Drag-and-drop task manager using LocalStorage.",
+        "category": "productivity",
+        "slug": "kanban-board"
+    },
+    {
+        "id": 23,
+        "name": "Habit Tracker Heatmap",
+        "desc": "GitHub-style contribution grid for tracking daily habits.",
+        "category": "productivity",
+        "slug": "habit-tracker-heatmap"
+    },
+    {
+        "id": 24,
+        "name": "Zen Notepad",
+        "desc": "Distraction-free markdown notepad with auto-save.",
+        "category": "productivity",
+        "slug": "zen-notepad"
+    },
+    {
+        "id": 25,
+        "name": "Budget Calculator",
+        "desc": "Sleek expense tracker with dynamic pie charts.",
+        "category": "calculator",
+        "slug": "budget-calculator"
+    },
+    {
+        "id": 26,
+        "name": "Password Architect",
+        "desc": "Customizable password generator with entropy calculation.",
+        "category": "developer",
+        "slug": "password-architect"
+    },
+    {
+        "id": 27,
+        "name": "Daily Focus Timer",
+        "desc": "Countdown timer featuring a minimalist progress ring.",
+        "category": "productivity",
+        "slug": "daily-focus-timer"
+    },
+    {
+        "id": 28,
+        "name": "Interactive Mind Map",
+        "desc": "Create nodes and connections using SVG drag-and-drop.",
+        "category": "productivity",
+        "slug": "interactive-mind-map"
+    },
+    {
+        "id": 29,
+        "name": "Breathwork Guide",
+        "desc": "Calming, animated circle expansion for guided breathing.",
+        "category": "productivity",
+        "slug": "breathwork-guide"
+    },
+    {
+        "id": 30,
+        "name": "Minimalist Weather App",
+        "desc": "Clean dashboard with real-time API data &amp; dynamic backgrounds.",
+        "category": "creative",
+        "slug": "minimalist-weather-app"
+    },
+    {
+        "id": 31,
+        "name": "Retro Terminal Emulator",
+        "desc": "Functional CLI styled like a 1980s CRT monitor.",
+        "category": "creative",
+        "slug": "retro-terminal-emulator"
+    },
+    {
+        "id": 32,
+        "name": "Neumorphic Calculator",
+        "desc": "Calculator using the soft, extruded Neumorphism design trend.",
+        "category": "design",
+        "slug": "neumorphic-calculator"
+    },
+    {
+        "id": 33,
+        "name": "Cyberpunk Dashboard",
+        "desc": "High-contrast, neon-accented UI for monitoring stats.",
+        "category": "design",
+        "slug": "cyberpunk-dashboard"
+    },
+    {
+        "id": 34,
+        "name": "Generative Art Canvas",
+        "desc": "Generate geometric patterns via mathematical logic.",
+        "category": "creative",
+        "slug": "generative-art-canvas"
+    },
+    {
+        "id": 35,
+        "name": "3D CSS Cube Playground",
+        "desc": "Manipulate 3D shapes created entirely with CSS transforms.",
+        "category": "creative",
+        "slug": "3d-css-cube-playground"
+    },
+    {
+        "id": 36,
+        "name": "Audio Visualizer",
+        "desc": "Web Audio API implementation for microphone input.",
+        "category": "creative",
+        "slug": "audio-visualizer"
+    },
+    {
+        "id": 37,
+        "name": "Glassmorphism UI Kit",
+        "desc": "Interactive showcase of various glass-style components.",
+        "category": "design",
+        "slug": "glassmorphism-ui-kit"
+    },
+    {
+        "id": 38,
+        "name": "Interactive Particle Background",
+        "desc": "Lightweight, high-performance background for landing pages.",
+        "category": "creative",
+        "slug": "interactive-particle-background"
+    },
+    {
+        "id": 39,
+        "name": "CSS Grid Playground",
+        "desc": "Visual tool to build and export complex CSS Grid layouts.",
+        "category": "design",
+        "slug": "css-grid-playground"
+    },
+    {
+        "id": 40,
+        "name": "Digital Clock (Modern)",
+        "desc": "Typography-focused clock with smooth transitions.",
+        "category": "creative",
+        "slug": "digital-clock-modern"
+    },
+    {
+        "id": 41,
+        "name": "HTML Live Previewer",
+        "desc": "Real-time HTML editor with instant preview in a modal.",
+        "category": "developer",
+        "slug": "html-live-previewer"
+    },
+    {
+        "id": 42,
+        "name": "Video Background Generator",
+        "desc": "Generate video for audio using Bunny.",
+        "category": "creative",
+        "slug": "video-background-generator"
+    },
+    {
+        "id": 43,
+        "name": "Text Video Creator",
+        "desc": "Generate video with text.",
+        "category": "creative",
+        "slug": "text-video-creator"
+    },
+    {
+        "id": 44,
+        "name": "EV Optimal Speed Calculator",
+        "desc": "Find the speed that minimizes total trip time — driving + charging.",
+        "category": "calculator",
+        "slug": "ev-optimal-speed-calculator"
+    },
+    {
+        "id": 45,
+        "name": "CSV Batch LLM Processor",
+        "desc": "Process CSV data through OpenAI-compatible endpoint.",
+        "category": "data",
+        "slug": "csv-batch-llm-processor"
+    },
+    {
+        "id": 46,
+        "name": "CSV HTML Inspector",
+        "desc": "Preview CSV data in an HTML format.",
+        "category": "data",
+        "slug": "csv-html-inspector"
+    },
+    {
+        "id": 47,
+        "name": "CSV File Extractor",
+        "desc": "Convert CSV rows into individual files inside a ZIP archive instantly.",
+        "category": "data",
+        "slug": "csv-file-extractor"
+    },
+    {
+        "id": 48,
+        "name": "Tower defense game",
+        "desc": "Modern and fancy-looking tower defense game in single HTML.",
+        "category": "games",
+        "slug": "tower-defense-game"
+    },
+    {
+        "id": 49,
+        "name": "Screen recorder",
+        "desc": "Screen recorder webm/mp4.",
+        "category": "creative",
+        "slug": "screen-recorder"
+    },
+    {
+        "id": 50,
+        "name": "PKI Key Generator",
+        "desc": "Generate RSA &amp; Ed25519 key pairs, SSH keys &amp; self-signed certificates.",
+        "category": "developer",
+        "slug": "key-pair-generator"
+    },
+    {
+        "id": 51,
+        "name": "image_one — Image Editor",
+        "desc": "In browser offline image editor. Copy - paste included.",
+        "category": "creative",
+        "slug": "image-editor"
+    },
+    {
+        "id": 52,
+        "name": "CSV SQL inspector",
+        "desc": "In browser offline CSV inspector and analyzer.",
+        "category": "data",
+        "slug": "csv-sql-inspector"
+    },
+    {
+        "id": 53,
+        "name": "SQLite SQL inspector",
+        "desc": "In browser offline SQLite / CSV viewer and analyzer.",
+        "category": "data",
+        "slug": "sqlite-sql-inspector"
+    },
+    {
+        "id": 54,
+        "name": "Lorentzkraft visualization",
+        "desc": "Interactive Lorentz-force &amp; magnetosphere visualization (GFS physics, Sun → Earth).",
+        "category": "visualization",
+        "slug": "lorentzkraft-visualization"
+    }
+];
+        const CATS = {
+        "developer": "Developer",
+        "visualization": "Visualization",
+        "creative": "Creative",
+        "productivity": "Productivity",
+        "data": "Data",
+        "design": "Design",
+        "calculator": "Calculator",
+        "games": "Games"
+};
+        const grid = document.getElementById("grid");
+        const filters = document.getElementById("filters");
+        const count = document.getElementById("count");
+        const empty = document.getElementById("empty");
+        const q = document.getElementById("q");
+        let activeCat = "all";
+
+        const counts = {};
+        TOOLS.forEach(t => counts[t.category] = (counts[t.category] || 0) + 1);
+        const chips = [["all", "All", TOOLS.length], ...Object.keys(CATS).filter(c => counts[c]).map(c => [c, CATS[c], counts[c]])];
+        filters.innerHTML = chips.map(([id, label, n]) =>
+            `<button class="chip${id === activeCat ? " active" : ""}" data-cat="${id}">${label}<span class="n">${n}</span></button>`
+        ).join("");
+
+        const esc = s => s.replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+
+        function render() {
+            const term = q.value.trim().toLowerCase();
+            const list = TOOLS.filter(t =>
+                (activeCat === "all" || t.category === activeCat) &&
+                (!term || t.name.toLowerCase().includes(term) || t.desc.toLowerCase().includes(term))
+            );
+            grid.innerHTML = list.map(t => `
+                <a class="card" href="${t.slug}.html">
+                    <div class="top"><span class="tag">${CATS[t.category]}</span><span class="slug">${t.slug}</span></div>
+                    <h2>${esc(t.name)}</h2>
+                    <p>${t.desc}</p>
+                    <span class="go">Open &rarr;</span>
+                </a>`).join("");
+            count.innerHTML = `Showing <b>${list.length}</b> of ${TOOLS.length} tools`;
+            empty.style.display = list.length ? "none" : "block";
+        }
+
+        filters.addEventListener("click", e => {
+            const b = e.target.closest(".chip");
+            if (!b) return;
+            activeCat = b.dataset.cat;
+            filters.querySelectorAll(".chip").forEach(c => c.classList.toggle("active", c === b));
+            render();
+        });
+        q.addEventListener("input", render);
+        render();
+    </script>
+</body>
 </html>

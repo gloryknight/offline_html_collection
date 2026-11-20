@@ -774,7 +774,7 @@
                 // 5. Generate Base64 hash of the FULL content
                 try {
                     const base64 = btoa(unescape(encodeURIComponent(String(cellContent))));
-                    window.open(`tool_41.html#${base64}`, '_blank');
+                    window.open(`html-live-previewer.html#${base64}`, '_blank');
                 } catch (err) {
                     console.error("Failed to encode cell content:", err);
                 }
